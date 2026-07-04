@@ -1,0 +1,33 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "./lib/**/*.ts"
+  ],
+  "out": "docs/api",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "node_modules",
+    "dist"
+  ],
+  "includeVersion": true,
+  "readme": "README.md",
+  "name": "Template CDK Documentation",
+  "plugin": [
+    "typedoc-plugin-markdown"
+  ],
+  "theme": "markdown",
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Config",
+    "Constructs",
+    "Stacks",
+    "Aspects"
+  ],
+  "sort": [
+    "source-order"
+  ]
+}
