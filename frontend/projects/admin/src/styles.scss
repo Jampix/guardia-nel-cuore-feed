@@ -1,0 +1,35 @@
+// Tema Material 3 del backoffice.
+// Stessa palette calda condivisa dell'app cittadini (seed #C0392B / #E67E22).
+@use '@angular/material' as mat;
+@use '../../shared/styles/theme-colors' as theme;
+
+// Stack di sistema Apple: su macOS/iOS rende SF Pro, nessuna webfont da caricare.
+$sf-plain: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+$sf-brand: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+
+html {
+  // light dark → Material usa light-dark() e commuta con le preferenze di sistema.
+  color-scheme: light dark;
+
+  @include mat.theme((
+    color: (
+      primary: theme.$primary-palette,
+      tertiary: theme.$tertiary-palette,
+    ),
+    typography: (
+      plain-family: $sf-plain,
+      brand-family: $sf-brand,
+    ),
+    density: 0,
+  ));
+}
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  font-family: $sf-plain;
+  -webkit-font-smoothing: antialiased;
+}
