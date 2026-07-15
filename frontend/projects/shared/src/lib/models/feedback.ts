@@ -38,6 +38,11 @@ export interface Feedback {
   /** Etichetta leggibile del luogo, es. "Via Roma". */
   luogo?: string;
   numeroVoti: number;
+  /**
+   * Ultima risposta pubblica dell'associazione (denormalizzata sul feedback
+   * per comodità di lettura). La cronologia completa vivrà in FeedbackComments.
+   */
+  rispostaPubblica?: string;
   autoreId: string;
   /** Nickname pubblico dell'autore mostrato in bacheca. */
   autoreNick: string;

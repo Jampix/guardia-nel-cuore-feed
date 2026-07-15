@@ -36,7 +36,7 @@
 } @else {
   <div class="feed">
     @for (f of feedbacks(); track f.id) {
-      <mat-card class="fcard" appearance="outlined">
+      <mat-card class="fcard" appearance="outlined" [routerLink]="['/feedback', f.id]">
         <div class="thumb" [style.background]="categoryGradient(f.categoriaId)">
           <span class="catchip">{{ categoryName(f.categoriaId) }}</span>
         </div>

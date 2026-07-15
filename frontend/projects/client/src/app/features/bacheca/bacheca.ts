@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
@@ -12,7 +13,7 @@ type View = 'lista' | 'mappa';
 /** Bacheca pubblica: elenco a card dei feedback dei cittadini, con filtri. */
 @Component({
   selector: 'app-bacheca',
-  imports: [MatButtonToggleModule, MatChipsModule, MatCardModule, MatIconModule],
+  imports: [RouterLink, MatButtonToggleModule, MatChipsModule, MatCardModule, MatIconModule],
   templateUrl: './bacheca.html',
   styleUrl: './bacheca.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
