@@ -40,7 +40,12 @@ export class ApiStack extends Stack {
     const userPool = UserPool.fromUserPoolId(this, 'UserPool', props.userPoolId);
     const clientApp = UserPoolClient.fromUserPoolClientId(this, 'ClientApp', props.clientAppClientId);
     const adminApp = UserPoolClient.fromUserPoolClientId(this, 'AdminApp', props.adminAppClientId);
-    const feedbacks = Table.fromTableArn(this, 'FeedbacksTable', props.feedbacksTableArn);
+    // grantIndexPermissions: i grant includono anche gli indici (`/index/*`),
+    // necessario perché la bacheca interroga il GSI `byVisibilita`.
+    const feedbacks = Table.fromTableAttributes(this, 'FeedbacksTable', {
+      tableArn: props.feedbacksTableArn,
+      grantIndexPermissions: true,
+    });
     const categories = Table.fromTableArn(this, 'CategoriesTable', props.categoriesTableArn);
 
     // GET /categories (pubblica)
@@ -59,12 +64,21 @@ export class ApiStack extends Stack {
     });
     feedbacks.grantWriteData(createFeedbackFn.fn);
 
+    // GET /feedback/public (pubblica) — bacheca
+    const listPublicFeedbackFn = new NodeFunctionConstruct(this, 'ListPublicFeedbackFn', {
+      entry: path.join(handlersDir, 'list-public-feedback.ts'),
+      environment: { FEEDBACKS_TABLE: props.feedbacksTableName },
+      description: 'Guardia nel Cuore - bacheca pubblica',
+    });
+    feedbacks.grantReadData(listPublicFeedbackFn.fn);
+
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
       allowOrigins: ['*'], // TODO(Incremento 4): restringere ai domini reali
     });
     api.addRoute(HttpMethod.GET, '/categories', categoriesFn.fn, { authenticated: false });
+    api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: false });
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;

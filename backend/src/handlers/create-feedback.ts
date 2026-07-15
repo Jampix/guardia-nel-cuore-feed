@@ -43,7 +43,7 @@ export const handler = async (
     descrizione,
     categoriaId: body.categoriaId ? String(body.categoriaId) : null,
     visibilita: body.visibilita === 'pubblico' ? 'pubblico' : 'privato',
-    stato: 'ricevuto',
+    stato: 'proposta',
     autoreId,
     autoreNick,
     lat: body.lat ?? null,
