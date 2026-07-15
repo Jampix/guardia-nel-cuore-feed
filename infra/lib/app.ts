@@ -9,6 +9,7 @@ import { NamingAspect } from './aspects/naming-aspect';
 import { CostOptimizationStack } from './stacks/cost-optimization-stack';
 import { DataStack } from './stacks/data-stack';
 import { AuthStack } from './stacks/auth-stack';
+import { StorageStack } from './stacks/storage-stack';
 import { ApiStack } from './stacks/api-stack';
 import { DnsStack } from './stacks/dns-stack';
 import { CertStack } from './stacks/cert-stack';
@@ -106,6 +107,21 @@ export class InfrastructureApp {
       env: this.env,
     });
 
+    // Incremento 4 — Storage. Bucket S3 privato per le foto dei feedback.
+    // Feature core (come Data/Auth): sempre creato, nessun feature flag.
+    // Le origini CORS derivano dal dominio: il client vive su `feed.<dominio>`
+    // e l'admin su `admin.feed.<dominio>` (cioè `admin.<domain>` dato che
+    // `domain` è già `feed.guardianelcuore.it`).
+    const domain = this.config.features.dns?.domain;
+    const allowedOrigins = domain
+      ? [`https://${domain}`, `https://admin.${domain}`]
+      : [];
+    new StorageStack(this.app, this.stackName('StorageStack'), {
+      config: this.config,
+      allowedOrigins,
+      env: this.env,
+    });
+
     // Incremento 3 — API (HTTP API + JWT authorizer + Lambda). Dipende da
     // Data e Auth: riceve ID/ARN come stringhe (convenzione cross-stack).
     const api = new ApiStack(this.app, this.stackName('ApiStack'), {
@@ -148,7 +164,7 @@ export class InfrastructureApp {
       }
     }
 
-    // TODO(Incremento 4): StorageStack + FrontendStack.
+    // TODO(Incremento 4): FrontendStack (S3 sito statico + CloudFront).
   }
 
   /** Stampa un riepilogo del deploy. Chiamabile da `bin/app.ts` se utile. */
