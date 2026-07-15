@@ -1,0 +1,68 @@
+<header class="np-nav">
+  <a class="cancel" routerLink="/">Annulla</a>
+  <span class="np-title">Nuova proposta</span>
+  <span class="np-spacer"></span>
+</header>
+
+<form class="np-form" [formGroup]="form" (ngSubmit)="submit()">
+  <section class="group">
+    <mat-form-field appearance="outline">
+      <mat-label>Titolo</mat-label>
+      <input matInput formControlName="titolo" maxlength="80" placeholder="Es. Buche lungo via Roma" />
+      @if (form.controls.titolo.touched && form.controls.titolo.invalid) {
+        <mat-error>Inserisci un titolo (almeno 5 caratteri).</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Descrizione</mat-label>
+      <textarea matInput formControlName="descrizione" rows="4"
+        placeholder="Descrivi la proposta o la segnalazione…"></textarea>
+      @if (form.controls.descrizione.touched && form.controls.descrizione.invalid) {
+        <mat-error>Descrivi meglio (almeno 10 caratteri).</mat-error>
+      }
+    </mat-form-field>
+  </section>
+
+  <section class="group">
+    <mat-form-field appearance="outline">
+      <mat-label>Categoria</mat-label>
+      <mat-select formControlName="categoriaId">
+        @for (c of categories(); track c.id) {
+          <mat-option [value]="c.id">{{ c.nome }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.categoriaId.touched && form.controls.categoriaId.invalid) {
+        <mat-error>Scegli una categoria.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Luogo (facoltativo)</mat-label>
+      <input matInput formControlName="luogo" placeholder="Es. Via Roma, Lungomare…" />
+      <mat-icon matSuffix>place</mat-icon>
+      <mat-hint>La scelta sulla mappa arriverà a breve.</mat-hint>
+    </mat-form-field>
+  </section>
+
+  <section class="block">
+    <span class="block-label">Foto</span>
+    <div class="photo-drop" aria-disabled="true">
+      <mat-icon>add_a_photo</mat-icon>
+      <span>Aggiungi una foto</span>
+      <small>Il caricamento sicuro arriverà a breve.</small>
+    </div>
+  </section>
+
+  <section class="block">
+    <span class="block-label">Visibilità</span>
+    <mat-button-toggle-group formControlName="visibilita" hideSingleSelectionIndicator
+      aria-label="Visibilità della proposta">
+      <mat-button-toggle value="pubblico">Pubblico</mat-button-toggle>
+      <mat-button-toggle value="privato">Privato</mat-button-toggle>
+    </mat-button-toggle-group>
+    <p class="hint">Le proposte pubbliche appaiono in bacheca e possono ricevere sostegni.</p>
+  </section>
+
+  <button mat-flat-button type="submit" class="publish">Pubblica</button>
+</form>
