@@ -1,0 +1,59 @@
+<header class="page-head">
+  <h1>Bacheca</h1>
+  <p class="subtitle">Guardia Piemontese · {{ feedbacks().length }} proposte</p>
+</header>
+
+<mat-button-toggle-group
+  class="view-toggle"
+  [value]="view()"
+  (change)="setView($event.value)"
+  hideSingleSelectionIndicator
+  aria-label="Vista bacheca">
+  <mat-button-toggle value="lista">
+    <mat-icon>view_agenda</mat-icon> Lista
+  </mat-button-toggle>
+  <mat-button-toggle value="mappa">
+    <mat-icon>map</mat-icon> Mappa
+  </mat-button-toggle>
+</mat-button-toggle-group>
+
+<mat-chip-listbox
+  class="filters"
+  [value]="selectedCategory()"
+  (change)="selectCategory($event.value)"
+  aria-label="Filtra per categoria">
+  <mat-chip-option [value]="null" [selected]="selectedCategory() === null">Tutte</mat-chip-option>
+  @for (c of categories(); track c.id) {
+    <mat-chip-option [value]="c.id">{{ c.nome }}</mat-chip-option>
+  }
+</mat-chip-listbox>
+
+@if (view() === 'mappa') {
+  <div class="map-placeholder">
+    <mat-icon>map</mat-icon>
+    <p>La mappa (Leaflet) arriverà qui: i feedback geolocalizzati su Guardia Piemontese.</p>
+  </div>
+} @else {
+  <div class="feed">
+    @for (f of feedbacks(); track f.id) {
+      <mat-card class="fcard" appearance="outlined">
+        <div class="thumb" [style.background]="categoryGradient(f.categoriaId)">
+          <span class="catchip">{{ categoryName(f.categoriaId) }}</span>
+        </div>
+        <div class="fc-body">
+          <h3 class="fc-title">{{ f.titolo }}</h3>
+          <p class="fc-snip">{{ f.descrizione }}</p>
+          <div class="fc-foot">
+            <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+            <span class="spacer"></span>
+            <span class="metric" [attr.aria-label]="f.numeroVoti + ' sostegni'">
+              <mat-icon>favorite</mat-icon>{{ f.numeroVoti }}
+            </span>
+          </div>
+        </div>
+      </mat-card>
+    } @empty {
+      <p class="empty">Nessuna proposta in questa categoria.</p>
+    }
+  </div>
+}

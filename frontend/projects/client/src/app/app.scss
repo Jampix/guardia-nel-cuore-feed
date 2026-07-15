@@ -1,0 +1,61 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.app-main {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--mat-sys-on-surface-variant);
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &.on { color: var(--mat-sys-primary); }
+  &.disabled { opacity: 0.55; cursor: default; }
+
+  &.proponi .plus {
+    width: 40px;
+    height: 40px;
+    margin-top: -14px;
+    border-radius: 999px;
+    background: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--mat-sys-primary) 42%, transparent);
+  }
+}
+
+/* Su schermo largo la bottom-bar mobile non serve: il chrome desktop
+   (top-bar) arriverà in un'iterazione successiva. */
