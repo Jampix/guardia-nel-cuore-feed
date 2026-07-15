@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Category, Feedback } from 'shared';
+import { Category, CreateFeedbackInput, Feedback } from 'shared';
 import { environment } from '../../environments/environment';
 
 /**
@@ -25,5 +25,10 @@ export class FeedbackService {
   /** Feedback della bacheca pubblica (più recenti prima). */
   getPublicFeedbacks(): Observable<Feedback[]> {
     return this.http.get<Feedback[]>(`${this.api}/feedback/public`);
+  }
+
+  /** Crea un feedback (richiede JWT: aggiunto dall'auth interceptor). */
+  create(input: CreateFeedbackInput): Observable<Feedback> {
+    return this.http.post<Feedback>(`${this.api}/feedback`, input);
   }
 }

@@ -64,5 +64,7 @@
     <p class="hint">Le proposte pubbliche appaiono in bacheca e possono ricevere sostegni.</p>
   </section>
 
-  <button mat-flat-button type="submit" class="publish">Pubblica</button>
+  <button mat-flat-button type="submit" class="publish" [disabled]="submitting()">
+    @if (submitting()) { <mat-spinner diameter="22"></mat-spinner> } @else { Pubblica }
+  </button>
 </form>

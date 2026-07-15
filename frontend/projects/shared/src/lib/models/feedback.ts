@@ -53,6 +53,19 @@ export interface Feedback {
   updatedAt: string;
 }
 
+/** Dati inviati per creare un feedback (POST /feedback). */
+export interface CreateFeedbackInput {
+  titolo: string;
+  descrizione: string;
+  categoriaId: string;
+  visibilita: Visibility;
+  luogo?: string;
+  lat?: number;
+  lng?: number;
+  fotoUrl?: string;
+  lingua?: string;
+}
+
 /** Etichette leggibili degli stati (IT), per i chip in UI. */
 export const FEEDBACK_STATUS_LABEL: Record<FeedbackStatus, string> = {
   proposta: 'Proposta',
