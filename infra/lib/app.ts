@@ -13,6 +13,7 @@ import { StorageStack } from './stacks/storage-stack';
 import { ApiStack } from './stacks/api-stack';
 import { DnsStack } from './stacks/dns-stack';
 import { CertStack } from './stacks/cert-stack';
+import { FrontendStack } from './stacks/frontend-stack';
 
 /**
  * Orchestratore degli stack del progetto "Guardia nel Cuore".
@@ -161,10 +162,24 @@ export class InfrastructureApp {
           hostedZoneId: dns.hostedZoneId,
           env: { account: this.config.account, region: 'us-east-1' },
         });
+
+        // Frontend: due siti statici (client/admin) su CloudFront. Vive in
+        // eu-west-1; importa la zona `feed` (attributi) e il certificato ACM
+        // (ARN stringa cross-region da us-east-1). Richiede quindi sia
+        // hostedZoneId sia certificateArn noti (post-deploy Cert/Dns).
+        if (dns.certificateArn) {
+          new FrontendStack(this.app, this.stackName('FrontendStack'), {
+            config: this.config,
+            clientDomain: dns.domain, // feed.guardianelcuore.it
+            adminDomain: `admin.${dns.domain}`, // admin.feed.guardianelcuore.it
+            zoneName: dns.domain,
+            hostedZoneId: dns.hostedZoneId,
+            certificateArn: dns.certificateArn,
+            env: this.env,
+          });
+        }
       }
     }
-
-    // TODO(Incremento 4): FrontendStack (S3 sito statico + CloudFront).
   }
 
   /** Stampa un riepilogo del deploy. Chiamabile da `bin/app.ts` se utile. */

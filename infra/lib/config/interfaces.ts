@@ -60,6 +60,12 @@ export interface ProjectConfig {
        * il certificato ACM. Riferimento cross-region → stringa esplicita.
        */
       hostedZoneId?: string;
+      /**
+       * ARN del certificato ACM in us-east-1 (creato dal CertStack), consumato
+       * dal FrontendStack (eu-west-1) per CloudFront. CloudFormation non importa
+       * output tra region diverse → si passa come stringa literal esplicita.
+       */
+      certificateArn?: string;
     };
   };
 }
