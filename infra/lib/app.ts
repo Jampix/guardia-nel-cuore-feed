@@ -10,6 +10,8 @@ import { CostOptimizationStack } from './stacks/cost-optimization-stack';
 import { DataStack } from './stacks/data-stack';
 import { AuthStack } from './stacks/auth-stack';
 import { ApiStack } from './stacks/api-stack';
+import { DnsStack } from './stacks/dns-stack';
+import { CertStack } from './stacks/cert-stack';
 
 /**
  * Orchestratore degli stack del progetto "Guardia nel Cuore".
@@ -120,7 +122,33 @@ export class InfrastructureApp {
     api.addDependency(data);
     api.addDependency(auth);
 
-    // TODO(Incremento 4): CertStack (us-east-1) + FrontendStack + DNS.
+    // Incremento 4 — DNS. Crea la hosted zone `feed.guardianelcuore.it`
+    // nell'account di progetto. La delega NS dall'apex (account main) e' un
+    // passo MANUALE post-deploy (l'apex non e' gestito da questo account).
+    // Stateful e indipendente: nessuna dipendenza da Data/Auth/Api.
+    if (this.config.features.dns?.enabled) {
+      const dns = this.config.features.dns;
+
+      new DnsStack(this.app, this.stackName('DnsStack'), {
+        projectName: this.config.projectName,
+        domain: dns.domain,
+        env: this.env,
+      });
+
+      // Certificato ACM per CloudFront: DEVE stare in us-east-1 (override
+      // della region rispetto a this.env). Importa la zona `feed` cross-region
+      // via hostedZoneId (stringa). Richiede l'ID noto dopo il deploy DnsStack.
+      if (dns.hostedZoneId) {
+        new CertStack(this.app, this.stackName('CertStack'), {
+          projectName: this.config.projectName,
+          zoneName: dns.domain,
+          hostedZoneId: dns.hostedZoneId,
+          env: { account: this.config.account, region: 'us-east-1' },
+        });
+      }
+    }
+
+    // TODO(Incremento 4): StorageStack + FrontendStack.
   }
 
   /** Stampa un riepilogo del deploy. Chiamabile da `bin/app.ts` se utile. */

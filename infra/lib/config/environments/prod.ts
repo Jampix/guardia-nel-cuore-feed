@@ -19,8 +19,10 @@ export const prodConfig: ProjectConfig = {
   features: {
     // Abilitato all'Incremento 4 (hosted zone + record client/admin).
     dns: {
-      enabled: false,
+      enabled: true,
       domain: 'feed.guardianelcuore.it',
+      // Hosted zone `feed` creata dal DnsStack (deploy 2026-07-13).
+      hostedZoneId: 'Z0749602EGJJ2UCIQME2',
     },
   },
 };

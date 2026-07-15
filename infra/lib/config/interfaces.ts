@@ -53,6 +53,13 @@ export interface ProjectConfig {
       enabled: boolean;
       /** Dominio della hosted zone, es. `feed.guardianelcuore.it` */
       domain: string;
+      /**
+       * ID della hosted zone `feed` (account progetto), noto dopo il primo
+       * deploy del DnsStack. Serve al CertStack (us-east-1) per importare la
+       * zona cross-region come stringa (`fromHostedZoneAttributes`) e validare
+       * il certificato ACM. Riferimento cross-region → stringa esplicita.
+       */
+      hostedZoneId?: string;
     };
   };
 }
