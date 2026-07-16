@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from './auth.service';
+import { AuthService } from 'shared';
 
 /**
  * Protegge le rotte private. Verifica la sessione reale (getIdToken) così

@@ -1,0 +1,13 @@
+<header class="page-head">
+  <h1>Sintesi</h1>
+  @if (user(); as u) { <p class="welcome">Ciao {{ u.nickname || 'staff' }} 👋</p> }
+</header>
+
+<div class="kpi-grid">
+  <div class="stat"><div class="n">—</div><div class="l">Da moderare</div></div>
+  <div class="stat"><div class="n">—</div><div class="l">In lavorazione</div></div>
+  <div class="stat"><div class="n">—</div><div class="l">Risolti · mese</div></div>
+  <div class="stat"><div class="n">—</div><div class="l">Cittadini</div></div>
+</div>
+
+<p class="soon">I dati reali (KPI e coda di moderazione) arriveranno con l'endpoint <code>GET /admin/feedback</code>, nel prossimo passo.</p>

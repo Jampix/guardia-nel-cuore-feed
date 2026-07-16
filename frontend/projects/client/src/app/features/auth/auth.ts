@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { AuthService } from '../../core/auth.service';
+import { AuthService } from 'shared';
 
 type Mode = 'login' | 'register' | 'confirm';
 

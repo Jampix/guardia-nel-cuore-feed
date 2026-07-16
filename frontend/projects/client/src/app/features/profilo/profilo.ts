@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService } from '../../core/auth.service';
+import { AuthService } from 'shared';
 
 /** Profilo del cittadino: dati account + logout. */
 @Component({
