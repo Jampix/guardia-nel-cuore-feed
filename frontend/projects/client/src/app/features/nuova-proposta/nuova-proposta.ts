@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { map, Observable, of, switchMap } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -40,6 +41,36 @@ export class NuovaProposta {
   readonly categories = toSignal(this.service.getCategories(), { initialValue: [] as Category[] });
   readonly submitting = signal(false);
 
+  private readonly MAX_MB = 5;
+  private readonly ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+  readonly photoFile = signal<File | null>(null);
+  readonly photoPreview = signal<string | null>(null);
+  readonly photoError = signal<string | null>(null);
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.photoError.set(null);
+    if (!file) return;
+    if (!this.ALLOWED.includes(file.type)) {
+      this.photoError.set('Formato non valido: usa JPEG, PNG o WebP.');
+      return;
+    }
+    if (file.size > this.MAX_MB * 1024 * 1024) {
+      this.photoError.set(`La foto supera ${this.MAX_MB} MB.`);
+      return;
+    }
+    this.photoFile.set(file);
+    this.photoPreview.set(URL.createObjectURL(file));
+  }
+
+  removePhoto(): void {
+    const url = this.photoPreview();
+    if (url) URL.revokeObjectURL(url);
+    this.photoFile.set(null);
+    this.photoPreview.set(null);
+  }
+
   readonly form = this.fb.nonNullable.group({
     titolo: ['', [Validators.required, Validators.minLength(5)]],
     categoriaId: ['', Validators.required],
@@ -57,8 +88,31 @@ export class NuovaProposta {
     // qui l'utente è autenticato.
     this.submitting.set(true);
     const { titolo, descrizione, categoriaId, luogo, visibilita } = this.form.getRawValue();
-    this.service
-      .create({ titolo, descrizione, categoriaId, visibilita, luogo: luogo || undefined, lingua: 'it' })
+    const file = this.photoFile();
+
+    // Se c'è una foto: presign → upload su S3 → uso la chiave; altrimenti nessuna.
+    const key$: Observable<string | undefined> = file
+      ? this.service.presignUpload(file.type).pipe(
+          switchMap(({ uploadUrl, key }) =>
+            this.service.uploadToS3(uploadUrl, file).pipe(map(() => key)),
+          ),
+        )
+      : of(undefined);
+
+    key$
+      .pipe(
+        switchMap((fotoKey) =>
+          this.service.create({
+            titolo,
+            descrizione,
+            categoriaId,
+            visibilita,
+            luogo: luogo || undefined,
+            fotoKey,
+            lingua: 'it',
+          }),
+        ),
+      )
       .subscribe({
         next: () => {
           this.snack.open('Proposta pubblicata! Grazie.', 'OK', { duration: 4000 });

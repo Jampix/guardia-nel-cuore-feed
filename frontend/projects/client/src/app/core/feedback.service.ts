@@ -31,4 +31,21 @@ export class FeedbackService {
   create(input: CreateFeedbackInput): Observable<Feedback> {
     return this.http.post<Feedback>(`${this.api}/feedback`, input);
   }
+
+  /** Ottiene un URL prefirmato per caricare una foto (richiede JWT). */
+  presignUpload(contentType: string): Observable<{ uploadUrl: string; key: string }> {
+    return this.http.post<{ uploadUrl: string; key: string }>(
+      `${this.api}/uploads/presign`,
+      { contentType },
+    );
+  }
+
+  /**
+   * Carica il file su S3 con il PUT prefirmato. L'URL NON è verso la nostra
+   * API, quindi l'interceptor non vi allega alcun token (corretto per S3).
+   * Il Content-Type deve combaciare con quello firmato.
+   */
+  uploadToS3(url: string, file: File): Observable<unknown> {
+    return this.http.put(url, file, { headers: { 'Content-Type': file.type } });
+  }
 }

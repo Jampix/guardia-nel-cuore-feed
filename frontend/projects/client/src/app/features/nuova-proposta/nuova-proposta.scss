@@ -70,9 +70,34 @@ mat-form-field {
   color: var(--mat-sys-on-surface-variant);
   font-size: 13.5px;
   font-weight: 550;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
 
+  &:hover { border-color: var(--mat-sys-primary); }
   mat-icon { font-size: 26px; width: 26px; height: 26px; opacity: 0.7; }
   small { font-size: 11.5px; font-weight: 400; opacity: 0.85; }
+}
+
+.photo-preview {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: 240px;
+
+  img { width: 100%; max-height: 240px; object-fit: cover; display: block; }
+  .remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: color-mix(in srgb, var(--mat-sys-surface) 78%, transparent);
+    backdrop-filter: blur(6px);
+  }
+}
+
+.photo-err {
+  font-size: 12.5px;
+  color: var(--mat-sys-error);
+  margin: 2px 4px 0;
 }
 
 mat-button-toggle-group {

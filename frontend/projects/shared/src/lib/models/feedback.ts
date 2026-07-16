@@ -62,7 +62,8 @@ export interface CreateFeedbackInput {
   luogo?: string;
   lat?: number;
   lng?: number;
-  fotoUrl?: string;
+  /** Chiave S3 della foto caricata via presigned PUT. */
+  fotoKey?: string;
   lingua?: string;
 }
 

@@ -38,6 +38,7 @@
     @for (f of feedbacks(); track f.id) {
       <mat-card class="fcard" appearance="outlined" [routerLink]="['/feedback', f.id]">
         <div class="thumb" [style.background]="categoryGradient(f.categoriaId)">
+          @if (f.fotoUrl) { <img [src]="f.fotoUrl" alt="" loading="lazy" /> }
           <span class="catchip">{{ categoryName(f.categoriaId) }}</span>
         </div>
         <div class="fc-body">

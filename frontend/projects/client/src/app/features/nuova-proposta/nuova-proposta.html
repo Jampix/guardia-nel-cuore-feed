@@ -46,12 +46,23 @@
   </section>
 
   <section class="block">
-    <span class="block-label">Foto</span>
-    <div class="photo-drop" aria-disabled="true">
-      <mat-icon>add_a_photo</mat-icon>
-      <span>Aggiungi una foto</span>
-      <small>Il caricamento sicuro arriverà a breve.</small>
-    </div>
+    <span class="block-label">Foto (facoltativa)</span>
+    @if (photoPreview(); as preview) {
+      <div class="photo-preview">
+        <img [src]="preview" alt="Anteprima della foto" />
+        <button type="button" mat-icon-button class="remove" (click)="removePhoto()" aria-label="Rimuovi foto">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    } @else {
+      <label class="photo-drop">
+        <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onFileSelected($event)" hidden />
+        <mat-icon>add_a_photo</mat-icon>
+        <span>Aggiungi una foto</span>
+        <small>JPEG, PNG o WebP · max 5 MB</small>
+      </label>
+    }
+    @if (photoError(); as err) { <p class="photo-err">{{ err }}</p> }
   </section>
 
   <section class="block">
