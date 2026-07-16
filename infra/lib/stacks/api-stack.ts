@@ -90,6 +90,18 @@ export class ApiStack extends Stack {
     });
     photoBucket.grantPut(presignUploadFn.fn);
 
+    // GET /admin/feedback (autenticata + controllo gruppo nell'handler) — backoffice
+    const listAdminFeedbackFn = new NodeFunctionConstruct(this, 'ListAdminFeedbackFn', {
+      entry: path.join(handlersDir, 'list-admin-feedback.ts'),
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        PHOTO_BUCKET: props.photoBucketName,
+      },
+      description: 'Guardia nel Cuore - lista feedback (backoffice)',
+    });
+    feedbacks.grantReadData(listAdminFeedbackFn.fn);
+    photoBucket.grantRead(listAdminFeedbackFn.fn);
+
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
@@ -99,6 +111,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: false });
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/admin/feedback', listAdminFeedbackFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {
