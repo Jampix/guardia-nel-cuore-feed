@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { AuthService, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
 import { AdminFeedbackService } from '../../core/admin-feedback.service';
 
 /** Dashboard di sintesi del backoffice: KPI + coda di moderazione (dati reali). */
 @Component({
   selector: 'app-sintesi',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './sintesi.html',
   styleUrl: './sintesi.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

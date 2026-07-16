@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
@@ -10,7 +11,7 @@ const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazion
 /** Elenco di tutti i feedback (backoffice), filtrabile per stato. */
 @Component({
   selector: 'app-feedback-list',
-  imports: [MatChipsModule, MatIconModule],
+  imports: [RouterLink, MatChipsModule, MatIconModule],
   templateUrl: './feedback-list.html',
   styleUrl: './feedback-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

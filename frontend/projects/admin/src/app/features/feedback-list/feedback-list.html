@@ -16,7 +16,7 @@
 
 <div class="list">
   @for (f of feedbacks(); track f.id) {
-    <div class="card">
+    <a class="card" [routerLink]="['/feedback', f.id]">
       <div class="main">
         <span class="t">{{ f.titolo }}</span>
         <span class="meta">
@@ -28,7 +28,7 @@
         <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
         <span class="votes"><mat-icon>favorite</mat-icon>{{ f.numeroVoti }}</span>
       </div>
-    </div>
+    </a>
   } @empty {
     <p class="empty">Nessun feedback per questo filtro.</p>
   }

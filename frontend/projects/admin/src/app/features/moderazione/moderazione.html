@@ -1,0 +1,58 @@
+<header class="mod-nav">
+  <a class="back" routerLink="/feedback" aria-label="Torna ai feedback">
+    <mat-icon>arrow_back_ios_new</mat-icon><span>Feedback</span>
+  </a>
+  <span class="mod-title">Moderazione</span>
+  <span class="mod-spacer"></span>
+</header>
+
+@if (feedback(); as f) {
+  <article class="mod-body">
+    <section class="fb-card">
+      <div class="chips">
+        <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+        @if (f.visibilita === 'privato') {
+          <span class="vis"><mat-icon>lock</mat-icon> privato</span>
+        }
+      </div>
+      <h1 class="title">{{ f.titolo }}</h1>
+      <p class="meta">di <strong>{{ f.autoreNick }}</strong> · {{ f.numeroVoti }} sostegni@if (f.luogo) { · {{ f.luogo }} }</p>
+      @if (f.fotoUrl) { <img class="foto" [src]="f.fotoUrl" alt="Foto della proposta" /> }
+      <p class="descr">{{ f.descrizione }}</p>
+    </section>
+
+    <form class="mod-form" [formGroup]="form" (ngSubmit)="save()">
+      <mat-form-field appearance="outline">
+        <mat-label>Stato</mat-label>
+        <mat-select formControlName="stato">
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ statusLabel[s] }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Cambiando stato, in futuro il cittadino riceverà una email.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Nota interna</mat-label>
+        <textarea matInput formControlName="notaInterna" rows="2"
+          placeholder="Visibile solo allo staff…"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Risposta pubblica</mat-label>
+        <textarea matInput formControlName="rispostaPubblica" rows="3"
+          placeholder="Sarà visibile al cittadino sul dettaglio."></textarea>
+      </mat-form-field>
+
+      <button mat-flat-button type="submit" class="save" [disabled]="saving()">
+        @if (saving()) { <mat-spinner diameter="22"></mat-spinner> } @else { Salva }
+      </button>
+    </form>
+  </article>
+} @else {
+  <div class="notfound">
+    <mat-icon>search_off</mat-icon>
+    <p>Feedback non trovato.</p>
+    <a routerLink="/feedback" mat-stroked-button>Torna ai feedback</a>
+  </div>
+}
