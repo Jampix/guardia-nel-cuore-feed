@@ -4,6 +4,7 @@ import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
 import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { ProjectConfig } from '../config/interfaces';
 import { ApiConstruct } from '../constructs/api/http-api';
 import { NodeFunctionConstruct } from '../constructs/functions/node-function';
@@ -19,6 +20,9 @@ export interface ApiStackProps extends StackProps {
   feedbacksTableName: string;
   categoriesTableArn: string;
   categoriesTableName: string;
+  // Da StorageStack (stringhe)
+  photoBucketArn: string;
+  photoBucketName: string;
 }
 
 /**
@@ -47,6 +51,7 @@ export class ApiStack extends Stack {
       grantIndexPermissions: true,
     });
     const categories = Table.fromTableArn(this, 'CategoriesTable', props.categoriesTableArn);
+    const photoBucket = Bucket.fromBucketArn(this, 'PhotoBucket', props.photoBucketArn);
 
     // GET /categories (pubblica)
     const categoriesFn = new NodeFunctionConstruct(this, 'CategoriesFn', {
@@ -64,13 +69,26 @@ export class ApiStack extends Stack {
     });
     feedbacks.grantWriteData(createFeedbackFn.fn);
 
-    // GET /feedback/public (pubblica) — bacheca
+    // GET /feedback/public (pubblica) — bacheca. Legge il bucket foto per
+    // generare gli URL GET prefirmati (grantRead → s3:GetObject).
     const listPublicFeedbackFn = new NodeFunctionConstruct(this, 'ListPublicFeedbackFn', {
       entry: path.join(handlersDir, 'list-public-feedback.ts'),
-      environment: { FEEDBACKS_TABLE: props.feedbacksTableName },
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        PHOTO_BUCKET: props.photoBucketName,
+      },
       description: 'Guardia nel Cuore - bacheca pubblica',
     });
     feedbacks.grantReadData(listPublicFeedbackFn.fn);
+    photoBucket.grantRead(listPublicFeedbackFn.fn);
+
+    // POST /uploads/presign (autenticata) — URL prefirmato per upload foto
+    const presignUploadFn = new NodeFunctionConstruct(this, 'PresignUploadFn', {
+      entry: path.join(handlersDir, 'presign-upload.ts'),
+      environment: { PHOTO_BUCKET: props.photoBucketName },
+      description: 'Guardia nel Cuore - presigned URL upload foto',
+    });
+    photoBucket.grantPut(presignUploadFn.fn);
 
     const api = new ApiConstruct(this, 'Api', {
       userPool,
@@ -80,6 +98,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.GET, '/categories', categoriesFn.fn, { authenticated: false });
     api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: false });
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

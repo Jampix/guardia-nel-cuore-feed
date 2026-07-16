@@ -5,7 +5,9 @@
   "description": "Funzioni Lambda (TypeScript) per l'app Guardia nel Cuore",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.700.0",
-    "@aws-sdk/lib-dynamodb": "^3.700.0"
+    "@aws-sdk/client-s3": "^3.1087.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.1087.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",

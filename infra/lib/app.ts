@@ -114,10 +114,13 @@ export class InfrastructureApp {
     // e l'admin su `admin.feed.<dominio>` (cioè `admin.<domain>` dato che
     // `domain` è già `feed.guardianelcuore.it`).
     const domain = this.config.features.dns?.domain;
-    const allowedOrigins = domain
-      ? [`https://${domain}`, `https://admin.${domain}`]
-      : [];
-    new StorageStack(this.app, this.stackName('StorageStack'), {
+    const allowedOrigins = [
+      ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
+      // Dev: consente l'upload presigned dal dev server Angular locale.
+      // TODO(go-live): rimuovere localhost dalle origini CORS.
+      'http://localhost:4200',
+    ];
+    const storage = new StorageStack(this.app, this.stackName('StorageStack'), {
       config: this.config,
       allowedOrigins,
       env: this.env,
@@ -135,9 +138,12 @@ export class InfrastructureApp {
       feedbacksTableName: data.feedbacksTableName,
       categoriesTableArn: data.categoriesTableArn,
       categoriesTableName: data.categoriesTableName,
+      photoBucketArn: storage.photoBucketArn,
+      photoBucketName: storage.photoBucketName,
     });
     api.addDependency(data);
     api.addDependency(auth);
+    api.addDependency(storage);
 
     // Incremento 4 — DNS. Crea la hosted zone `feed.guardianelcuore.it`
     // nell'account di progetto. La delega NS dall'apex (account main) e' un
