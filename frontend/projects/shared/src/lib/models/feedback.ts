@@ -43,6 +43,11 @@ export interface Feedback {
    * per comodità di lettura). La cronologia completa vivrà in FeedbackComments.
    */
   rispostaPubblica?: string;
+  /**
+   * Nota interna dello staff: visibile SOLO nel backoffice. L'endpoint pubblico
+   * la rimuove dalla risposta (mai esposta ai cittadini).
+   */
+  notaInterna?: string;
   autoreId: string;
   /** Nickname pubblico dell'autore mostrato in bacheca. */
   autoreNick: string;

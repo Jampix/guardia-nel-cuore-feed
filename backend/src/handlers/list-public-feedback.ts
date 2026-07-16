@@ -31,13 +31,15 @@ export const handler = async (): Promise<APIGatewayProxyResultV2> => {
 
   const items = await Promise.all(
     (res.Items ?? []).map(async (item) => {
-      if (!item.fotoKey) return item;
+      // La nota interna dello staff non deve MAI finire nella risposta pubblica.
+      const { notaInterna, ...pub } = item;
+      if (!pub.fotoKey) return pub;
       const fotoUrl = await getSignedUrl(
         s3,
-        new GetObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(item.fotoKey) }),
+        new GetObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(pub.fotoKey) }),
         { expiresIn: 3600 },
       );
-      return { ...item, fotoUrl };
+      return { ...pub, fotoUrl };
     }),
   );
 

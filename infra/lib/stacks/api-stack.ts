@@ -102,6 +102,14 @@ export class ApiStack extends Stack {
     feedbacks.grantReadData(listAdminFeedbackFn.fn);
     photoBucket.grantRead(listAdminFeedbackFn.fn);
 
+    // PATCH /admin/feedback/{id} (autenticata + gruppo) — moderazione
+    const patchFeedbackFn = new NodeFunctionConstruct(this, 'PatchFeedbackFn', {
+      entry: path.join(handlersDir, 'patch-feedback.ts'),
+      environment: { FEEDBACKS_TABLE: props.feedbacksTableName },
+      description: 'Guardia nel Cuore - moderazione feedback',
+    });
+    feedbacks.grantWriteData(patchFeedbackFn.fn);
+
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
@@ -112,6 +120,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/feedback', listAdminFeedbackFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.PATCH, '/admin/feedback/{id}', patchFeedbackFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {
