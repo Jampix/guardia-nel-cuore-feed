@@ -1,10 +1,12 @@
 import { Routes } from '@angular/router';
 import { Login } from './features/login/login';
 import { Sintesi } from './features/sintesi/sintesi';
+import { FeedbackList } from './features/feedback-list/feedback-list';
 import { staffGuard } from './core/staff.guard';
 
 export const routes: Routes = [
   { path: 'accedi', component: Login, title: 'Accedi · Backoffice' },
   { path: '', component: Sintesi, canActivate: [staffGuard], title: 'Sintesi · Backoffice' },
-  // TODO(admin): feedback (lista/moderazione), categorie.
+  { path: 'feedback', component: FeedbackList, canActivate: [staffGuard], title: 'Feedback · Backoffice' },
+  // TODO(admin): moderazione (dettaglio), categorie.
 ];

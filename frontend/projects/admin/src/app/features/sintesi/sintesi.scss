@@ -21,19 +21,57 @@
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 18px;
   padding: 16px;
-  .n { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--mat-sys-on-surface-variant); }
+  .n {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    &.alert { color: var(--mat-sys-primary); }
+  }
   .l { font-size: 12.5px; color: var(--mat-sys-on-surface-variant); margin-top: 2px; font-weight: 550; }
 }
 
-.soon {
-  margin-top: 20px;
-  font-size: 13.5px;
+.queue {
+  margin-top: 24px;
+  h2 { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; margin: 0 2px 10px; }
+}
+.list {
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  &:last-child { border-bottom: 0; }
+  .main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+  .t { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s { font-size: 12px; color: var(--mat-sys-on-surface-variant); margin-top: 2px; }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  &::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+}
+.st-proposta       { color: light-dark(#8a7d77, #ada098); background: light-dark(#ece5e2, #322925); }
+.st-in_valutazione { color: light-dark(#c77a1b, #e5a24d); background: light-dark(#fbebd6, #3b2a15); }
+.st-in_lavorazione { color: light-dark(#2e77c2, #6fa8e6); background: light-dark(#deebf8, #17293c); }
+.st-risolto        { color: light-dark(#2e9e6b, #59c793); background: light-dark(#d9f1e5, #143025); }
+.st-archiviato     { color: light-dark(#8a7d77, #ada098); background: light-dark(#ece5e2, #322925); }
+
+.empty {
   color: var(--mat-sys-on-surface-variant);
-  code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12.5px;
-    background: var(--mat-sys-surface-container-high);
-    padding: 1px 6px;
-    border-radius: 6px;
-  }
+  font-size: 14px;
+  padding: 18px 4px;
 }
