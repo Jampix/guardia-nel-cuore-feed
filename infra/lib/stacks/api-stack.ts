@@ -110,6 +110,14 @@ export class ApiStack extends Stack {
     });
     feedbacks.grantWriteData(patchFeedbackFn.fn);
 
+    // /admin/categories (autenticata + gruppo) — CRUD categorie (1 Lambda, 4 rotte)
+    const adminCategoriesFn = new NodeFunctionConstruct(this, 'AdminCategoriesFn', {
+      entry: path.join(handlersDir, 'admin-categories.ts'),
+      environment: { CATEGORIES_TABLE: props.categoriesTableName },
+      description: 'Guardia nel Cuore - CRUD categorie (backoffice)',
+    });
+    categories.grantReadWriteData(adminCategoriesFn.fn);
+
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
@@ -121,6 +129,10 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/feedback', listAdminFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.PATCH, '/admin/feedback/{id}', patchFeedbackFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/admin/categories', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/admin/categories', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.PATCH, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.DELETE, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {
