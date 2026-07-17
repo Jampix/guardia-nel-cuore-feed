@@ -48,4 +48,19 @@ export class FeedbackService {
   uploadToS3(url: string, file: File): Observable<unknown> {
     return this.http.put(url, file, { headers: { 'Content-Type': file.type } });
   }
+
+  /** Stato del voto dell'utente corrente su un feedback (richiede JWT). */
+  getVoteStatus(id: string): Observable<{ voted: boolean }> {
+    return this.http.get<{ voted: boolean }>(`${this.api}/feedback/${id}/vote`);
+  }
+
+  /** Sostieni un feedback (richiede JWT). */
+  vote(id: string): Observable<{ voted: boolean; numeroVoti?: number }> {
+    return this.http.post<{ voted: boolean; numeroVoti?: number }>(`${this.api}/feedback/${id}/vote`, {});
+  }
+
+  /** Ritira il sostegno (richiede JWT). */
+  unvote(id: string): Observable<{ voted: boolean; numeroVoti?: number }> {
+    return this.http.delete<{ voted: boolean; numeroVoti?: number }>(`${this.api}/feedback/${id}/vote`);
+  }
 }

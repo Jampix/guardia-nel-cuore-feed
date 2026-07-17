@@ -38,15 +38,18 @@
     }
 
     <div class="vote-cta">
-      <button mat-flat-button class="vote-btn" disabled>
-        <mat-icon>favorite</mat-icon> Sostieni
+      <button mat-flat-button class="vote-btn" [class.voted]="voted()" [disabled]="voting()" (click)="toggleVote()">
+        <mat-icon>{{ voted() ? 'favorite' : 'favorite_border' }}</mat-icon>
+        {{ voted() ? 'Sostenuto' : 'Sostieni' }}
       </button>
       <div class="count">
-        <span class="n">{{ f.numeroVoti }}</span>
+        <span class="n">{{ voteCount() }}</span>
         <span class="lbl">cittadini</span>
       </div>
     </div>
-    <p class="vote-note">Per sostenere una proposta serve accedere — presto disponibile.</p>
+    @if (!isAuthenticated()) {
+      <p class="vote-note">Per sostenere una proposta devi accedere.</p>
+    }
 
     @if (f.rispostaPubblica) {
       <section class="reply">

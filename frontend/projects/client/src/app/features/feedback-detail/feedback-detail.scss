@@ -140,6 +140,12 @@
   .vote-btn {
     --mat-button-filled-container-color: var(--mat-sys-primary);
     font-weight: 650;
+
+    // Stato "già sostenuto": look più tenue, non da call-to-action.
+    &.voted {
+      --mat-button-filled-container-color: var(--mat-sys-secondary-container);
+      --mat-button-filled-label-text-color: var(--mat-sys-on-secondary-container);
+    }
   }
   .count {
     display: flex;
