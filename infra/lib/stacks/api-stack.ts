@@ -20,6 +20,8 @@ export interface ApiStackProps extends StackProps {
   feedbacksTableName: string;
   categoriesTableArn: string;
   categoriesTableName: string;
+  votesTableArn: string;
+  votesTableName: string;
   // Da StorageStack (stringhe)
   photoBucketArn: string;
   photoBucketName: string;
@@ -52,6 +54,7 @@ export class ApiStack extends Stack {
     });
     const categories = Table.fromTableArn(this, 'CategoriesTable', props.categoriesTableArn);
     const photoBucket = Bucket.fromBucketArn(this, 'PhotoBucket', props.photoBucketArn);
+    const votes = Table.fromTableArn(this, 'VotesTable', props.votesTableArn);
 
     // GET /categories (pubblica)
     const categoriesFn = new NodeFunctionConstruct(this, 'CategoriesFn', {
@@ -118,6 +121,18 @@ export class ApiStack extends Stack {
     });
     categories.grantReadWriteData(adminCategoriesFn.fn);
 
+    // /feedback/{id}/vote (autenticata) — voto cittadino (GET/POST/DELETE, 1 Lambda)
+    const voteFn = new NodeFunctionConstruct(this, 'FeedbackVoteFn', {
+      entry: path.join(handlersDir, 'feedback-vote.ts'),
+      environment: {
+        VOTES_TABLE: props.votesTableName,
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+      },
+      description: 'Guardia nel Cuore - voto feedback',
+    });
+    votes.grantReadWriteData(voteFn.fn);
+    feedbacks.grantWriteData(voteFn.fn);
+
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
@@ -133,6 +148,9 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/admin/categories', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.PATCH, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.DELETE, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

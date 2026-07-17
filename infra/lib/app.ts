@@ -138,6 +138,8 @@ export class InfrastructureApp {
       feedbacksTableName: data.feedbacksTableName,
       categoriesTableArn: data.categoriesTableArn,
       categoriesTableName: data.categoriesTableName,
+      votesTableArn: data.votesTableArn,
+      votesTableName: data.votesTableName,
       photoBucketArn: storage.photoBucketArn,
       photoBucketName: storage.photoBucketName,
     });
