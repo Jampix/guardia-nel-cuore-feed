@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,10 +24,18 @@ export class FeedbackDetail {
   readonly id = input.required<string>();
 
   private readonly allFeedbacks = toSignal(this.service.getPublicFeedbacks(), { initialValue: [] as Feedback[] });
+  // Include anche le proprie proposte (per aprire quelle private dall'area "I miei").
+  // Se non autenticato l'endpoint dà 401: lo assorbiamo con una lista vuota.
+  private readonly mine = toSignal(
+    this.service.getMine().pipe(catchError(() => of([] as Feedback[]))),
+    { initialValue: [] as Feedback[] },
+  );
   private readonly categories = toSignal(this.service.getCategories(), { initialValue: [] as Category[] });
 
-  /** Feedback corrente (undefined finché non caricato o se non trovato). */
-  readonly feedback = computed(() => this.allFeedbacks().find((f) => f.id === this.id()));
+  /** Feedback corrente (dai propri o dai pubblici); undefined se non trovato. */
+  readonly feedback = computed(
+    () => this.mine().find((f) => f.id === this.id()) ?? this.allFeedbacks().find((f) => f.id === this.id()),
+  );
 
   /** Stato voto (mantenuto separato per aggiornare al volo il pulsante/contatore). */
   readonly voted = signal(false);

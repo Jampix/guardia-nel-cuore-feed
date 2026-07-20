@@ -83,6 +83,18 @@ export class ApiStack extends Stack {
       description: 'Guardia nel Cuore - bacheca pubblica',
     });
     feedbacks.grantReadData(listPublicFeedbackFn.fn);
+
+    // GET /feedback/mine (autenticata) — le proposte dell'utente (GSI byAutore)
+    const listMyFeedbackFn = new NodeFunctionConstruct(this, 'ListMyFeedbackFn', {
+      entry: path.join(handlersDir, 'list-my-feedback.ts'),
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        PHOTO_BUCKET: props.photoBucketName,
+      },
+      description: 'Guardia nel Cuore - i miei feedback',
+    });
+    feedbacks.grantReadData(listMyFeedbackFn.fn);
+    photoBucket.grantRead(listMyFeedbackFn.fn);
     photoBucket.grantRead(listPublicFeedbackFn.fn);
 
     // POST /uploads/presign (autenticata) — URL prefirmato per upload foto
@@ -140,6 +152,7 @@ export class ApiStack extends Stack {
     });
     api.addRoute(HttpMethod.GET, '/categories', categoriesFn.fn, { authenticated: false });
     api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: false });
+    api.addRoute(HttpMethod.GET, '/feedback/mine', listMyFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/feedback', listAdminFeedbackFn.fn, { authenticated: true });

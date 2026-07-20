@@ -27,6 +27,11 @@ export class FeedbackService {
     return this.http.get<Feedback[]>(`${this.api}/feedback/public`);
   }
 
+  /** Le proposte dell'utente autenticato (anche private). */
+  getMine(): Observable<Feedback[]> {
+    return this.http.get<Feedback[]>(`${this.api}/feedback/mine`);
+  }
+
   /** Crea un feedback (richiede JWT: aggiunto dall'auth interceptor). */
   create(input: CreateFeedbackInput): Observable<Feedback> {
     return this.http.post<Feedback>(`${this.api}/feedback`, input);

@@ -1,0 +1,71 @@
+:host {
+  display: block;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 12px 16px 20px;
+}
+
+.page-head {
+  margin: 8px 2px 14px;
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.026em; margin: 0; }
+  .subtitle { margin: 3px 0 0; font-size: 13px; color: var(--mat-sys-on-surface-variant); }
+}
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 16px;
+  padding: 13px 15px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  &:hover { background: var(--mat-sys-surface-container); }
+
+  .main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+  .t { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta {
+    font-size: 12.5px;
+    color: var(--mat-sys-on-surface-variant);
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    .lock { font-size: 13px; width: 13px; height: 13px; }
+  }
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  &::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+}
+.st-proposta       { color: light-dark(#8a7d77, #ada098); background: light-dark(#ece5e2, #322925); }
+.st-in_valutazione { color: light-dark(#c77a1b, #e5a24d); background: light-dark(#fbebd6, #3b2a15); }
+.st-in_lavorazione { color: light-dark(#2e77c2, #6fa8e6); background: light-dark(#deebf8, #17293c); }
+.st-risolto        { color: light-dark(#2e9e6b, #59c793); background: light-dark(#d9f1e5, #143025); }
+.st-archiviato     { color: light-dark(#8a7d77, #ada098); background: light-dark(#ece5e2, #322925); }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  mat-icon { font-size: 44px; width: 44px; height: 44px; opacity: 0.5; }
+  p { margin: 0; }
+  .cta { --mat-button-filled-container-color: var(--mat-sys-primary); font-weight: 600; border-radius: 12px; margin-top: 6px; }
+}

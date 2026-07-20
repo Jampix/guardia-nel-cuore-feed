@@ -1,0 +1,27 @@
+<header class="page-head">
+  <h1>I miei feedback</h1>
+  <p class="subtitle">{{ feedbacks().length }} proposte</p>
+</header>
+
+@if (feedbacks().length) {
+  <div class="list">
+    @for (f of feedbacks(); track f.id) {
+      <a class="card" [routerLink]="['/feedback', f.id]">
+        <div class="main">
+          <span class="t">{{ f.titolo }}</span>
+          <span class="meta">
+            @if (f.visibilita === 'privato') { <mat-icon class="lock">lock</mat-icon> privato · }
+            {{ f.numeroVoti }} sostegni
+          </span>
+        </div>
+        <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+      </a>
+    }
+  </div>
+} @else {
+  <div class="empty">
+    <mat-icon>lightbulb</mat-icon>
+    <p>Non hai ancora proposte.</p>
+    <a mat-flat-button class="cta" routerLink="/nuova"><mat-icon>add</mat-icon> Crea la prima</a>
+  </div>
+}
