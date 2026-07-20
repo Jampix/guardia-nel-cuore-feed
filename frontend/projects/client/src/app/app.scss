@@ -6,11 +6,75 @@
   background: var(--mat-sys-surface-container-low);
 }
 
-.app-main {
-  flex: 1;
-  overflow-y: auto;
+/* ---------- Top-bar (desktop) ---------- */
+.topbar {
+  display: none; // mobile-first: nascosta; compare da >=900px
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    color: var(--mat-sys-on-surface);
+    text-decoration: none;
+    .heart { color: var(--mat-sys-primary); font-size: 20px; width: 20px; height: 20px; }
+  }
+  .links {
+    display: flex;
+    gap: 4px;
+    a {
+      font-size: 14px;
+      font-weight: 550;
+      color: var(--mat-sys-on-surface-variant);
+      text-decoration: none;
+      padding: 8px 13px;
+      border-radius: 9px;
+      &.on { color: var(--mat-sys-on-surface); background: var(--mat-sys-surface-container-high); }
+    }
+  }
+  .grow { flex: 1; }
+  .cta {
+    --mat-button-filled-container-color: var(--mat-sys-primary);
+    font-weight: 600;
+    border-radius: 11px;
+  }
+  .signin {
+    color: var(--mat-sys-primary);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 8px 12px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--mat-sys-secondary), var(--mat-sys-primary));
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+  }
 }
 
+.app-main { flex: 1; overflow-y: auto; }
+
+/* ---------- Bottom tab (mobile) ---------- */
 .tabbar {
   position: sticky;
   bottom: 0;
@@ -22,7 +86,6 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
-
 .tab {
   flex: 1;
   display: flex;
@@ -33,16 +96,9 @@
   font-weight: 550;
   color: var(--mat-sys-on-surface-variant);
   text-decoration: none;
-
-  mat-icon {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-  }
-
+  mat-icon { font-size: 24px; width: 24px; height: 24px; }
   &.on { color: var(--mat-sys-primary); }
   &.disabled { opacity: 0.55; cursor: default; }
-
   &.proponi .plus {
     width: 40px;
     height: 40px;
@@ -57,5 +113,8 @@
   }
 }
 
-/* Su schermo largo la bottom-bar mobile non serve: il chrome desktop
-   (top-bar) arriverà in un'iterazione successiva. */
+/* ---------- Desktop: mostra top-bar, nascondi bottom tab ---------- */
+@media (min-width: 900px) {
+  .topbar { display: flex; }
+  .tabbar { display: none; }
+}

@@ -1,12 +1,66 @@
-:host {
+:host { display: block; }
+
+.layout {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
   background: var(--mat-sys-surface-container-low);
 }
 
-.topbar {
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+.app-main { flex: 1; overflow-y: auto; }
+
+/* ---------- Sidenav (desktop) ---------- */
+.sidenav {
+  display: none; // mobile-first: nascosta; compare da >=900px
+  flex-direction: column;
+  width: 236px;
+  flex: 0 0 236px;
+  padding: 18px 14px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    padding: 6px 10px 18px;
+    .heart { color: var(--mat-sys-primary); font-size: 20px; width: 20px; height: 20px; }
+  }
+  .snav { display: flex; flex-direction: column; gap: 3px; }
+  .snav a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    font-size: 14px;
+    font-weight: 550;
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    mat-icon { font-size: 20px; width: 20px; height: 20px; }
+    &.on {
+      background: var(--mat-sys-primary-container, color-mix(in srgb, var(--mat-sys-primary) 16%, transparent));
+      color: var(--mat-sys-primary);
+      font-weight: 600;
+    }
+  }
+  .grow { flex: 1; }
+  .logout-d { justify-content: flex-start; color: var(--mat-sys-on-surface-variant); font-weight: 550; }
+}
+
+/* ---------- Topbar mobile ---------- */
+.topbar-mobile {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -18,21 +72,13 @@
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
-
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    .heart { color: var(--mat-sys-primary); font-size: 20px; width: 20px; height: 20px; }
-  }
+  .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -0.02em;
+    .heart { color: var(--mat-sys-primary); font-size: 20px; width: 20px; height: 20px; } }
   .spacer { flex: 1; }
 }
 
-.app-main { flex: 1; overflow-y: auto; }
-
-.tabbar {
+/* ---------- Bottom tab mobile ---------- */
+.tabbar-mobile {
   position: sticky;
   bottom: 0;
   z-index: 10;
@@ -55,5 +101,11 @@
   text-decoration: none;
   mat-icon { font-size: 24px; width: 24px; height: 24px; }
   &.on { color: var(--mat-sys-primary); }
-  &.disabled { opacity: 0.55; cursor: default; }
+}
+
+/* ---------- Desktop: mostra sidenav, nascondi chrome mobile ---------- */
+@media (min-width: 900px) {
+  .sidenav { display: flex; }
+  .topbar-mobile,
+  .tabbar-mobile { display: none; }
 }
