@@ -1,0 +1,9 @@
+<div class="map" #mapEl></div>
+
+@if (editable()) {
+  <button type="button" mat-stroked-button class="locate" [disabled]="locating()" (click)="useMyLocation()">
+    <mat-icon>my_location</mat-icon>
+    {{ locating() ? 'Individuo la posizione…' : 'Usa la mia posizione' }}
+  </button>
+  <p class="hint">Tocca la mappa per posizionare il segnalino, oppure usa la tua posizione.</p>
+}

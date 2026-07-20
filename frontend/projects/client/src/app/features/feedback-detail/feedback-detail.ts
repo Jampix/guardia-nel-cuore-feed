@@ -6,11 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AuthService, Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
+import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 
 /** Dettaglio di un singolo feedback (raggiunto dalla bacheca). */
 @Component({
   selector: 'app-feedback-detail',
-  imports: [RouterLink, MatIconModule, MatButtonModule],
+  imports: [RouterLink, MatIconModule, MatButtonModule, FeedbackMap],
   templateUrl: './feedback-detail.html',
   styleUrl: './feedback-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

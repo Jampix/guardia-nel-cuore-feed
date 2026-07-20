@@ -13,6 +13,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Category, Visibility } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
+import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 
 /** Form di creazione di una nuova proposta/segnalazione del cittadino. */
 @Component({
@@ -27,6 +28,7 @@ import { FeedbackService } from '../../core/feedback.service';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    FeedbackMap,
   ],
   templateUrl: './nuova-proposta.html',
   styleUrl: './nuova-proposta.scss',
@@ -46,6 +48,15 @@ export class NuovaProposta {
   readonly photoFile = signal<File | null>(null);
   readonly photoPreview = signal<string | null>(null);
   readonly photoError = signal<string | null>(null);
+
+  /** Coordinate scelte sulla mappa (o via geolocalizzazione). */
+  readonly lat = signal<number | null>(null);
+  readonly lng = signal<number | null>(null);
+
+  onPickLocation(e: { lat: number; lng: number }): void {
+    this.lat.set(e.lat);
+    this.lng.set(e.lng);
+  }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -108,6 +119,8 @@ export class NuovaProposta {
             categoriaId,
             visibilita,
             luogo: luogo || undefined,
+            lat: this.lat() ?? undefined,
+            lng: this.lng() ?? undefined,
             fotoKey,
             lingua: 'it',
           }),

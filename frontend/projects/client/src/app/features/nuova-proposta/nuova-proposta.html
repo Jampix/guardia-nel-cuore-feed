@@ -41,8 +41,13 @@
       <mat-label>Luogo (facoltativo)</mat-label>
       <input matInput formControlName="luogo" placeholder="Es. Via Roma, Lungomare…" />
       <mat-icon matSuffix>place</mat-icon>
-      <mat-hint>La scelta sulla mappa arriverà a breve.</mat-hint>
+      <mat-hint>Etichetta leggibile del luogo (facoltativa).</mat-hint>
     </mat-form-field>
+  </section>
+
+  <section class="block">
+    <span class="block-label">Posizione sulla mappa</span>
+    <app-feedback-map [editable]="true" (pick)="onPickLocation($event)"></app-feedback-map>
   </section>
 
   <section class="block">
