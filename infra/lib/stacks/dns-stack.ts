@@ -1,6 +1,7 @@
 import { Construct } from 'constructs';
 import { Stack, StackProps, CfnOutput, Fn } from 'aws-cdk-lib';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses';
 import { ProjectConfig } from '../config/interfaces';
 
 export interface DnsStackProps extends StackProps {
@@ -34,6 +35,13 @@ export class DnsStack extends Stack {
         value: Fn.join(',', this.hostedZone.hostedZoneNameServers ?? []),
         description: 'Route53 Name Servers',
         exportName: `${props.projectName}-name-servers`,
+      });
+
+      // Identità SES per il dominio: aggiunge i record DKIM nella zona feed,
+      // così le email transazionali (es. cambio stato) partono da
+      // noreply@<domain> con verifica DKIM. Vedi §Email (SES) architettura.
+      new EmailIdentity(this, 'FeedEmailIdentity', {
+        identity: Identity.publicHostedZone(this.hostedZone),
       });
     }
   }

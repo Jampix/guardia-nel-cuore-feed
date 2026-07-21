@@ -5,6 +5,7 @@ import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { ProjectConfig } from '../config/interfaces';
 import { ApiConstruct } from '../constructs/api/http-api';
 import { NodeFunctionConstruct } from '../constructs/functions/node-function';
@@ -117,13 +118,31 @@ export class ApiStack extends Stack {
     feedbacks.grantReadData(listAdminFeedbackFn.fn);
     photoBucket.grantRead(listAdminFeedbackFn.fn);
 
-    // PATCH /admin/feedback/{id} (autenticata + gruppo) — moderazione
+    // PATCH /admin/feedback/{id} (autenticata + gruppo) — moderazione.
+    // Al cambio stato invia email all'autore (SES) risolvendone l'indirizzo
+    // da Cognito (AdminGetUser). Email best-effort nell'handler.
+    const emailDomain = props.config.features.dns?.domain;
     const patchFeedbackFn = new NodeFunctionConstruct(this, 'PatchFeedbackFn', {
       entry: path.join(handlersDir, 'patch-feedback.ts'),
-      environment: { FEEDBACKS_TABLE: props.feedbacksTableName },
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        USER_POOL_ID: props.userPoolId,
+        ...(emailDomain
+          ? { FROM_EMAIL: `noreply@${emailDomain}`, CLIENT_URL: `https://${emailDomain}` }
+          : {}),
+      },
       description: 'Guardia nel Cuore - moderazione feedback',
     });
     feedbacks.grantWriteData(patchFeedbackFn.fn);
+    userPool.grant(patchFeedbackFn.fn, 'cognito-idp:AdminGetUser');
+    if (emailDomain) {
+      patchFeedbackFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+    }
 
     // /admin/categories (autenticata + gruppo) — CRUD categorie (1 Lambda, 4 rotte)
     const adminCategoriesFn = new NodeFunctionConstruct(this, 'AdminCategoriesFn', {
