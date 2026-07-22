@@ -9,6 +9,12 @@
     @if (error(); as err) {
       <div class="err" role="alert"><mat-icon>error_outline</mat-icon>{{ err }}</div>
     }
+    @if (showRegistered()) {
+      <div class="notice" role="status">
+        <mat-icon>schedule</mat-icon>
+        Registrazione completata! Il tuo account dev'essere approvato dallo staff prima del primo accesso: riceverai conferma appena sarà attivo.
+      </div>
+    }
 
     @switch (mode()) {
       @case ('register') {
@@ -36,6 +42,7 @@
               <mat-error>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-error>
             }
           </mat-form-field>
+          <p class="approval-note">Dopo la registrazione, l'accesso sarà possibile solo dopo l'approvazione dello staff.</p>
           <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
             @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Registrati }
           </button>

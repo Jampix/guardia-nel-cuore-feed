@@ -60,9 +60,21 @@ export class AuthService {
 
   /** Login con email + password. Al successo aggiorna lo stato utente. */
   async login(email: string, password: string) {
-    const res = await signIn({ username: email, password });
-    if (res.isSignedIn) await this.refresh();
-    return res;
+    try {
+      const res = await signIn({ username: email, password });
+      if (res.isSignedIn) await this.refresh();
+      return res;
+    } catch (e: any) {
+      // Sessione residua nel browser (altro utente / tentativo precedente):
+      // esci e riprova una volta.
+      if (e?.name === 'UserAlreadyAuthenticatedException') {
+        await signOut();
+        const res = await signIn({ username: email, password });
+        if (res.isSignedIn) await this.refresh();
+        return res;
+      }
+      throw e;
+    }
   }
 
   /** Logout. */

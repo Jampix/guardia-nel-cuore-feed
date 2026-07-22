@@ -42,9 +42,12 @@ export class Auth {
   readonly email = input<string>('');
   /** URL a cui tornare dopo il login (query param). */
   readonly returnUrl = input<string>('');
+  /** '1' subito dopo una registrazione completata (avviso approvazione). */
+  readonly registrato = input<string>('');
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly showRegistered = computed(() => this.registrato() === '1' && !this.error());
 
   readonly title = computed(() => {
     switch (this.mode()) {
@@ -110,8 +113,8 @@ export class Auth {
     await this.run(async () => {
       const { email, code } = this.confirmForm.getRawValue();
       await this.auth.confirm(email, code);
-      this.snack.open('Account confermato! Ora puoi accedere.', 'OK', { duration: 4000 });
-      this.router.navigate(['/accedi']);
+      this.snack.open('Registrazione completata!', 'OK', { duration: 4000 });
+      this.router.navigate(['/accedi'], { queryParams: { registrato: 1 } });
     });
   }
 
