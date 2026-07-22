@@ -32,7 +32,22 @@ export const handler = async (
   const username = event.pathParameters?.username;
 
   if (method === 'GET') {
-    // Insieme degli utenti già in un gruppo (= approvati/staff).
+    // GET /admin/users → cittadini attivi (gruppo `cittadino`).
+    if (!(event.rawPath ?? '').endsWith('/pending')) {
+      const r = await cognito.send(
+        new ListUsersInGroupCommand({ UserPoolId: USER_POOL_ID, GroupName: 'cittadino' }),
+      );
+      const citizens = (r.Users ?? []).map((u) => ({
+        username: u.Username,
+        email: attr(u.Attributes, 'email'),
+        nickname: attr(u.Attributes, 'nickname'),
+        createdAt: u.UserCreateDate?.toISOString(),
+        enabled: u.Enabled ?? true,
+      }));
+      return resp(200, citizens);
+    }
+
+    // GET /admin/users/pending → confermati ma non in alcun gruppo.
     const approved = new Set<string>();
     for (const g of GROUPS) {
       const r = await cognito.send(

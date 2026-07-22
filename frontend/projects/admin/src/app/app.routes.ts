@@ -4,7 +4,7 @@ import { Sintesi } from './features/sintesi/sintesi';
 import { FeedbackList } from './features/feedback-list/feedback-list';
 import { Moderazione } from './features/moderazione/moderazione';
 import { Categorie } from './features/categorie/categorie';
-import { Iscrizioni } from './features/iscrizioni/iscrizioni';
+import { Cittadini } from './features/cittadini/cittadini';
 import { staffGuard } from './core/staff.guard';
 
 export const routes: Routes = [
@@ -13,5 +13,5 @@ export const routes: Routes = [
   { path: 'feedback', component: FeedbackList, canActivate: [staffGuard], title: 'Feedback · Backoffice' },
   { path: 'feedback/:id', component: Moderazione, canActivate: [staffGuard], title: 'Moderazione · Backoffice' },
   { path: 'categorie', component: Categorie, canActivate: [staffGuard], title: 'Categorie · Backoffice' },
-  { path: 'iscrizioni', component: Iscrizioni, canActivate: [staffGuard], title: 'Iscrizioni · Backoffice' },
+  { path: 'cittadini', component: Cittadini, canActivate: [staffGuard], title: 'Cittadini · Backoffice' },
 ];

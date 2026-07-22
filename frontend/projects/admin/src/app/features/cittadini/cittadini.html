@@ -1,0 +1,62 @@
+<header class="page-head">
+  <h1>Cittadini</h1>
+</header>
+
+<mat-button-toggle-group class="seg" [value]="view()" (change)="setView($event.value)" hideSingleSelectionIndicator>
+  <mat-button-toggle value="attesa">In attesa ({{ pending().length }})</mat-button-toggle>
+  <mat-button-toggle value="attivi">Attivi ({{ citizens().length }})</mat-button-toggle>
+</mat-button-toggle-group>
+
+@if (view() === 'attesa') {
+  @if (pending().length) {
+    <div class="list">
+      @for (u of pending(); track u.username) {
+        <div class="card">
+          <div class="who">
+            <span class="avatar">{{ (u.nickname || u.email).charAt(0).toUpperCase() }}</span>
+            <div class="txt">
+              <span class="nick">{{ u.nickname || 'Senza nome' }}</span>
+              <span class="email">{{ u.email }}</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button mat-stroked-button [disabled]="acting() === u.username" (click)="reject(u)">Rifiuta</button>
+            <button mat-flat-button class="approve" [disabled]="acting() === u.username" (click)="approve(u)">
+              <mat-icon>check</mat-icon> Approva
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty"><mat-icon>how_to_reg</mat-icon><p>Nessuna iscrizione in attesa.</p></div>
+  }
+} @else {
+  <mat-form-field appearance="outline" class="search">
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput placeholder="Cerca per nome o email"
+      [value]="search()" (input)="search.set($any($event.target).value)" />
+  </mat-form-field>
+
+  @if (filteredCitizens().length) {
+    <div class="list">
+      @for (c of filteredCitizens(); track c.username) {
+        <div class="card">
+          <div class="who">
+            <span class="avatar">{{ (c.nickname || c.email).charAt(0).toUpperCase() }}</span>
+            <div class="txt">
+              <span class="nick">{{ c.nickname || 'Senza nome' }}</span>
+              <span class="email">{{ c.email }}</span>
+            </div>
+          </div>
+          <div class="meta">
+            @if (!c.enabled) { <span class="disabled">disattivato</span> }
+            @if (c.createdAt) { <span class="since">dal {{ c.createdAt | date: 'dd/MM/yyyy' }}</span> }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty"><mat-icon>group</mat-icon><p>Nessun cittadino attivo.</p></div>
+  }
+}

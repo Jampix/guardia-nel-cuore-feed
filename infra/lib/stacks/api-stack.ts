@@ -194,6 +194,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/admin/categories', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.PATCH, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/admin/users', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/users/pending', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/admin/users/{username}/approve', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/admin/users/{username}', adminUsersFn.fn, { authenticated: true });

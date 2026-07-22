@@ -11,6 +11,11 @@ export interface PendingUser {
   createdAt?: string;
 }
 
+/** Cittadino attivo (approvato). */
+export interface Citizen extends PendingUser {
+  enabled: boolean;
+}
+
 /** Gestione iscrizioni cittadini (approvazione staff). */
 @Injectable({ providedIn: 'root' })
 export class AdminUsersService {
@@ -20,6 +25,11 @@ export class AdminUsersService {
   /** Iscrizioni in attesa di approvazione. */
   getPending(): Observable<PendingUser[]> {
     return this.http.get<PendingUser[]>(`${this.api}/admin/users/pending`);
+  }
+
+  /** Cittadini attivi (approvati). */
+  getCitizens(): Observable<Citizen[]> {
+    return this.http.get<Citizen[]>(`${this.api}/admin/users`);
   }
 
   /** Approva: aggiunge il cittadino al gruppo `cittadino`. */
