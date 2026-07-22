@@ -137,6 +137,11 @@ export class Auth {
   }
 
   private humanError(e: any): string {
+    // Blocco dal trigger Pre-Authentication (cittadino non ancora approvato).
+    const msg = String(e?.message ?? '');
+    if (e?.name === 'UserLambdaValidationException' || /approvazione/i.test(msg)) {
+      return 'Il tuo account è in attesa di approvazione da parte dello staff.';
+    }
     const map: Record<string, string> = {
       NotAuthorizedException: 'Email o password non corretti.',
       UserNotFoundException: 'Nessun account con questa email.',

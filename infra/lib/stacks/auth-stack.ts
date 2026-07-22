@@ -1,7 +1,11 @@
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { UserPoolOperation } from 'aws-cdk-lib/aws-cognito';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { ProjectConfig } from '../config/interfaces';
 import { UserPoolConstruct } from '../constructs/auth/user-pool';
+import { NodeFunctionConstruct } from '../constructs/functions/node-function';
 
 export interface AuthStackProps extends StackProps {
   config: ProjectConfig;
@@ -27,6 +31,23 @@ export class AuthStack extends Stack {
     const removalPolicy = RemovalPolicy.RETAIN;
 
     const auth = new UserPoolConstruct(this, 'Auth', { removalPolicy });
+
+    // Trigger Pre-Authentication: blocca il login dei cittadini non approvati
+    // (chi non è in alcun gruppo). L'approvazione avviene dal backoffice
+    // aggiungendo l'utente al gruppo `cittadino`.
+    const preAuthFn = new NodeFunctionConstruct(this, 'PreAuthFn', {
+      entry: path.join(__dirname, '..', '..', '..', 'backend', 'src', 'handlers', 'pre-auth.ts'),
+      description: 'Guardia nel Cuore - gate login (approvazione staff)',
+    });
+    auth.userPool.addTrigger(UserPoolOperation.PRE_AUTHENTICATION, preAuthFn.fn);
+    // Permesso con ARN wildcard (non il costrutto pool) per evitare la
+    // dipendenza circolare pool→trigger→policy→pool. Scope: pool di questo account.
+    preAuthFn.fn.addToRolePolicy(
+      new PolicyStatement({
+        actions: ['cognito-idp:AdminListGroupsForUser'],
+        resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`],
+      }),
+    );
 
     this.userPoolId = auth.userPool.userPoolId;
     this.userPoolArn = auth.userPool.userPoolArn;

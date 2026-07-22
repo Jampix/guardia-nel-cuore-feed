@@ -1,0 +1,31 @@
+<header class="page-head">
+  <h1>Iscrizioni</h1>
+  <p class="subtitle">{{ pending().length }} in attesa di approvazione</p>
+</header>
+
+@if (pending().length) {
+  <div class="list">
+    @for (u of pending(); track u.username) {
+      <div class="card">
+        <div class="who">
+          <span class="avatar">{{ (u.nickname || u.email).charAt(0).toUpperCase() }}</span>
+          <div class="txt">
+            <span class="nick">{{ u.nickname || 'Senza nome' }}</span>
+            <span class="email">{{ u.email }}</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button mat-stroked-button [disabled]="acting() === u.username" (click)="reject(u)">Rifiuta</button>
+          <button mat-flat-button class="approve" [disabled]="acting() === u.username" (click)="approve(u)">
+            <mat-icon>check</mat-icon> Approva
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="empty">
+    <mat-icon>how_to_reg</mat-icon>
+    <p>Nessuna iscrizione in attesa.</p>
+  </div>
+}

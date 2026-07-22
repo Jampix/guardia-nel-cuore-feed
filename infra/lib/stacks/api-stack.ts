@@ -152,6 +152,20 @@ export class ApiStack extends Stack {
     });
     categories.grantReadWriteData(adminCategoriesFn.fn);
 
+    // /admin/users (autenticata + gruppo) — gestione iscrizioni (approvazione)
+    const adminUsersFn = new NodeFunctionConstruct(this, 'AdminUsersFn', {
+      entry: path.join(handlersDir, 'admin-users.ts'),
+      environment: { USER_POOL_ID: props.userPoolId },
+      description: 'Guardia nel Cuore - iscrizioni cittadini (approvazione)',
+    });
+    userPool.grant(
+      adminUsersFn.fn,
+      'cognito-idp:ListUsers',
+      'cognito-idp:ListUsersInGroup',
+      'cognito-idp:AdminAddUserToGroup',
+      'cognito-idp:AdminDeleteUser',
+    );
+
     // /feedback/{id}/vote (autenticata) — voto cittadino (GET/POST/DELETE, 1 Lambda)
     const voteFn = new NodeFunctionConstruct(this, 'FeedbackVoteFn', {
       entry: path.join(handlersDir, 'feedback-vote.ts'),
@@ -180,6 +194,9 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/admin/categories', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.PATCH, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/admin/categories/{id}', adminCategoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/admin/users/pending', adminUsersFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/admin/users/{username}/approve', adminUsersFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.DELETE, '/admin/users/{username}', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
