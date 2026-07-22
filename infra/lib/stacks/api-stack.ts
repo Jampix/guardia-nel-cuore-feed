@@ -155,7 +155,12 @@ export class ApiStack extends Stack {
     // /admin/users (autenticata + gruppo) — gestione iscrizioni (approvazione)
     const adminUsersFn = new NodeFunctionConstruct(this, 'AdminUsersFn', {
       entry: path.join(handlersDir, 'admin-users.ts'),
-      environment: { USER_POOL_ID: props.userPoolId },
+      environment: {
+        USER_POOL_ID: props.userPoolId,
+        ...(emailDomain
+          ? { FROM_EMAIL: `noreply@${emailDomain}`, CLIENT_URL: `https://${emailDomain}` }
+          : {}),
+      },
       description: 'Guardia nel Cuore - iscrizioni cittadini (approvazione)',
     });
     userPool.grant(
@@ -164,7 +169,16 @@ export class ApiStack extends Stack {
       'cognito-idp:ListUsersInGroup',
       'cognito-idp:AdminAddUserToGroup',
       'cognito-idp:AdminDeleteUser',
+      'cognito-idp:AdminGetUser',
     );
+    if (emailDomain) {
+      adminUsersFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+    }
 
     // /feedback/{id}/vote (autenticata) — voto cittadino (GET/POST/DELETE, 1 Lambda)
     const voteFn = new NodeFunctionConstruct(this, 'FeedbackVoteFn', {

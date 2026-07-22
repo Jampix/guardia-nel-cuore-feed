@@ -4,14 +4,19 @@ import {
   ListUsersInGroupCommand,
   AdminAddUserToGroupCommand,
   AdminDeleteUserCommand,
+  AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
 } from 'aws-lambda';
 
 const cognito = new CognitoIdentityProviderClient({});
+const ses = new SESv2Client({});
 const USER_POOL_ID = process.env.USER_POOL_ID as string;
+const FROM_EMAIL = process.env.FROM_EMAIL as string;
+const CLIENT_URL = process.env.CLIENT_URL as string;
 const GROUPS = ['admin', 'membro', 'cittadino'];
 
 /**
@@ -76,6 +81,8 @@ export const handler = async (
         GroupName: 'cittadino',
       }),
     );
+    // Email di benvenuto (best-effort: non fa fallire l'approvazione).
+    await notifyApproved(username).catch((err) => console.error('Email approvazione fallita:', err));
     return resp(200, { approved: true });
   }
 
@@ -88,6 +95,38 @@ export const handler = async (
 
   return resp(400, { message: 'Richiesta non valida' });
 };
+
+/** Invia al cittadino l'email di benvenuto dopo l'approvazione. */
+async function notifyApproved(username: string): Promise<void> {
+  if (!FROM_EMAIL) return;
+  const user = await cognito.send(
+    new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: username }),
+  );
+  const email = attr(user.UserAttributes, 'email');
+  const nickname = attr(user.UserAttributes, 'nickname');
+  if (!email) return;
+
+  const link = CLIENT_URL ? `${CLIENT_URL}/accedi` : '';
+  const text =
+    `Ciao ${nickname || ''},\n\n` +
+    'la tua iscrizione a Guardia nel Cuore è stata accettata! ' +
+    'Ora puoi accedere con le credenziali che hai scelto in fase di registrazione.' +
+    (link ? `\n\nAccedi qui: ${link}` : '') +
+    '\n\nA presto,\nGuardia nel Cuore';
+
+  await ses.send(
+    new SendEmailCommand({
+      FromEmailAddress: FROM_EMAIL,
+      Destination: { ToAddresses: [email] },
+      Content: {
+        Simple: {
+          Subject: { Data: 'La tua iscrizione è stata accettata — Guardia nel Cuore' },
+          Body: { Text: { Data: text } },
+        },
+      },
+    }),
+  );
+}
 
 function attr(
   attrs: { Name?: string; Value?: string }[] | undefined,
