@@ -43,13 +43,15 @@ export const handler = async (
     descrizione,
     categoriaId: body.categoriaId ? String(body.categoriaId) : null,
     visibilita: body.visibilita === 'pubblico' ? 'pubblico' : 'privato',
-    stato: 'ricevuto',
+    stato: 'proposta',
     autoreId,
     autoreNick,
     lat: body.lat ?? null,
     lng: body.lng ?? null,
     luogo: body.luogo ? String(body.luogo) : null,
-    fotoUrl: body.fotoUrl ? String(body.fotoUrl) : null,
+    // Chiave S3 dell'eventuale foto (caricata via presigned PUT). L'URL di
+    // lettura viene generato al volo dagli endpoint di lettura.
+    fotoKey: body.fotoKey ? String(body.fotoKey) : null,
     numeroVoti: 0,
     lingua: body.lingua === 'en' ? 'en' : 'it',
     createdAt: now,

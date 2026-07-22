@@ -1,0 +1,17 @@
+<header class="page-head">
+  <h1>Profilo</h1>
+</header>
+
+@if (user(); as u) {
+  <section class="card account">
+    <div class="avatar">{{ (u.nickname || u.email).charAt(0).toUpperCase() }}</div>
+    <div class="who">
+      <span class="nick">{{ u.nickname || 'Cittadino' }}</span>
+      <span class="email">{{ u.email }}</span>
+    </div>
+  </section>
+
+  <button mat-stroked-button class="logout" (click)="logout()">
+    <mat-icon>logout</mat-icon> Esci
+  </button>
+}

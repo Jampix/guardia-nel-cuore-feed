@@ -1,0 +1,41 @@
+<div class="layout">
+  <!-- Sidenav desktop (solo da loggati; nascosta su mobile via CSS) -->
+  @if (user()) {
+    <aside class="sidenav">
+      <span class="brand"><mat-icon class="heart">favorite</mat-icon> Backoffice</span>
+      <nav class="snav">
+        <a routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }"><mat-icon>dashboard</mat-icon> Sintesi</a>
+        <a routerLink="/feedback" routerLinkActive="on"><mat-icon>list_alt</mat-icon> Feedback</a>
+        <a routerLink="/categorie" routerLinkActive="on"><mat-icon>category</mat-icon> Categorie</a>
+        <a routerLink="/cittadini" routerLinkActive="on"><mat-icon>group</mat-icon> Cittadini</a>
+      </nav>
+      <span class="grow"></span>
+      <button mat-button class="logout-d" (click)="logout()"><mat-icon>logout</mat-icon> Esci</button>
+    </aside>
+  }
+
+  <div class="content">
+    <!-- Topbar mobile -->
+    @if (user()) {
+      <header class="topbar-mobile">
+        <span class="brand"><mat-icon class="heart">favorite</mat-icon> Backoffice</span>
+        <span class="spacer"></span>
+        <button mat-icon-button (click)="logout()" aria-label="Esci"><mat-icon>logout</mat-icon></button>
+      </header>
+    }
+
+    <main class="app-main">
+      <router-outlet></router-outlet>
+    </main>
+
+    <!-- Bottom tab mobile -->
+    @if (user()) {
+      <nav class="tabbar-mobile" aria-label="Navigazione backoffice">
+        <a class="tab" routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }"><mat-icon>dashboard</mat-icon><span>Sintesi</span></a>
+        <a class="tab" routerLink="/feedback" routerLinkActive="on"><mat-icon>list_alt</mat-icon><span>Feedback</span></a>
+        <a class="tab" routerLink="/categorie" routerLinkActive="on"><mat-icon>category</mat-icon><span>Categorie</span></a>
+        <a class="tab" routerLink="/cittadini" routerLinkActive="on"><mat-icon>group</mat-icon><span>Cittadini</span></a>
+      </nav>
+    }
+  </div>
+</div>

@@ -1,0 +1,64 @@
+<header class="detail-nav">
+  <a class="back" routerLink="/" aria-label="Torna alla bacheca">
+    <mat-icon>arrow_back_ios_new</mat-icon><span>Bacheca</span>
+  </a>
+  <button class="share" mat-icon-button aria-label="Condividi">
+    <mat-icon>ios_share</mat-icon>
+  </button>
+</header>
+
+@if (feedback(); as f) {
+  <div class="hero" [style.background]="categoryGradient(f.categoriaId)">
+    @if (f.fotoUrl) {
+      <img [src]="f.fotoUrl" alt="" />
+    }
+  </div>
+
+  <article class="detail-body">
+    <div class="chips">
+      <span class="catchip">{{ categoryName(f.categoriaId) }}</span>
+      <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+    </div>
+
+    <h1 class="title">{{ f.titolo }}</h1>
+
+    <div class="meta">
+      <span><strong>{{ f.autoreNick }}</strong></span>
+      <span>{{ timeAgo(f.createdAt) }}</span>
+      @if (f.luogo) { <span class="place"><mat-icon>place</mat-icon>{{ f.luogo }}</span> }
+    </div>
+
+    <p class="descr">{{ f.descrizione }}</p>
+
+    @if (f.lat != null && f.lng != null) {
+      <app-feedback-map [lat]="f.lat" [lng]="f.lng"></app-feedback-map>
+    }
+
+    <div class="vote-cta">
+      <button mat-flat-button class="vote-btn" [class.voted]="voted()" [disabled]="voting()" (click)="toggleVote()">
+        <mat-icon>{{ voted() ? 'favorite' : 'favorite_border' }}</mat-icon>
+        {{ voted() ? 'Sostenuto' : 'Sostieni' }}
+      </button>
+      <div class="count">
+        <span class="n">{{ voteCount() }}</span>
+        <span class="lbl">cittadini</span>
+      </div>
+    </div>
+    @if (!isAuthenticated()) {
+      <p class="vote-note">Per sostenere una proposta devi accedere.</p>
+    }
+
+    @if (f.rispostaPubblica) {
+      <section class="reply">
+        <div class="who"><span class="avatar">GC</span> Guardia nel Cuore</div>
+        <p>{{ f.rispostaPubblica }}</p>
+      </section>
+    }
+  </article>
+} @else {
+  <div class="notfound">
+    <mat-icon>search_off</mat-icon>
+    <p>Proposta non trovata.</p>
+    <a routerLink="/" mat-stroked-button>Torna alla bacheca</a>
+  </div>
+}

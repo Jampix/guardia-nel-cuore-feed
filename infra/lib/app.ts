@@ -9,7 +9,11 @@ import { NamingAspect } from './aspects/naming-aspect';
 import { CostOptimizationStack } from './stacks/cost-optimization-stack';
 import { DataStack } from './stacks/data-stack';
 import { AuthStack } from './stacks/auth-stack';
+import { StorageStack } from './stacks/storage-stack';
 import { ApiStack } from './stacks/api-stack';
+import { DnsStack } from './stacks/dns-stack';
+import { CertStack } from './stacks/cert-stack';
+import { FrontendStack } from './stacks/frontend-stack';
 
 /**
  * Orchestratore degli stack del progetto "Guardia nel Cuore".
@@ -104,6 +108,24 @@ export class InfrastructureApp {
       env: this.env,
     });
 
+    // Incremento 4 — Storage. Bucket S3 privato per le foto dei feedback.
+    // Feature core (come Data/Auth): sempre creato, nessun feature flag.
+    // Le origini CORS derivano dal dominio: il client vive su `feed.<dominio>`
+    // e l'admin su `admin.feed.<dominio>` (cioè `admin.<domain>` dato che
+    // `domain` è già `feed.guardianelcuore.it`).
+    const domain = this.config.features.dns?.domain;
+    const allowedOrigins = [
+      ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
+      // Dev: consente l'upload presigned dal dev server Angular locale.
+      // TODO(go-live): rimuovere localhost dalle origini CORS.
+      'http://localhost:4200',
+    ];
+    const storage = new StorageStack(this.app, this.stackName('StorageStack'), {
+      config: this.config,
+      allowedOrigins,
+      env: this.env,
+    });
+
     // Incremento 3 — API (HTTP API + JWT authorizer + Lambda). Dipende da
     // Data e Auth: riceve ID/ARN come stringhe (convenzione cross-stack).
     const api = new ApiStack(this.app, this.stackName('ApiStack'), {
@@ -116,11 +138,56 @@ export class InfrastructureApp {
       feedbacksTableName: data.feedbacksTableName,
       categoriesTableArn: data.categoriesTableArn,
       categoriesTableName: data.categoriesTableName,
+      votesTableArn: data.votesTableArn,
+      votesTableName: data.votesTableName,
+      photoBucketArn: storage.photoBucketArn,
+      photoBucketName: storage.photoBucketName,
     });
     api.addDependency(data);
     api.addDependency(auth);
+    api.addDependency(storage);
 
-    // TODO(Incremento 4): CertStack (us-east-1) + FrontendStack + DNS.
+    // Incremento 4 — DNS. Crea la hosted zone `feed.guardianelcuore.it`
+    // nell'account di progetto. La delega NS dall'apex (account main) e' un
+    // passo MANUALE post-deploy (l'apex non e' gestito da questo account).
+    // Stateful e indipendente: nessuna dipendenza da Data/Auth/Api.
+    if (this.config.features.dns?.enabled) {
+      const dns = this.config.features.dns;
+
+      new DnsStack(this.app, this.stackName('DnsStack'), {
+        projectName: this.config.projectName,
+        domain: dns.domain,
+        env: this.env,
+      });
+
+      // Certificato ACM per CloudFront: DEVE stare in us-east-1 (override
+      // della region rispetto a this.env). Importa la zona `feed` cross-region
+      // via hostedZoneId (stringa). Richiede l'ID noto dopo il deploy DnsStack.
+      if (dns.hostedZoneId) {
+        new CertStack(this.app, this.stackName('CertStack'), {
+          projectName: this.config.projectName,
+          zoneName: dns.domain,
+          hostedZoneId: dns.hostedZoneId,
+          env: { account: this.config.account, region: 'us-east-1' },
+        });
+
+        // Frontend: due siti statici (client/admin) su CloudFront. Vive in
+        // eu-west-1; importa la zona `feed` (attributi) e il certificato ACM
+        // (ARN stringa cross-region da us-east-1). Richiede quindi sia
+        // hostedZoneId sia certificateArn noti (post-deploy Cert/Dns).
+        if (dns.certificateArn) {
+          new FrontendStack(this.app, this.stackName('FrontendStack'), {
+            config: this.config,
+            clientDomain: dns.domain, // feed.guardianelcuore.it
+            adminDomain: `admin.${dns.domain}`, // admin.feed.guardianelcuore.it
+            zoneName: dns.domain,
+            hostedZoneId: dns.hostedZoneId,
+            certificateArn: dns.certificateArn,
+            env: this.env,
+          });
+        }
+      }
+    }
   }
 
   /** Stampa un riepilogo del deploy. Chiamabile da `bin/app.ts` se utile. */

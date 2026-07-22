@@ -1,0 +1,35 @@
+<header class="page-head">
+  <h1>Feedback</h1>
+  <p class="subtitle">{{ feedbacks().length }} proposte</p>
+</header>
+
+<mat-chip-listbox
+  class="filters"
+  [value]="statusFilter()"
+  (change)="setFilter($event.value)"
+  aria-label="Filtra per stato">
+  <mat-chip-option [value]="null" [selected]="statusFilter() === null">Tutti</mat-chip-option>
+  @for (s of statuses; track s) {
+    <mat-chip-option [value]="s">{{ statusLabel[s] }}</mat-chip-option>
+  }
+</mat-chip-listbox>
+
+<div class="list">
+  @for (f of feedbacks(); track f.id) {
+    <a class="card" [routerLink]="['/feedback', f.id]">
+      <div class="main">
+        <span class="t">{{ f.titolo }}</span>
+        <span class="meta">
+          di {{ f.autoreNick }}
+          @if (f.visibilita === 'privato') { · <mat-icon class="lock">lock</mat-icon> privato }
+        </span>
+      </div>
+      <div class="right">
+        <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+        <span class="votes"><mat-icon>favorite</mat-icon>{{ f.numeroVoti }}</span>
+      </div>
+    </a>
+  } @empty {
+    <p class="empty">Nessun feedback per questo filtro.</p>
+  }
+</div>

@@ -1,0 +1,32 @@
+<!-- Chrome desktop (nascosto su mobile via CSS) -->
+<header class="topbar">
+  <a class="brand" routerLink="/"><mat-icon class="heart">favorite</mat-icon> Guardia nel Cuore</a>
+  <nav class="links">
+    <a routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }">Bacheca</a>
+    @if (user()) {
+      <a routerLink="/miei" routerLinkActive="on">I miei feedback</a>
+    }
+  </nav>
+  <span class="grow"></span>
+  <a mat-flat-button class="cta" routerLink="/nuova"><mat-icon>add</mat-icon> Nuova proposta</a>
+  @if (user(); as u) {
+    <a class="avatar" routerLink="/profilo" [title]="u.nickname || u.email">{{ (u.nickname || u.email).charAt(0).toUpperCase() }}</a>
+  } @else {
+    <a class="signin" routerLink="/accedi">Accedi</a>
+  }
+</header>
+
+<main class="app-main">
+  <router-outlet></router-outlet>
+</main>
+
+<!-- Chrome mobile (nascosto su desktop via CSS) -->
+<nav class="tabbar" aria-label="Navigazione principale">
+  <a class="tab" routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }">
+    <mat-icon>home</mat-icon><span>Bacheca</span>
+  </a>
+  <span class="tab disabled"><mat-icon>explore</mat-icon><span>Esplora</span></span>
+  <a class="tab proponi" routerLink="/nuova" routerLinkActive="on"><span class="plus"><mat-icon>add</mat-icon></span><span>Proponi</span></a>
+  <a class="tab" routerLink="/miei" routerLinkActive="on"><mat-icon>view_list</mat-icon><span>I miei</span></a>
+  <a class="tab" routerLink="/profilo" routerLinkActive="on"><mat-icon>person</mat-icon><span>Profilo</span></a>
+</nav>

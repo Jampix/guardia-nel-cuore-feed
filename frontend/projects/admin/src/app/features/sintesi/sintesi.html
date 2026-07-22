@@ -1,0 +1,30 @@
+<header class="page-head">
+  <h1>Sintesi</h1>
+  @if (user(); as u) { <p class="welcome">Ciao {{ u.nickname || 'staff' }} 👋</p> }
+</header>
+
+<div class="kpi-grid">
+  <div class="stat"><div class="n alert">{{ daModerare() }}</div><div class="l">Da moderare</div></div>
+  <div class="stat"><div class="n">{{ inLavorazione() }}</div><div class="l">In lavorazione</div></div>
+  <div class="stat"><div class="n">{{ risoltiMese() }}</div><div class="l">Risolti · mese</div></div>
+  <div class="stat"><div class="n">{{ cittadini() }}</div><div class="l">Cittadini</div></div>
+</div>
+
+<section class="queue">
+  <h2>Richiede attenzione</h2>
+  @if (coda().length) {
+    <div class="list">
+      @for (f of coda(); track f.id) {
+        <a class="row" [routerLink]="['/feedback', f.id]">
+          <div class="main">
+            <span class="t">{{ f.titolo }}</span>
+            <span class="s">di {{ f.autoreNick }}</span>
+          </div>
+          <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+        </a>
+      }
+    </div>
+  } @else {
+    <p class="empty">Nessuna proposta in attesa. Tutto in ordine ✨</p>
+  }
+</section>

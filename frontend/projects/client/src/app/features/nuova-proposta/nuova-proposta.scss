@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.np-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  .cancel {
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+    font-size: 15px;
+  }
+  .np-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .np-spacer { width: 52px; } // bilancia "Annulla" per centrare il titolo
+}
+
+.np-form {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.block-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+  margin-left: 4px;
+}
+
+.photo-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 104px;
+  border-radius: 14px;
+  border: 1.5px dashed var(--mat-sys-outline);
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 13.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover { border-color: var(--mat-sys-primary); }
+  mat-icon { font-size: 26px; width: 26px; height: 26px; opacity: 0.7; }
+  small { font-size: 11.5px; font-weight: 400; opacity: 0.85; }
+}
+
+.photo-preview {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: 240px;
+
+  img { width: 100%; max-height: 240px; object-fit: cover; display: block; }
+  .remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: color-mix(in srgb, var(--mat-sys-surface) 78%, transparent);
+    backdrop-filter: blur(6px);
+  }
+}
+
+.photo-err {
+  font-size: 12.5px;
+  color: var(--mat-sys-error);
+  margin: 2px 4px 0;
+}
+
+mat-button-toggle-group {
+  width: 100%;
+}
+
+.hint {
+  font-size: 12.5px;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 4px;
+}
+
+.publish {
+  --mat-button-filled-container-color: var(--mat-sys-primary);
+  height: 50px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
+}

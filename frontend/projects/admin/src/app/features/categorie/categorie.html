@@ -1,0 +1,37 @@
+<header class="page-head">
+  <h1>Categorie</h1>
+  <p class="subtitle">{{ categories().length }} categorie · quelle disattivate non sono scelte dai cittadini</p>
+</header>
+
+<div class="add-row">
+  <mat-form-field appearance="outline" class="add-field">
+    <mat-label>Nuova categoria</mat-label>
+    <input matInput #newCat maxlength="40" (keyup.enter)="add(newCat.value); newCat.value = ''" />
+  </mat-form-field>
+  <button mat-flat-button class="add-btn" [disabled]="busy()" (click)="add(newCat.value); newCat.value = ''">
+    <mat-icon>add</mat-icon> Aggiungi
+  </button>
+</div>
+
+<div class="list">
+  @for (c of categories(); track c.id) {
+    <div class="cat" [class.off]="!c.attiva">
+      @if (editingId() === c.id) {
+        <mat-form-field appearance="outline" class="edit-field">
+          <input matInput #editRef [value]="c.nome" maxlength="40"
+            (keyup.enter)="saveEdit(c, editRef.value)" (keyup.escape)="cancelEdit()" />
+        </mat-form-field>
+        <button mat-icon-button (click)="saveEdit(c, editRef.value)" aria-label="Salva"><mat-icon>check</mat-icon></button>
+        <button mat-icon-button (click)="cancelEdit()" aria-label="Annulla"><mat-icon>close</mat-icon></button>
+      } @else {
+        <span class="nome">{{ c.nome }}</span>
+        <span class="spacer"></span>
+        <mat-slide-toggle [checked]="c.attiva" (change)="toggle(c)" aria-label="Attiva o disattiva"></mat-slide-toggle>
+        <button mat-icon-button (click)="startEdit(c)" aria-label="Rinomina"><mat-icon>edit</mat-icon></button>
+        <button mat-icon-button (click)="remove(c)" aria-label="Elimina"><mat-icon>delete_outline</mat-icon></button>
+      }
+    </div>
+  } @empty {
+    <p class="empty">Nessuna categoria. Aggiungine una qui sopra.</p>
+  }
+</div>

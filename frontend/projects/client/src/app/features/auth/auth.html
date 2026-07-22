@@ -1,0 +1,100 @@
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="brand">
+      <mat-icon class="heart">favorite</mat-icon>
+      <span>Guardia nel Cuore</span>
+    </div>
+    <h1 class="title">{{ title() }}</h1>
+
+    @if (error(); as err) {
+      <div class="err" role="alert"><mat-icon>error_outline</mat-icon>{{ err }}</div>
+    }
+    @if (showRegistered()) {
+      <div class="notice" role="status">
+        <mat-icon>schedule</mat-icon>
+        Registrazione completata! Il tuo account dev'essere approvato dallo staff prima del primo accesso: riceverai conferma appena sarà attivo.
+      </div>
+    }
+
+    @switch (mode()) {
+      @case ('register') {
+        <form [formGroup]="registerForm" (ngSubmit)="doRegister()">
+          <mat-form-field appearance="outline">
+            <mat-label>Nome pubblico</mat-label>
+            <input matInput formControlName="nickname" autocomplete="nickname" placeholder="Es. Marco P." />
+            <mat-hint>È il nome mostrato sulle tue proposte (mai l'email).</mat-hint>
+            @if (registerForm.controls.nickname.touched && registerForm.controls.nickname.invalid) {
+              <mat-error>Inserisci un nome (almeno 2 caratteri).</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+            @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
+              <mat-error>Inserisci un'email valida.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="new-password" />
+            <mat-hint>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-hint>
+            @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
+              <mat-error>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-error>
+            }
+          </mat-form-field>
+          <p class="approval-note">Dopo la registrazione, l'accesso sarà possibile solo dopo l'approvazione dello staff.</p>
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Registrati }
+          </button>
+        </form>
+        <p class="switch">Hai già un account? <a routerLink="/accedi">Accedi</a></p>
+      }
+
+      @case ('confirm') {
+        <p class="lead">Inserisci il codice a 6 cifre che ti abbiamo inviato via email.</p>
+        <form [formGroup]="confirmForm" (ngSubmit)="doConfirm()">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Codice di verifica</mat-label>
+            <input matInput formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" />
+            @if (confirmForm.controls.code.touched && confirmForm.controls.code.invalid) {
+              <mat-error>Inserisci il codice a 6 cifre.</mat-error>
+            }
+          </mat-form-field>
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Conferma }
+          </button>
+        </form>
+        <p class="switch"><a (click)="resend()" tabindex="0" role="button">Non hai ricevuto il codice? Rinvia</a></p>
+      }
+
+      @default {
+        <form [formGroup]="loginForm" (ngSubmit)="doLogin()">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+            @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+              <mat-error>Inserisci un'email valida.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="current-password" />
+            @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+              <mat-error>Inserisci la password.</mat-error>
+            }
+          </mat-form-field>
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Accedi }
+          </button>
+        </form>
+        <p class="switch">Non hai un account? <a routerLink="/registrati">Registrati</a></p>
+      }
+    }
+
+    <p class="back"><a routerLink="/">‹ Torna alla bacheca</a></p>
+  </div>
+</div>
