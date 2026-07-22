@@ -23,8 +23,8 @@ export class AuthStack extends Stack {
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
 
-    // TODO(go-live): impostare RemovalPolicy.RETAIN per non perdere gli utenti.
-    const removalPolicy = RemovalPolicy.DESTROY;
+    // Go-live: RETAIN per non perdere gli utenti a un destroy accidentale.
+    const removalPolicy = RemovalPolicy.RETAIN;
 
     const auth = new UserPoolConstruct(this, 'Auth', { removalPolicy });
 

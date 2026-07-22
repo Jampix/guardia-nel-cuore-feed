@@ -26,8 +26,8 @@ export class StorageStack extends Stack {
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
 
-    // TODO(go-live): impostare RemovalPolicy.RETAIN per non perdere le foto.
-    const removalPolicy = RemovalPolicy.DESTROY;
+    // Go-live: RETAIN per non perdere le foto a un destroy accidentale.
+    const removalPolicy = RemovalPolicy.RETAIN;
 
     const photos = new PhotoBucketConstruct(this, 'Photos', {
       removalPolicy,

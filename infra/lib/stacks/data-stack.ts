@@ -28,8 +28,8 @@ export class DataStack extends Stack {
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
-    // TODO(go-live): impostare RemovalPolicy.RETAIN per non perdere i dati.
-    const removalPolicy = RemovalPolicy.DESTROY;
+    // Go-live: RETAIN per non perdere i dati dei cittadini a un destroy accidentale.
+    const removalPolicy = RemovalPolicy.RETAIN;
 
     const tables = new DynamoTablesConstruct(this, 'Tables', { removalPolicy });
 
