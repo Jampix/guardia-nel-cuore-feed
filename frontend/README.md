@@ -1,59 +1,38 @@
-# Frontend
+# Frontend — Guardia nel Cuore
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.32.
+Workspace **Angular 20** multi-progetto (Angular Material M3), mobile-first, tema
+chiaro/scuro.
 
-## Development server
-
-To start a local development server, run:
-
-```bash
-ng serve
+```
+projects/client   app cittadini   → feed.guardianelcuore.it
+projects/admin    backoffice      → admin.feed.guardianelcuore.it
+projects/shared   libreria condivisa: modelli (Feedback, Category, …) e AuthService (Cognito/Amplify)
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Requisiti
+- **Node 22 LTS** (`nvm use 22`) — Angular 20 non supporta Node 25.
+- CLI via `npx ng` (v20 locale del workspace), non la eventuale `ng` globale.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+## Sviluppo
 ```bash
-ng generate component component-name
+nvm use 22
+npm install
+npx ng serve client --port 4200   # http://localhost:4200
+npx ng serve admin  --port 4300   # http://localhost:4300
 ```
+Le app puntano all'API di produzione (`projects/<app>/src/environments/environment.ts`);
+non serve backend locale.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+## Build & deploy
 ```bash
-ng generate --help
+npx ng build client   # → dist/client/browser
+npx ng build admin    # → dist/admin/browser
 ```
+Deploy su S3 + CloudFront: vedi la sezione "Deploy" nel [README di root](../README.md).
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Note
+- **Tema**: palette M3 calda generata in `projects/shared/styles/_theme-colors.scss`
+  (seed `#C0392B` / `#E67E22`), font stack di sistema Apple, `color-scheme: light dark`.
+- **Auth**: `AuthService` in `shared` (Amplify → Cognito); ogni app configura Amplify
+  al bootstrap (`main.ts`) col proprio app client. Guard + interceptor JWT per-app.
+- **Mappa**: Leaflet + OpenStreetMap (`projects/client/.../components/feedback-map`).
