@@ -197,8 +197,10 @@ export class ApiStack extends Stack {
       userPoolClients: [clientApp, adminApp],
       allowOrigins: ['*'], // TODO(Incremento 4): restringere ai domini reali
     });
-    api.addRoute(HttpMethod.GET, '/categories', categoriesFn.fn, { authenticated: false });
-    api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: false });
+    // Contenuti privati: bacheca e categorie richiedono l'autenticazione
+    // (accesso riservato ai cittadini approvati).
+    api.addRoute(HttpMethod.GET, '/categories', categoriesFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/feedback/public', listPublicFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/feedback/mine', listMyFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback', createFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/uploads/presign', presignUploadFn.fn, { authenticated: true });
