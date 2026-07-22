@@ -4,7 +4,15 @@
       <mat-icon class="heart">favorite</mat-icon>
       <span>Guardia nel Cuore</span>
     </div>
-    <h1 class="title">{{ title() }}</h1>
+    @if (mode() === 'login') {
+      <div class="welcome">
+        <h1 class="welcome-title">Benvenuto in Guardia nel Cuore</h1>
+        <p>Lo spazio dove i cittadini di Guardia Piemontese propongono, segnalano e sostengono le idee per migliorare il nostro paese.</p>
+        <p class="cta-line">Accedi o registrati per partecipare.</p>
+      </div>
+    } @else {
+      <h1 class="title">{{ title() }}</h1>
+    }
 
     @if (error(); as err) {
       <div class="err" role="alert"><mat-icon>error_outline</mat-icon>{{ err }}</div>
