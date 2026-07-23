@@ -16,6 +16,11 @@ export const prodConfig: ProjectConfig = {
     owner: commonConfig.owner,
   },
 
+  alerts: {
+    email: 'pasqualemazzei@gmail.com',
+    budgetUsd: 15,
+  },
+
   features: {
     // Abilitato all'Incremento 4 (hosted zone + record client/admin).
     dns: {

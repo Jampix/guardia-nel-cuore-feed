@@ -42,6 +42,17 @@ export interface ProjectConfig {
     backup?: string;        // Tag legacy per compatibilità
   };
 
+  /**
+   * Avvisi (costi + operativi). Email destinataria e soglia budget mensile.
+   * Configurati qui (non via env var) così gli alert sono sempre attivi.
+   */
+  alerts?: {
+    /** Email per budget alert e allarmi operativi. */
+    email: string;
+    /** Limite budget mensile in USD (avvisi a 50/80/100% + previsione). */
+    budgetUsd: number;
+  };
+
   // Feature flag per stack opzionali (attivate in compose())
   features: {
     /**

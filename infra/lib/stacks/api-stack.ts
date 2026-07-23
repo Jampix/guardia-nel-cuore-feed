@@ -1,11 +1,15 @@
 import * as path from 'path';
 import { Construct } from 'constructs';
-import { Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, Duration } from 'aws-cdk-lib';
 import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { UserPool, UserPoolClient } from 'aws-cdk-lib/aws-cognito';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Bucket } from 'aws-cdk-lib/aws-s3';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { Alarm, ComparisonOperator, MathExpression, Metric, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import { ProjectConfig } from '../config/interfaces';
 import { ApiConstruct } from '../constructs/api/http-api';
 import { NodeFunctionConstruct } from '../constructs/functions/node-function';
@@ -26,6 +30,8 @@ export interface ApiStackProps extends StackProps {
   // Da StorageStack (stringhe)
   photoBucketArn: string;
   photoBucketName: string;
+  /** Email per gli allarmi operativi (errori Lambda + 5xx API). Se omessa, niente allarmi. */
+  alertEmail?: string;
 }
 
 /**
@@ -223,5 +229,58 @@ export class ApiStack extends Stack {
       value: this.apiUrl,
       exportName: `${props.config.projectCode}-api-url`,
     });
+
+    // ----- Allarmi operativi (opzionali) -----
+    // Un solo topic SNS con email: alla prima sottoscrizione arriva 1 email di
+    // conferma da cliccare. Poi ricevi gli avvisi quando qualcosa si rompe.
+    if (props.alertEmail) {
+      const alertsTopic = new Topic(this, 'OpsAlerts', {
+        displayName: `Guardia nel Cuore - allarmi ${props.config.environment}`,
+      });
+      alertsTopic.addSubscription(new EmailSubscription(props.alertEmail));
+      const action = new SnsAction(alertsTopic);
+
+      // 1) Errori Lambda (somma su tutte le funzioni dell'API): >=1 in 5 min.
+      const fns = [
+        categoriesFn, createFeedbackFn, listPublicFeedbackFn, listMyFeedbackFn,
+        presignUploadFn, listAdminFeedbackFn, patchFeedbackFn, adminCategoriesFn,
+        adminUsersFn, voteFn,
+      ].map((c) => c.fn);
+      const usingMetrics: Record<string, Metric> = {};
+      fns.forEach((fn, i) => {
+        usingMetrics[`e${i}`] = fn.metricErrors({ period: Duration.minutes(5), statistic: 'Sum' });
+      });
+      const lambdaErrors = new MathExpression({
+        expression: Object.keys(usingMetrics).join('+'),
+        usingMetrics,
+        period: Duration.minutes(5),
+        label: 'Errori Lambda (totali)',
+      });
+      new Alarm(this, 'LambdaErrorsAlarm', {
+        metric: lambdaErrors,
+        threshold: 1,
+        evaluationPeriods: 1,
+        comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        treatMissingData: TreatMissingData.NOT_BREACHING,
+        alarmDescription: 'Una o più Lambda dell\'API hanno restituito un errore.',
+      }).addAlarmAction(action);
+
+      // 2) 5xx dell'HTTP API: errori lato server percepiti dai cittadini.
+      const api5xx = new Metric({
+        namespace: 'AWS/ApiGateway',
+        metricName: '5xx',
+        dimensionsMap: { ApiId: api.api.apiId },
+        statistic: 'Sum',
+        period: Duration.minutes(5),
+      });
+      new Alarm(this, 'Api5xxAlarm', {
+        metric: api5xx,
+        threshold: 1,
+        evaluationPeriods: 1,
+        comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        treatMissingData: TreatMissingData.NOT_BREACHING,
+        alarmDescription: 'L\'API ha restituito errori 5xx ai client.',
+      }).addAlarmAction(action);
+    }
   }
 }

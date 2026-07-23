@@ -94,7 +94,8 @@ export class InfrastructureApp {
     // dipendenza da altri stack.
     new CostOptimizationStack(this.app, this.stackName('CostOptimizationStack'), {
       config: this.config,
-      budgetEmail: process.env.BUDGET_EMAIL,
+      budgetEmail: this.config.alerts?.email ?? process.env.BUDGET_EMAIL,
+      budgetLimitUsd: this.config.alerts?.budgetUsd,
       env: this.env,
     });
 
@@ -143,6 +144,7 @@ export class InfrastructureApp {
       votesTableName: data.votesTableName,
       photoBucketArn: storage.photoBucketArn,
       photoBucketName: storage.photoBucketName,
+      alertEmail: this.config.alerts?.email,
     });
     api.addDependency(data);
     api.addDependency(auth);
