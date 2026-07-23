@@ -1,0 +1,439 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"></head><body>
+<title>Guardia nel Cuore — Guida per il cittadino</title>
+<style>
+  :root {
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --primary: #C0392B;
+    --primary-d: #9c2418;
+    --secondary: #E67E22;
+    --page: #FAF6F5;
+    --surface: #ffffff;
+    --sunk: #F1EAE7;
+    --ink: #2B2321;
+    --ink-2: #6E615B;
+    --ink-3: #9C8F89;
+    --line: rgba(43,35,33,.10);
+    --line-2: rgba(43,35,33,.06);
+    --st-prop: #8a7d77; --st-prop-bg:#ece5e2;
+    --st-eval: #c77a1b; --st-eval-bg:#fbebd6;
+    --st-work: #2e77c2; --st-work-bg:#deebf8;
+    --st-done: #2e9e6b; --st-done-bg:#d9f1e5;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #d9cfca; }
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* ---------- Pagina A4 ---------- */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 16px auto;
+    background: var(--page);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 30px rgba(0,0,0,.22);
+  }
+  .pad { padding: 20mm 18mm; }
+  .pad.tight { padding: 13mm 18mm; }
+
+  @media print {
+    html, body { background: #fff; }
+    .page {
+      margin: 0;
+      box-shadow: none;
+      break-after: page;
+      width: 210mm;
+      min-height: 297mm;
+    }
+    .page:last-child { break-after: auto; }
+  }
+  @page { size: A4; margin: 0; }
+
+  /* force background colors in print */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ---------- Cover ---------- */
+  .cover { display: flex; flex-direction: column; }
+  .cover-top {
+    background: linear-gradient(160deg, var(--primary), var(--primary-d));
+    color: #fff;
+    padding: 34mm 18mm 26mm;
+    position: relative;
+  }
+  .cover-heart {
+    width: 76px; height: 76px; border-radius: 999px;
+    background: rgba(255,255,255,.16);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 22px;
+  }
+  .cover-kicker {
+    font-size: 13px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+    opacity: .85; margin: 0 0 10px;
+  }
+  .cover h1 {
+    font-family: var(--display);
+    font-size: 52px; line-height: 1.02; letter-spacing: -0.03em;
+    font-weight: 800; margin: 0; text-wrap: balance;
+  }
+  .cover .lead {
+    font-size: 19px; line-height: 1.5; margin: 20px 0 0; max-width: 30ch; opacity: .95;
+  }
+  .cover-bottom { padding: 20mm 18mm; display: flex; flex-direction: column; gap: 18px; }
+  .cover-intro { font-size: 16px; color: var(--ink-2); max-width: 60ch; margin: 0; }
+  .url-pill {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 14px 20px; border-radius: 14px;
+    font-size: 19px; font-weight: 700; color: var(--primary); letter-spacing: -0.01em;
+  }
+  .cover-note { font-size: 13.5px; color: var(--ink-3); margin: 0; }
+  .cover-foot {
+    margin-top: auto; padding: 12mm 18mm; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-3);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* ---------- Titoli sezione ---------- */
+  .sec-eyebrow {
+    font-size: 12.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--primary); margin: 0 0 8px;
+  }
+  .sec-title {
+    font-family: var(--display);
+    font-size: 30px; letter-spacing: -0.025em; font-weight: 800; margin: 0 0 6px; text-wrap: balance;
+  }
+  .sec-sub { font-size: 15px; color: var(--ink-2); margin: 0 0 18px; max-width: 62ch; }
+
+  /* ---------- Passi ---------- */
+  .step {
+    display: flex; gap: 20px; align-items: flex-start;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .step:last-child { border-bottom: 0; }
+  .step-num {
+    flex: 0 0 auto;
+    width: 40px; height: 40px; border-radius: 999px;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; font-family: var(--display);
+  }
+  .step-body h3 { font-size: 17px; letter-spacing: -0.015em; margin: 6px 0 4px; }
+  .step-body p { font-size: 14.5px; color: var(--ink-2); margin: 0; }
+  .badge-attesa {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--st-eval-bg); color: var(--st-eval);
+    font-size: 12.5px; font-weight: 650; padding: 4px 10px; border-radius: 999px; margin-top: 8px;
+  }
+
+  /* ---------- Griglia funzioni ---------- */
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 26px; }
+  .feature { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .feature h3 {
+    font-size: 16px; letter-spacing: -0.015em; margin: 11px 0 4px;
+    display: flex; align-items: center; gap: 7px; justify-content: center;
+  }
+  .feature p { font-size: 13.5px; color: var(--ink-2); margin: 0; max-width: 34ch; }
+  .feature .ico { color: var(--primary); }
+
+  /* ---------- Telefono ---------- */
+  .phone {
+    width: 200px; height: 410px;
+    background: #1c1a19; border-radius: 30px; padding: 7px;
+    flex: 0 0 auto;
+  }
+  .phone.sm { width: 168px; height: 316px; padding: 6px; }
+  .phone.sm .screen { border-radius: 20px; }
+  .phone.sm .sc-body { gap: 6px; }
+  .screen {
+    width: 100%; height: 100%; background: var(--page);
+    border-radius: 24px; overflow: hidden;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .sc-bar {
+    padding: 10px 14px 6px; display: flex; justify-content: space-between;
+    font-size: 10px; font-weight: 700; color: var(--ink);
+  }
+  .sc-body { flex: 1; padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+  .sc-title { font-family: var(--display); font-size: 19px; font-weight: 800; letter-spacing: -0.02em; margin: 2px 0 0; }
+  .sc-sub { font-size: 10.5px; color: var(--ink-3); margin: 0; }
+
+  .mini-brand { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; letter-spacing: -0.02em; }
+  .mini-brand .h { color: var(--primary); }
+
+  .field { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 11px; color: var(--ink-3); }
+  .btn { background: var(--primary); color: #fff; border-radius: 10px; padding: 9px; text-align: center; font-size: 12px; font-weight: 700; }
+  .btn.soft { background: var(--st-prop-bg); color: var(--ink-2); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 13px; overflow: hidden;
+  }
+  .card .thumb { height: 38px; position: relative; }
+  .card .cat { position: absolute; left: 7px; bottom: 6px; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: #fff; background: rgba(0,0,0,.34); padding: 2px 6px; border-radius: 999px; }
+  .card .cb { padding: 8px 9px; }
+  .card .ct { font-size: 11.5px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  .card .cf { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .chip { font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; }
+  .chip::before { content:''; width:5px;height:5px;border-radius:999px;background:currentColor; }
+  .st-prop{color:var(--st-prop);background:var(--st-prop-bg)} .st-eval{color:var(--st-eval);background:var(--st-eval-bg)}
+  .st-work{color:var(--st-work);background:var(--st-work-bg)} .st-done{color:var(--st-done);background:var(--st-done-bg)}
+  .metric { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: center; gap: 3px; }
+  .metric .h { color: var(--primary); }
+
+  .drop { border: 1.4px dashed var(--line); border-radius: 10px; padding: 9px; text-align: center; color: var(--ink-3); font-size: 10px; font-weight: 600; background: var(--surface); }
+  .map { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: radial-gradient(circle at 40% 45%, #e7d6cd, #cdd7c6); display: flex; align-items: center; justify-content: center; color: var(--primary); }
+  .lock-note { display: flex; gap: 6px; align-items: flex-start; font-size: 9px; color: var(--ink-2); background: var(--sunk); border-radius: 9px; padding: 6px 7px; }
+
+  .vote-box { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 9px 11px; }
+  .vote-btn { background: var(--primary); color: #fff; border-radius: 9px; padding: 7px 11px; font-size: 11px; font-weight: 700; display: inline-flex; gap: 5px; align-items: center; }
+  .reply { background: var(--st-prop-bg); border-radius: 10px; padding: 8px; font-size: 10px; color: var(--ink-2); }
+  .reply b { color: var(--primary); display: block; font-size: 10px; margin-bottom: 2px; }
+
+  .tabbar { border-top: 1px solid var(--line-2); display: flex; padding: 6px 4px; gap: 2px; background: rgba(255,255,255,.7); }
+  .tabbar .t { flex: 1; text-align: center; font-size: 7.5px; color: var(--ink-3); font-weight: 600; }
+  .tabbar .t.on { color: var(--primary); }
+  .tabbar .dot { width: 15px; height: 15px; margin: 0 auto 2px; }
+
+  .rowitem { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: 7px 9px; }
+  .rowitem .t { font-size: 10.5px; font-weight: 700; margin: 0; }
+  .rowitem .s { font-size: 8.5px; color: var(--ink-3); display: flex; align-items: center; gap: 3px; }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--primary);
+    border-radius: 12px; padding: 16px 18px; margin-top: 24px;
+  }
+  .callout h4 { margin: 0 0 6px; font-size: 15px; }
+  .callout p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+  .foot-strip {
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--ink-3);
+  }
+  .foot-strip .b { color: var(--primary); font-weight: 700; }
+</style>
+
+<!-- ============ PAGINA 1 — COVER ============ -->
+<section class="page cover">
+  <div class="cover-top">
+    <div class="cover-heart">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="#fff"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg>
+    </div>
+    <p class="cover-kicker">Guida per il cittadino</p>
+    <h1>Guardia nel Cuore</h1>
+    <p class="lead">La tua voce per Guardia Piemontese: proponi, segnala e sostieni le idee per il nostro paese.</p>
+  </div>
+  <div class="cover-bottom">
+    <p class="cover-intro">Un'iniziativa dell'associazione <b>Guardia nel Cuore</b> per raccogliere proposte, segnalazioni e idee dei cittadini. Bastano pochi minuti dal telefono: ogni contributo aiuta l'associazione a farsi portavoce delle esigenze del territorio.</p>
+    <span class="url-pill">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      feed.guardianelcuore.it
+    </span>
+    <p class="cover-note">App web gratuita · funziona da telefono e da computer · nessuna installazione</p>
+  </div>
+  <div class="cover-foot">
+    <span>Associazione Guardia nel Cuore</span>
+    <span>Guida rapida · edizione 2026</span>
+  </div>
+</section>
+
+<!-- ============ PAGINA 2 — COME INIZIARE ============ -->
+<section class="page">
+  <div class="pad">
+    <p class="sec-eyebrow">Primi passi</p>
+    <h2 class="sec-title">Come iniziare, in 4 passi</h2>
+    <p class="sec-sub">Per partecipare serve un account. La registrazione è gratuita; l'accesso è riservato ai cittadini, quindi l'associazione conferma ogni iscrizione.</p>
+
+    <div style="display:flex; gap:28px; align-items:flex-start;">
+      <div style="flex:1;">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Apri l'app e registrati</h3>
+            <p>Vai su <b>feed.guardianelcuore.it</b> e tocca “Registrati”. Inserisci un nome pubblico, la tua email e una password.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Conferma la tua email</h3>
+            <p>Ricevi un codice via email: inseriscilo per confermare l'indirizzo.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Attendi l'approvazione</h3>
+            <p>L'associazione verifica l'iscrizione e attiva il tuo account. Ti avvisiamo via email appena è pronto.</p>
+            <span class="badge-attesa">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              In attesa di approvazione
+            </span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Accedi e partecipa</h3>
+            <p>Con l'account attivo entri con email e password e puoi vedere le proposte pubbliche e crearne di tue.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telefono: schermata di accesso -->
+      <div class="phone">
+        <div class="screen">
+          <div class="sc-bar"><span>9:41</span><span>▮▮▮</span></div>
+          <div class="sc-body">
+            <div class="mini-brand"><svg class="h" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg> Guardia nel Cuore</div>
+            <p class="sc-title" style="margin-top:8px;">Benvenuto</p>
+            <p class="sc-sub">Lo spazio dei cittadini di Guardia Piemontese. Accedi o registrati per partecipare.</p>
+            <div style="height:6px"></div>
+            <div class="field">La tua email</div>
+            <div class="field">Password</div>
+            <div class="btn">Accedi</div>
+            <p class="sc-sub" style="text-align:center; margin-top:2px;">Non hai un account? <span style="color:var(--primary); font-weight:700;">Registrati</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h4>Perché serve l'approvazione?</h4>
+      <p>Guardia nel Cuore è uno spazio riservato ai cittadini del paese. L'approvazione dell'associazione evita iscrizioni indesiderate e tiene la comunità autentica. È un passaggio veloce e una tantum.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAGINA 3 — COSA PUOI FARE ============ -->
+<section class="page">
+  <div class="pad tight">
+    <p class="sec-eyebrow">Le funzioni</p>
+    <h2 class="sec-title">Cosa puoi fare</h2>
+    <p class="sec-sub">Una volta dentro, l'app è semplice: sfoglia le proposte, creane di nuove, e sostieni quelle che ti stanno a cuore.</p>
+
+    <div class="features">
+      <!-- Bacheca -->
+      <div class="feature">
+        <div class="phone sm">
+          <div class="screen">
+            <div class="sc-bar"><span>9:41</span><span>▮▮▮</span></div>
+            <div class="sc-body">
+              <p class="sc-title">Bacheca</p>
+              <p class="sc-sub">Le proposte del paese</p>
+              <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#7c8a5a,#4d5a34)"><span class="cat">Verde</span></div>
+                <div class="cb">
+                  <p class="ct">Area giochi</p>
+                  <div class="cf"><span class="chip st-eval">In valut.</span><span class="metric"><svg class="h" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg>41</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#9c6b4f,#6b4433)"><span class="cat">Strade</span></div>
+                <div class="cb">
+                  <p class="ct">Buche via Roma</p>
+                  <div class="cf"><span class="chip st-work">In lavoro</span><span class="metric"><svg class="h" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg>24</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="tabbar">
+              <div class="t on"><div class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></div>Bacheca</div>
+              <div class="t"><div class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></div>Proponi</div>
+              <div class="t"><div class="dot"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>I miei</div>
+            </div>
+          </div>
+        </div>
+        <h3>
+          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+          Sfoglia la bacheca
+        </h3>
+        <p>Vedi le proposte pubbliche dei cittadini, con foto, luogo e stato di avanzamento.</p>
+      </div>
+
+      <!-- Nuova proposta -->
+      <div class="feature">
+        <div class="phone sm">
+          <div class="screen">
+            <div class="sc-bar"><span>9:41</span><span>▮▮▮</span></div>
+            <div class="sc-body">
+              <p class="sc-title">Nuova proposta</p>
+              <div class="field">Titolo</div>
+              <div class="field">Categoria</div>
+              <div class="drop">📷 Aggiungi una foto</div>
+              <div class="map"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3.9 0-7 3-7 6.8 0 4.7 7 12.2 7 12.2s7-7.5 7-12.2C19 5 15.9 2 12 2z"/></svg></div>
+              <div class="lock-note">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto;margin-top:1px"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                La proposta resta privata: la valuta lo staff.
+              </div>
+              <div class="btn">Pubblica</div>
+            </div>
+          </div>
+        </div>
+        <h3>
+          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Crea una proposta
+        </h3>
+        <p>Aggiungi titolo, descrizione, una foto e la posizione sulla mappa. Resta privata finché l'associazione non la pubblica.</p>
+      </div>
+
+      <!-- Sostieni -->
+      <div class="feature">
+        <div class="phone sm">
+          <div class="screen">
+            <div class="sc-bar"><span>9:41</span><span>▮▮▮</span></div>
+            <div class="sc-body">
+              <div class="thumb" style="height:56px;border-radius:10px;background:linear-gradient(135deg,#9c6b4f,#5c3a2c)"></div>
+              <div class="cf"><span class="chip st-work">In lavorazione</span></div>
+              <p class="ct" style="font-size:13px">Buche lungo via Roma</p>
+              <p class="sc-sub">di Marco P. · Via Roma</p>
+              <div class="vote-box">
+                <span class="vote-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg> Sostieni</span>
+                <div style="line-height:1.05"><div style="font-size:14px;font-weight:800">24</div><div style="font-size:8px;color:var(--ink-3)">cittadini</div></div>
+              </div>
+              <div class="reply"><b>Guardia nel Cuore</b>Segnalazione inoltrata all'ufficio tecnico.</div>
+            </div>
+          </div>
+        </div>
+        <h3>
+          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg>
+          Sostieni le idee
+        </h3>
+        <p>Dai il tuo “Sostieni” alle proposte che condividi: più sostegni le rendono più visibili.</p>
+      </div>
+
+      <!-- I miei feedback -->
+      <div class="feature">
+        <div class="phone sm">
+          <div class="screen">
+            <div class="sc-bar"><span>9:41</span><span>▮▮▮</span></div>
+            <div class="sc-body">
+              <p class="sc-title">I miei feedback</p>
+              <p class="sc-sub">Le tue proposte</p>
+              <div class="rowitem"><div style="flex:1"><p class="t">Nuove panchine</p><p class="s"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> privato</p></div><span class="chip st-prop">Proposta</span></div>
+              <div class="rowitem"><div style="flex:1"><p class="t">Pista ciclabile</p><p class="s">12 sostegni</p></div><span class="chip st-done">Risolto</span></div>
+              <div class="rowitem"><div style="flex:1"><p class="t">Luce al porto</p><p class="s">8 sostegni</p></div><span class="chip st-eval">In valut.</span></div>
+            </div>
+          </div>
+        </div>
+        <h3>
+          <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          Segui i tuoi feedback
+        </h3>
+        <p>Ritrova tutte le tue proposte, controlla lo stato e leggi la risposta dell'associazione.</p>
+      </div>
+    </div>
+
+    <div class="foot-strip">
+      <span>Partecipa su <span class="b">feed.guardianelcuore.it</span></span>
+      <span>Associazione Guardia nel Cuore ❤️</span>
+    </div>
+  </div>
+</section>
+</body></html>
