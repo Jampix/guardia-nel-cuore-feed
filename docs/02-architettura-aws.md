@@ -1,22 +1,18 @@
 # Specifiche Architetturali — Guardia nel Cuore
 
-> Fase **Construction** (AI-DLC, versione leggera).
-> Stato: **BOZZA da rivedere** — v0.3 · 04/07/2026
-> Riferimento funzionale: `01-specifiche-funzionali.md` (v1.0)
+> Stato: **v1.0 — IN PRODUZIONE** · Riferimento funzionale: `01-specifiche-funzionali.md`
 >
-> **Avanzamento costruzione:**
-> - ✅ Incremento 1 — Fondamenta IaC: fork template in `/infra`, pulizia EC2/VPC, config `GNC`/`prod`/`eu-west-1`. `tsc`+`validate`+`synth`+`jest` verdi.
-> - ✅ Incremento 2 — **DEPLOYATO** su account `324908170418` (eu-west-1): `DataStack` (4 tabelle DynamoDB) + `AuthStack` (Cognito). Aspects resi deterministici (rimosso naming uuid + tag CreatedDate). Determinism check: due synth identici.
-> - ✅ Incremento 3 — **DEPLOYATO**: `ApiStack` (HTTP API + JWT authorizer Cognito) + 2 Lambda (`GET /categories` pubblica, `POST /feedback` autenticata). Codice in `/backend`. Verificato: categories 200, feedback senza token 401, invoke diretta create-feedback → 201 + item scritto in DynamoDB.
-> - ⬜ Incremento 4 — CertStack (us-east-1) + FrontendStack + DNS + app Angular
+> **Live:** cittadini <https://feed.guardianelcuore.it> · backoffice <https://admin.feed.guardianelcuore.it>
 >
-> **Output deployati:**
-> - Cognito User Pool: `eu-west-1_8tDpBt93Z`
-> - App client (cittadini): `1g6b1d8p5s6m82vrp1id53gkm2` · (admin): `3ba3hvlq6rtl7dlj476veee8mu`
-> - **API URL**: `https://dex1zyd5pe.execute-api.eu-west-1.amazonaws.com`
-> - Tabelle: nomi auto-generati (vedi output stack `GNCProdDataStack`).
+> Tutti gli stack sono deployati su account `324908170418` (`eu-west-1`, cert in
+> `us-east-1`): Data, Auth, Storage, Api, Dns, Cert, Frontend, CostOptimization.
+> `RemovalPolicy: RETAIN` su Data/Auth/Storage. Frontend Angular pubblicati su
+> S3+CloudFront.
 >
-> ⚠️ **Prima del go-live**: cambiare `RemovalPolicy.DESTROY` → `RETAIN` in `DataStack` e `AuthStack` per non perdere dati/utenti.
+> **Output principali:**
+> - Cognito User Pool `eu-west-1_8tDpBt93Z` · app client cittadini `1g6b1d8p5s6m82vrp1id53gkm2` · admin `3ba3hvlq6rtl7dlj476veee8mu`
+> - API `https://dex1zyd5pe.execute-api.eu-west-1.amazonaws.com`
+> - Bucket foto / bucket+distribuzioni frontend: vedi output `GNCProdStorageStack` / `GNCProdFrontendStack`.
 
 ## 0. Parametri account/deploy
 - **Account AWS**: `324908170418` (account personale dedicato al progetto).
@@ -83,11 +79,17 @@
         Cognito User Pool ─── gruppi: cittadino | membro | admin
 ```
 
-## 4. Autenticazione e autorizzazione (Cognito)
-- **User Pool** unico con verifica email + OTP, reset password.
-- **Gruppi**: `cittadino` (default all'iscrizione), `membro`, `admin`.
-- Il ruolo viaggia nel **JWT** → l'API Gateway usa un **Cognito Authorizer**; ogni Lambda controlla il gruppo per le operazioni riservate (backoffice/admin).
-- Il frontend usa la libreria **@aws-amplify/auth** (solo il modulo Auth) per login/registrazione.
+## 4. Autenticazione, ruoli e approvazione (Cognito)
+- **User Pool** unico con verifica email (codice), reset password. Frontend via **@aws-amplify/auth**.
+- **Gruppi**: `admin` / `membro` (staff backoffice) / `cittadino` (cittadino **approvato**).
+- Il ruolo viaggia nel **JWT** → l'API Gateway usa un **Cognito Authorizer**; per le
+  operazioni di backoffice ogni Lambda ricontrolla il gruppo (claim `cognito:groups`),
+  perché l'authorizer valida solo la validità del token, non il ruolo.
+- **Approvazione iscrizioni**: la registrazione è self-service (email + verifica), ma
+  un trigger **Pre-Authentication** su Cognito **blocca il login** di chi non è in un
+  gruppo attivo. Un cittadino resta quindi "in attesa" finché lo staff non lo **approva**
+  dal backoffice (= aggiunta al gruppo `cittadino`); all'approvazione parte un'email SES.
+- Due app client (SPA, senza secret): uno per il frontend cittadini, uno per il backoffice.
 
 ## 5. Modello dati DynamoDB (multi-table)
 
@@ -95,9 +97,14 @@ Scelta: **poche tabelle separate e leggibili** (billing on-demand). Prefisso nom
 
 ### Tabella `Feedbacks`
 - **Chiave primaria**: `id` (partition key).
-- Attributi: `titolo`, `descrizione`, `categoriaId`, `stato`, `visibilita` (`pubblico`|`privato`), `fotoUrl`, `lat`, `lng`, `luogo`, `numeroVoti`, `autoreId`, `autoreNick`, `lingua`, `createdAt`, `updatedAt`.
-- **GSI1 `byAutore`** (US-06 "i miei feedback"): PK `autoreId`, SK `createdAt`.
-- **GSI2 `byVisibilita`** (US-07 bacheca pubblica): PK `visibilita`, SK `createdAt`. Ordinamento "più votati" fatto lato client o con una scan+sort a questo volume.
+- Attributi: `titolo`, `descrizione`, `categoriaId`, `stato`, `visibilita`
+  (`pubblico`|`privato`), `fotoKey` (chiave S3 della foto; l'URL di lettura è
+  prefirmato al volo), `lat`, `lng`, `luogo`, `numeroVoti`, `autoreId`,
+  `autoreNick`, `lingua`, `rispostaPubblica`, `notaInterna` (solo staff — mai
+  esposta ai cittadini), `createdAt`, `updatedAt`.
+- **Stati**: `proposta` → `in_valutazione` → `in_lavorazione` → `risolto` (+ `archiviato`).
+- **GSI `byAutore`** ("i miei feedback"): PK `autoreId`, SK `createdAt`.
+- **GSI `byVisibilita`** (bacheca pubblica): PK `visibilita`, SK `createdAt`.
 
 ### Tabella `Votes`
 - **Chiave composta**: PK `feedbackId`, SK `userId` → garantisce **1 voto per utente per feedback** (write condizionata).
@@ -108,74 +115,75 @@ Scelta: **poche tabelle separate e leggibili** (billing on-demand). Prefisso nom
 - **Chiave primaria**: `id`.
 - Attributi: `nome`, `attiva` (bool), `creatoDa`, `createdAt`.
 
-### Tabella `FeedbackComments` (note interne + risposte pubbliche)
-- **Chiave composta**: PK `feedbackId`, SK `<tipo>#<timestamp>` con `tipo` ∈ {`NOTE`, `REPLY`}.
-- Attributi: `autoreId`, `testo`, `pubblica` (bool derivata dal tipo).
-- Una singola query per `feedbackId` restituisce note + risposte di quel feedback (nel dettaglio backoffice).
+### Tabella `FeedbackComments`
+- Prevista per una futura **cronologia** di note interne + risposte pubbliche
+  (PK `feedbackId`, SK `<tipo>#<timestamp>`). In v1 **non ancora usata**: l'ultima
+  nota interna e l'ultima risposta pubblica sono denormalizzate su `Feedbacks`
+  (`notaInterna` / `rispostaPubblica`), sufficienti per la moderazione attuale.
 
-## 6. Endpoint API (bozza)
+## 6. Endpoint API
 
-Pubblici / cittadino (autenticato):
-- `POST /feedback` — crea feedback (con visibilità pubblico/privato)
-- `GET /feedback/mine` — i miei feedback
-- `GET /feedback/public` — bacheca pubblica (con ordinamento/filtri)
-- `POST /feedback/{id}/vote` / `DELETE /feedback/{id}/vote` — vota / annulla voto
+Rotte effettive dell'HTTP API. Mappa endpoint → handler in
+[`../backend/README.md`](../backend/README.md).
+
+**Pubblici** (nessun token):
 - `GET /categories` — categorie attive
-- `POST /uploads/presign` — ottieni URL prefirmato per caricare una foto
+- `GET /feedback/public` — bacheca pubblica
 
-Backoffice (gruppo `membro`/`admin`):
-- `GET /admin/feedback` — tutti i feedback con filtri
-- `PATCH /admin/feedback/{id}/status` — cambia stato (→ trigger email)
-- `POST /admin/feedback/{id}/note` — nota interna
-- `POST /admin/feedback/{id}/reply` — risposta pubblica
-- `POST /categories` `PATCH /categories/{id}` — gestione categorie (membro/admin)
+**Cittadino** (JWT):
+- `POST /feedback` — crea proposta
+- `GET /feedback/mine` — le mie proposte
+- `GET·POST·DELETE /feedback/{id}/vote` — stato voto / vota / ritira
+- `POST /uploads/presign` — URL prefirmato per caricare una foto
 
-Admin (gruppo `admin`):
-- `GET /admin/users` — elenco utenti (via Cognito)
-- `POST /admin/members` — invita/abilita un membro
+**Backoffice** (JWT + gruppo `admin`/`membro`):
+- `GET /admin/feedback` — tutti i feedback (anche privati)
+- `PATCH /admin/feedback/{id}` — moderazione: `stato` / `rispostaPubblica` / `notaInterna` (cambio stato → email)
+- `GET·POST·PATCH·DELETE /admin/categories[/{id}]` — CRUD categorie
+- `GET /admin/users` — cittadini attivi · `GET /admin/users/pending` — iscrizioni in attesa
+- `POST /admin/users/{username}/approve` — approva (→ email) · `DELETE /admin/users/{username}` — rifiuta
 
 ## 7. Notifiche email (SES)
-Al cambio stato (`PATCH .../status`) la stessa Lambda invia l'email al cittadino via **SES** (template IT/EN in base alla lingua preferita).
-- v1: SES in **sandbox** → serve verificare il dominio/mittente e (in sandbox) i destinatari; per andare in produzione va richiesta l'uscita dalla sandbox.
-- Nessun sistema di code per la v1: invio sincrono. Se in futuro serve robustezza → DynamoDB Streams + SQS.
+Email transazionali da `noreply@feed.guardianelcuore.it` (identità **dominio**
+verificata con **DKIM**, record nella zona `feed`). Invio sincrono **best-effort**
+dentro la Lambda (un errore non fa fallire l'operazione), l'indirizzo del
+destinatario è risolto da Cognito al momento (non è salvato sui feedback):
+- **cambio stato** di un feedback → email all'autore (`patch-feedback`);
+- **approvazione iscrizione** → email di benvenuto (`admin-users`).
 
-## 7bis. Approccio IaC — fork del template CDK aziendale
+⚠️ **Sandbox**: SES è in sandbox → recapita solo a destinatari verificati finché
+non viene concessa la *production access* (richiesta inviata ad AWS). La verifica
+email in **registrazione** usa invece il mittente di default di Cognito e funziona
+già per tutti. Nessuna coda in v1; per robustezza futura → DynamoDB Streams + SQS.
 
-Base: **fork del template `template-cdk`** (di proprietà dell'utente) dentro `/infra`, mantenendo le sue convenzioni e rimuovendo il superfluo EC2.
+## 7bis. Approccio IaC (CDK)
 
-**Cosa manteniamo dal template:**
-- Config tipizzata per ambiente (`lib/config/` + `environments/{dev,prod}.ts`), orchestratore `InfrastructureApp.compose()`, `ConfigValidator`.
-- Aspects globali **TaggingAspect** + **NamingAspect** (applicati a tutti gli stack).
-- Tooling `infra-dlc` (guard sui diff), script `deploy:*`/`validate:*`, ADR.
-- CDK 2.176 · Node/TS via `ts-node` · `projectCode = GNC`, `projectName = guardia-nel-cuore`.
+Infra in **AWS CDK/TypeScript** sotto `/infra`, **100% serverless** (niente EC2/VPC).
+Convenzioni: config tipizzata per ambiente (`lib/config/`), orchestratore
+`InfrastructureApp.compose()` in `lib/app.ts`, Aspects globali (Tagging + Naming),
+CDK 2.176, `projectCode = GNC`.
 
-**Cosa rimuoviamo (non serve, siamo serverless senza VPC):**
-- Stack: `network`, `compute`, `storage` (EBS), `backup`, `scheduler`.
-- Construct: `networking/vpc`, `networking/security-groups`, `compute/ec2-instance`, `storage/ebs-volume`.
-- Manteniamo/riadattiamo: `dns` (Route53), `monitoring` (base), `cost-optimization` (budget alert).
+- **Naming**: nessun nome fisico (niente `BucketName`/`TableName` custom) →
+  CloudFormation genera nomi deterministici dal logical ID; gli Aspects applicano i tag.
+- **Cross-stack**: si passano stringhe (ID/ARN), mai oggetti CDK. Cross-region (cert
+  ACM in `us-east-1` → FrontendStack in `eu-west-1`) via ARN literal in `config`.
+- **Construct** in `lib/constructs/` (un dominio = una cartella): `database/`, `auth/`,
+  `api/`, `functions/`, `cdn/`, `dns/`, `storage/`.
 
-**Naming risorse serverless:** NON impostiamo nomi fisici (niente `BucketName`/`FunctionName`/`TableName` custom) → CloudFormation li genera dal logical ID (deterministici, superano il *determinism check* di infra-dlc). L'aspect applica comunque **tutti i tag** standard.
-
-**Nuovi construct serverless** in `lib/constructs/` (un dominio = una cartella):
-`database/` (DynamoDB), `auth/` (Cognito), `api/` (HTTP API + integrazioni), `functions/` (Lambda), `cdn/` (S3 sito + CloudFront), riuso di `dns/dns-certificate` per ACM.
-
-**Nuovi stack** in `lib/stacks/` orchestrati in `compose()`:
-- `DataStack` → tabelle DynamoDB (`Feedbacks`, `Votes`, `Categories`, `FeedbackComments`).
-- `AuthStack` → Cognito User Pool + gruppi `cittadino`/`membro`/`admin` + client.
-- `StorageStack` → bucket S3 privato per le foto.
-- `ApiStack` → HTTP API + Lambda + Cognito JWT authorizer (dipende da Data/Auth/Storage).
-- `CertStack` → ACM in **`us-east-1`** (stack separato, `env:{region:'us-east-1'}`).
-- `FrontendStack` → S3 sito statico + CloudFront (usa l'ARN cert cross-stack come stringa).
+Elenco stack e comandi: [`../infra/README.md`](../infra/README.md).
 
 ## 8. Struttura del repository (monorepo)
 ```
-/frontend-client  → app Angular cittadini   → feed.guardianelcuore.it
-/frontend-admin   → app Angular backoffice   → admin.feed.guardianelcuore.it
-/backend          → funzioni Lambda (TypeScript) + logica dominio
-/infra            → AWS CDK (fork del template): Cognito, API, DynamoDB, S3, CloudFront, SES, DNS
-/docs             → questi documenti
+/frontend   Workspace Angular 20 (Material M3):
+            projects/client (cittadini → feed.), projects/admin (backoffice →
+            admin.feed.), projects/shared (modelli + AuthService condivisi)
+/backend    Funzioni Lambda (TypeScript) — vedi backend/README.md
+/infra      AWS CDK: Cognito, API, DynamoDB, S3, CloudFront, SES, DNS — vedi infra/README.md
+/docs       Questi documenti
 ```
-Due frontend distinti (client/admin) su domini e distribuzioni CloudFront separati → migliore separazione e sicurezza (l'admin non è raggiungibile dal dominio client).
+Due app su domini e distribuzioni CloudFront separati (l'admin non è raggiungibile
+dal dominio client). Il workspace è multi-progetto: un solo `node_modules` e la
+libreria `shared` per modelli e autenticazione comuni.
 
 ## 9. Ambienti
 - **v1**: un solo ambiente `prod` (semplice, costi minimi).
@@ -198,10 +206,15 @@ Con poche centinaia di utenti/mese, gran parte rientra nel **free tier**:
 - Rate limiting su API Gateway + verifica email come anti-spam base.
 
 ## 12. Decisioni prese
-- **Account AWS**: `324908170418` (personale, dedicato). Accesso via IAM Identity Center.
-- **Regione**: `eu-west-1` (Irlanda).
-- **Dominio**: già registrato → collegare a CloudFront con certificato **ACM in `us-east-1`** (CloudFront richiede il certificato in Virginia anche se il resto è in Irlanda).
-- **DynamoDB**: **multi-table** (4 tabelle, §5) per leggibilità e manutenibilità.
+- **Account AWS** `324908170418` (personale, dedicato), IAM Identity Center · **Regione** `eu-west-1`.
+- **Dominio** `guardianelcuore.it` (registrato nell'account main); zona `feed.` delegata
+  all'account di progetto. Certificato **ACM in `us-east-1`** per CloudFront.
+- **DynamoDB multi-table** (§5) per leggibilità/manutenibilità.
+- **Frontend Angular Material (M3)**, mobile-first, tema chiaro/scuro; mappa **Leaflet+OSM** (no costi).
+- **Approvazione iscrizioni** via trigger Cognito Pre-Authentication (§4).
 
-### Nota residua
-- Qual è esattamente il **nome del dominio** registrato? (serve per configurare ACM + CloudFront)
+## 13. Prossimi passi
+- **SES production access** (uscita dalla sandbox) per recapitare le email a tutti.
+- **CI/CD** (GitHub Actions) per il deploy del frontend, oggi manuale.
+- **i18n IT/EN** (@ngx-translate), informativa **privacy/GDPR** + cancellazione account.
+- Restringere il **CORS** del bucket foto rimuovendo `localhost` a regime.

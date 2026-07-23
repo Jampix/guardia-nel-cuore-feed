@@ -63,6 +63,11 @@ export const handler = async (
     names['#stato'] = 'stato';
     values[':stato'] = String(body.stato);
   }
+  if (body.visibilita !== undefined) {
+    const vis = body.visibilita === 'pubblico' ? 'pubblico' : 'privato';
+    sets.push('visibilita = :vis');
+    values[':vis'] = vis;
+  }
   if (body.rispostaPubblica !== undefined) {
     sets.push('rispostaPubblica = :rp');
     values[':rp'] = String(body.rispostaPubblica);

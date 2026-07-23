@@ -70,15 +70,11 @@
     @if (photoError(); as err) { <p class="photo-err">{{ err }}</p> }
   </section>
 
-  <section class="block">
-    <span class="block-label">Visibilità</span>
-    <mat-button-toggle-group formControlName="visibilita" hideSingleSelectionIndicator
-      aria-label="Visibilità della proposta">
-      <mat-button-toggle value="pubblico">Pubblico</mat-button-toggle>
-      <mat-button-toggle value="privato">Privato</mat-button-toggle>
-    </mat-button-toggle-group>
-    <p class="hint">Le proposte pubbliche appaiono in bacheca e possono ricevere sostegni.</p>
-  </section>
+  <p class="privacy-note">
+    <mat-icon>lock</mat-icon>
+    La tua proposta resta privata: la vedrai solo tu. Lo staff dell'associazione la
+    valuterà e potrà pubblicarla in bacheca.
+  </p>
 
   <button mat-flat-button type="submit" class="publish" [disabled]="submitting()">
     @if (submitting()) { <mat-spinner diameter="22"></mat-spinner> } @else { Pubblica }

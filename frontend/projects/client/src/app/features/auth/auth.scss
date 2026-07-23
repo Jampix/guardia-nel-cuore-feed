@@ -41,6 +41,29 @@
   margin: 0 0 18px;
 }
 
+.welcome {
+  margin-bottom: 20px;
+  .welcome-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 10px;
+  }
+  p {
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--mat-sys-on-surface-variant);
+    margin: 0 0 8px;
+  }
+  .cta-line {
+    font-weight: 600;
+    color: var(--mat-sys-on-surface);
+    margin-bottom: 0;
+  }
+}
+
 .lead {
   margin: -6px 0 16px;
   color: var(--mat-sys-on-surface-variant);

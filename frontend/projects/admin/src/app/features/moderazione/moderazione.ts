@@ -8,8 +8,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
+import { Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Visibility } from 'shared';
 import { AdminFeedbackService } from '../../core/admin-feedback.service';
 
 const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazione', 'risolto', 'archiviato'];
@@ -26,6 +27,7 @@ const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazion
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './moderazione.html',
   styleUrl: './moderazione.scss',
@@ -46,6 +48,9 @@ export class Moderazione {
   readonly statusLabel = FEEDBACK_STATUS_LABEL;
   readonly saving = signal(false);
 
+  /** Visibilità gestita a parte (slide-toggle booleano): true = pubblico. */
+  readonly pubblico = signal(false);
+
   readonly form = this.fb.nonNullable.group({
     stato: ['proposta' as FeedbackStatus],
     rispostaPubblica: [''],
@@ -60,6 +65,7 @@ export class Moderazione {
       const f = this.feedback();
       if (f && !this.patched) {
         this.patched = true;
+        this.pubblico.set(f.visibilita === 'pubblico');
         this.form.patchValue({
           stato: f.stato,
           rispostaPubblica: f.rispostaPubblica ?? '',
@@ -75,7 +81,11 @@ export class Moderazione {
 
   save(): void {
     this.saving.set(true);
-    this.service.update(this.id(), this.form.getRawValue()).subscribe({
+    const patch = {
+      ...this.form.getRawValue(),
+      visibilita: (this.pubblico() ? 'pubblico' : 'privato') as Visibility,
+    };
+    this.service.update(this.id(), patch).subscribe({
       next: () => {
         this.snack.open('Modifiche salvate.', 'OK', { duration: 3000 });
         this.router.navigate(['/feedback']);

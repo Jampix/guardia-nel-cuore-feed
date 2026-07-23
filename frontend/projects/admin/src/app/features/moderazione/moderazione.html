@@ -29,8 +29,19 @@
             <mat-option [value]="s">{{ statusLabel[s] }}</mat-option>
           }
         </mat-select>
-        <mat-hint>Cambiando stato, in futuro il cittadino riceverà una email.</mat-hint>
+        <mat-hint>Cambiando stato, il cittadino riceve una email.</mat-hint>
       </mat-form-field>
+
+      <div class="visibility">
+        <mat-slide-toggle [checked]="pubblico()" (change)="pubblico.set($event.checked)">
+          Pubblica in bacheca
+        </mat-slide-toggle>
+        <p class="vis-hint">
+          {{ pubblico()
+            ? 'Visibile a tutti i cittadini in bacheca (e votabile).'
+            : 'Privata: la vede solo l’autore. Attiva per pubblicarla.' }}
+        </p>
+      </div>
 
       <mat-form-field appearance="outline">
         <mat-label>Nota interna</mat-label>

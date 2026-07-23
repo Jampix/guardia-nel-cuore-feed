@@ -6,12 +6,11 @@ import { map, Observable, of, switchMap } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Category, Visibility } from 'shared';
+import { Category } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 
@@ -24,7 +23,6 @@ import { FeedbackMap } from '../../components/feedback-map/feedback-map';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonToggleModule,
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
@@ -82,12 +80,13 @@ export class NuovaProposta {
     this.photoPreview.set(null);
   }
 
+  // La visibilità NON è scelta dal cittadino: ogni proposta nasce privata,
+  // solo lo staff può renderla pubblica dalla moderazione.
   readonly form = this.fb.nonNullable.group({
     titolo: ['', [Validators.required, Validators.minLength(5)]],
     categoriaId: ['', Validators.required],
     descrizione: ['', [Validators.required, Validators.minLength(10)]],
     luogo: [''],
-    visibilita: ['pubblico' as Visibility, Validators.required],
   });
 
   submit(): void {
@@ -98,7 +97,7 @@ export class NuovaProposta {
     // La rotta è protetta dall'authGuard e l'interceptor allega il JWT:
     // qui l'utente è autenticato.
     this.submitting.set(true);
-    const { titolo, descrizione, categoriaId, luogo, visibilita } = this.form.getRawValue();
+    const { titolo, descrizione, categoriaId, luogo } = this.form.getRawValue();
     const file = this.photoFile();
 
     // Se c'è una foto: presign → upload su S3 → uso la chiave; altrimenti nessuna.
@@ -117,7 +116,6 @@ export class NuovaProposta {
             titolo,
             descrizione,
             categoriaId,
-            visibilita,
             luogo: luogo || undefined,
             lat: this.lat() ?? undefined,
             lng: this.lng() ?? undefined,

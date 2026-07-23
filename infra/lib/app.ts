@@ -14,6 +14,7 @@ import { ApiStack } from './stacks/api-stack';
 import { DnsStack } from './stacks/dns-stack';
 import { CertStack } from './stacks/cert-stack';
 import { FrontendStack } from './stacks/frontend-stack';
+import { CiStack } from './stacks/ci-stack';
 
 /**
  * Orchestratore degli stack del progetto "Guardia nel Cuore".
@@ -176,7 +177,7 @@ export class InfrastructureApp {
         // (ARN stringa cross-region da us-east-1). Richiede quindi sia
         // hostedZoneId sia certificateArn noti (post-deploy Cert/Dns).
         if (dns.certificateArn) {
-          new FrontendStack(this.app, this.stackName('FrontendStack'), {
+          const frontend = new FrontendStack(this.app, this.stackName('FrontendStack'), {
             config: this.config,
             clientDomain: dns.domain, // feed.guardianelcuore.it
             adminDomain: `admin.${dns.domain}`, // admin.feed.guardianelcuore.it
@@ -185,6 +186,18 @@ export class InfrastructureApp {
             certificateArn: dns.certificateArn,
             env: this.env,
           });
+
+          // CI/CD: ruolo OIDC per il deploy del frontend da GitHub Actions.
+          const ci = new CiStack(this.app, this.stackName('CiStack'), {
+            githubRepo: 'Jampix/guardia-nel-cuore-feed',
+            githubBranch: 'main',
+            clientBucketName: frontend.clientBucketName,
+            adminBucketName: frontend.adminBucketName,
+            clientDistributionId: frontend.clientDistributionId,
+            adminDistributionId: frontend.adminDistributionId,
+            env: this.env,
+          });
+          ci.addDependency(frontend);
         }
       }
     }
