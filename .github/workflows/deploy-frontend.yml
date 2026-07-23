@@ -1,0 +1,101 @@
+name: Deploy frontend
+
+# Deploy automatico dei frontend su push a main. I job partono solo se sono
+# cambiati i file della rispettiva app (path filter). Autenticazione AWS via
+# OIDC (ruolo gnc-github-deploy-frontend, nessuna chiave nei secret).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # richiesto per l'OIDC verso AWS
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  ROLE_ARN: arn:aws:iam::324908170418:role/gnc-github-deploy-frontend
+  CLIENT_BUCKET: gncprodfrontendstack-clientsitebucket24e76985-v0ljzk6sca8b
+  ADMIN_BUCKET: gncprodfrontendstack-adminsitebucket4cf3a801-ob2vug24hwzm
+  CLIENT_DISTRIBUTION_ID: E2592AV0W938VD
+  ADMIN_DISTRIBUTION_ID: E3DHM3FGKE869L
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      admin: ${{ steps.filter.outputs.admin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'frontend/projects/client/**'
+              - 'frontend/projects/shared/**'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/angular.json'
+            admin:
+              - 'frontend/projects/admin/**'
+              - 'frontend/projects/shared/**'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/angular.json'
+
+  deploy-client:
+    needs: changes
+    if: ${{ needs.changes.outputs.client == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install & build client
+        working-directory: frontend
+        run: |
+          npm ci
+          npx ng build client
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy client
+        run: |
+          aws s3 sync frontend/dist/client/browser "s3://${CLIENT_BUCKET}" --delete
+          aws cloudfront create-invalidation --distribution-id "${CLIENT_DISTRIBUTION_ID}" --paths "/*"
+
+  deploy-admin:
+    needs: changes
+    if: ${{ needs.changes.outputs.admin == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install & build admin
+        working-directory: frontend
+        run: |
+          npm ci
+          npx ng build admin
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy admin
+        run: |
+          aws s3 sync frontend/dist/admin/browser "s3://${ADMIN_BUCKET}" --delete
+          aws cloudfront create-invalidation --distribution-id "${ADMIN_DISTRIBUTION_ID}" --paths "/*"

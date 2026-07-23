@@ -90,7 +90,13 @@ ENVIRONMENT=prod npx cdk deploy GNCProd<Stack> --profile guardia-nel-cuore
 Il codice dei backend è impacchettato automaticamente dalle Lambda CDK
 (`NodejsFunction`) a partire da `/backend/src/handlers`.
 
-**Frontend (manuale, S3 + CloudFront):**
+**Frontend (automatico via CI):** un push su **`main`** che tocca `frontend/**`
+attiva `.github/workflows/deploy-frontend.yml` → build + `s3 sync` + invalidazione
+CloudFront (client e/o admin, in base ai path cambiati). Autenticazione via **OIDC**
+(ruolo `gnc-github-deploy-frontend`, nessuna chiave nei secret; creato da `GNCProdCiStack`).
+Si può lanciare anche a mano dal tab *Actions* (workflow_dispatch).
+
+**Frontend (manuale, S3 + CloudFront):** se serve deployare fuori dalla CI —
 ```bash
 cd frontend && nvm use 22
 npx ng build client && npx ng build admin
