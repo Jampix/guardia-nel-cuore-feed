@@ -63,7 +63,8 @@ export interface CreateFeedbackInput {
   titolo: string;
   descrizione: string;
   categoriaId: string;
-  visibilita: Visibility;
+  /** Non impostata dal cittadino: la proposta nasce sempre privata (lato server). */
+  visibilita?: Visibility;
   luogo?: string;
   lat?: number;
   lng?: number;

@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
-import { Feedback, FeedbackStatus } from 'shared';
+import { Feedback, FeedbackStatus, Visibility } from 'shared';
 import { environment } from '../../environments/environment';
 
 /** Campi modificabili dalla moderazione. */
 export interface FeedbackPatch {
   stato?: FeedbackStatus;
+  visibilita?: Visibility;
   rispostaPubblica?: string;
   notaInterna?: string;
 }

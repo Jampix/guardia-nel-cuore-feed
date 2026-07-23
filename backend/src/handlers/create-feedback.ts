@@ -42,7 +42,9 @@ export const handler = async (
     titolo,
     descrizione,
     categoriaId: body.categoriaId ? String(body.categoriaId) : null,
-    visibilita: body.visibilita === 'pubblico' ? 'pubblico' : 'privato',
+    // Ogni proposta nasce PRIVATA: solo lo staff può renderla pubblica dalla
+    // moderazione. Il valore inviato dal client viene ignorato di proposito.
+    visibilita: 'privato',
     stato: 'proposta',
     autoreId,
     autoreNick,

@@ -110,6 +110,21 @@ mat-button-toggle-group {
   margin: 0 4px;
 }
 
+.privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mat-sys-on-surface-variant);
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; }
+}
+
 .publish {
   --mat-button-filled-container-color: var(--mat-sys-primary);
   height: 50px;
