@@ -1,8 +1,8 @@
 name: Deploy frontend
 
 # Deploy automatico dei frontend su push a main. I job partono solo se sono
-# cambiati i file della rispettiva app (path filter). Autenticazione AWS via
-# OIDC (ruolo gnc-github-deploy-frontend, nessuna chiave nei secret).
+# cambiati i file della rispettiva app (rilevamento via git diff). Autenticazione
+# AWS via OIDC (ruolo gnc-github-deploy-frontend, nessuna chiave nei secret).
 
 on:
   push:
@@ -27,34 +27,39 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      client: ${{ steps.filter.outputs.client }}
-      admin: ${{ steps.filter.outputs.admin }}
+      client: ${{ steps.detect.outputs.client }}
+      admin: ${{ steps.detect.outputs.admin }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
+      - uses: actions/checkout@v5
         with:
-          filters: |
-            client:
-              - 'frontend/projects/client/**'
-              - 'frontend/projects/shared/**'
-              - 'frontend/package.json'
-              - 'frontend/package-lock.json'
-              - 'frontend/angular.json'
-            admin:
-              - 'frontend/projects/admin/**'
-              - 'frontend/projects/shared/**'
-              - 'frontend/package.json'
-              - 'frontend/package-lock.json'
-              - 'frontend/angular.json'
+          fetch-depth: 0
+      - id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "client=true" >> "$GITHUB_OUTPUT"
+            echo "admin=true"  >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          BEFORE="${{ github.event.before }}"
+          if ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            BEFORE=$(git rev-parse HEAD^)
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          echo "File cambiati:"; echo "$CHANGED"
+          # shared/config toccano entrambe le app.
+          SHARED=$(echo "$CHANGED" | grep -E '^frontend/(projects/shared/|package(-lock)?\.json|angular\.json)' || true)
+          CLIENT=$(echo "$CHANGED" | grep -E '^frontend/projects/client/' || true)
+          ADMIN=$(echo "$CHANGED"  | grep -E '^frontend/projects/admin/'  || true)
+          [ -n "$SHARED$CLIENT" ] && echo "client=true" >> "$GITHUB_OUTPUT" || echo "client=false" >> "$GITHUB_OUTPUT"
+          [ -n "$SHARED$ADMIN" ]  && echo "admin=true"  >> "$GITHUB_OUTPUT" || echo "admin=false"  >> "$GITHUB_OUTPUT"
 
   deploy-client:
     needs: changes
-    if: ${{ needs.changes.outputs.client == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.client == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -76,11 +81,11 @@ jobs:
 
   deploy-admin:
     needs: changes
-    if: ${{ needs.changes.outputs.admin == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.changes.outputs.admin == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
