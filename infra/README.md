@@ -19,11 +19,16 @@ CloudFront · SES · Route53/ACM. Contesto completo in
 | `GNCProdDataStack` | 4 tabelle DynamoDB (Feedbacks, Votes, Categories, FeedbackComments) | RETAIN |
 | `GNCProdAuthStack` | Cognito User Pool + gruppi + 2 app client + trigger **pre-auth** | RETAIN |
 | `GNCProdStorageStack` | Bucket S3 privato foto (OAC, CORS) | RETAIN |
-| `GNCProdApiStack` | HTTP API + JWT authorizer + tutte le Lambda | vedi `../backend/README.md` |
+| `GNCProdApiStack` | HTTP API + JWT authorizer + tutte le Lambda + allarmi operativi (SNS+CloudWatch) | vedi `../backend/README.md` |
 | `GNCProdDnsStack` | Hosted zone `feed.` + record + identità SES (DKIM) | zona delegata dall'apex (account main) |
 | `GNCProdCertStack` | Certificato ACM in **us-east-1** (per CloudFront) | env override `us-east-1` |
 | `GNCProdFrontendStack` | 2 bucket S3 + 2 CloudFront (client/admin) + alias Route53 | consuma il cert per ARN (stringa) |
-| `GNCProdCostOptimizationStack` | Budget alert | — |
+| `GNCProdCiStack` | OIDC GitHub + ruolo IAM per il deploy frontend da GitHub Actions | trust su repo@main |
+| `GNCProdCostOptimizationStack` | Budget mensile con avvisi email (50/80/100% + previsione) | limite da `config.alerts` |
+
+**Avvisi** (email in `config.alerts`): budget costi nel `CostOptimizationStack`;
+allarmi operativi (errori Lambda + 5xx API) nell'`ApiStack`. Dettagli in
+`../docs/02-architettura-aws.md` §11bis.
 
 ## Struttura
 ```

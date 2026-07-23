@@ -115,14 +115,27 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   bloccato** finché lo staff non approva l'iscrizione (trigger **Pre-Authentication**
   su Cognito). Approvare = aggiungere l'utente al gruppo `cittadino`; all'approvazione
   parte un'email di benvenuto (SES).
+- **Contenuti privati**: l'app cittadini è interamente dietro login — chi non è
+  autenticato viene mandato alla pagina di accesso e nessun contenuto è leggibile
+  (nemmeno via API). Le proposte nascono **private**: solo lo staff può pubblicarle.
+- **Gestione staff**: aggiungere/rimuovere admin/membro si fa via CLI/console Cognito
+  (`admin-add-user-to-group`), non c'è ancora una UI dedicata.
+
+## Monitoraggio e avvisi
+
+- **Costi**: budget mensile (**15 USD**) con avvisi email a 50/80/100% + previsione.
+- **Operativi**: allarmi CloudWatch → email su errori Lambda e 5xx dell'API.
+- Email e soglia in `infra/lib/config/environments/prod.ts` (`alerts`). Dettagli:
+  `docs/02-architettura-aws.md` §11bis.
 
 ## Stato e note operative
 
 - ✅ **In produzione** su feed./admin.feed.guardianelcuore.it.
+- ✅ **CI/CD** frontend attivo (GitHub Actions + OIDC, deploy su push a `main`).
 - ⏳ **SES**: in *sandbox* → le email transazionali arrivano solo a destinatari
   verificati finché AWS non concede la *production access* (richiesta inviata).
   La verifica email di registrazione (mittente Cognito) funziona già per tutti.
-- 🔜 CI/CD (GitHub Actions), i18n IT/EN, rimozione di `localhost` dal CORS a regime.
+- 🔜 i18n IT/EN, rimozione di `localhost` dal CORS a regime, UI gestione staff.
 
 ## Documentazione
 

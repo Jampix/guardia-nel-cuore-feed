@@ -124,21 +124,21 @@ Scelta: **poche tabelle separate e leggibili** (billing on-demand). Prefisso nom
 ## 6. Endpoint API
 
 Rotte effettive dell'HTTP API. Mappa endpoint → handler in
-[`../backend/README.md`](../backend/README.md).
-
-**Pubblici** (nessun token):
-- `GET /categories` — categorie attive
-- `GET /feedback/public` — bacheca pubblica
+[`../backend/README.md`](../backend/README.md). **Contenuti privati**: non ci sono
+endpoint pubblici — anche bacheca e categorie richiedono il token (accesso ai soli
+cittadini approvati).
 
 **Cittadino** (JWT):
-- `POST /feedback` — crea proposta
-- `GET /feedback/mine` — le mie proposte
+- `GET /categories` — categorie attive
+- `GET /feedback/public` — bacheca (solo proposte `pubblico`)
+- `POST /feedback` — crea proposta (nasce **sempre privata**)
+- `GET /feedback/mine` — le mie proposte (anche private)
 - `GET·POST·DELETE /feedback/{id}/vote` — stato voto / vota / ritira
 - `POST /uploads/presign` — URL prefirmato per caricare una foto
 
 **Backoffice** (JWT + gruppo `admin`/`membro`):
 - `GET /admin/feedback` — tutti i feedback (anche privati)
-- `PATCH /admin/feedback/{id}` — moderazione: `stato` / `rispostaPubblica` / `notaInterna` (cambio stato → email)
+- `PATCH /admin/feedback/{id}` — moderazione: `stato` / `visibilita` (pubblica/nasconde) / `rispostaPubblica` / `notaInterna` (cambio stato → email)
 - `GET·POST·PATCH·DELETE /admin/categories[/{id}]` — CRUD categorie
 - `GET /admin/users` — cittadini attivi · `GET /admin/users/pending` — iscrizioni in attesa
 - `POST /admin/users/{username}/approve` — approva (→ email) · `DELETE /admin/users/{username}` — rifiuta
@@ -205,6 +205,16 @@ Con poche centinaia di utenti/mese, gran parte rientra nel **free tier**:
 - Informativa privacy + cancellazione account/dati (US futura da aggiungere).
 - Rate limiting su API Gateway + verifica email come anti-spam base.
 
+## 11bis. Monitoraggio e avvisi
+Avvisi via email a un indirizzo configurato in `config.alerts` (email + soglia budget).
+- **Costi** (`CostOptimizationStack`): budget mensile **15 USD** con notifiche al
+  50/80/100% della spesa reale + **previsione** oltre il 100% (avvisa se in rotta per
+  sforare). Email diretta del budget (nessuna conferma richiesta).
+- **Operativi** (`ApiStack`): topic SNS + 2 allarmi CloudWatch → email:
+  **errori Lambda** (somma su tutte le funzioni dell'API) e **5xx dell'HTTP API**.
+  La sottoscrizione SNS richiede una conferma via email una tantum.
+- Costo del monitoraggio: trascurabile (allarmi entro il free tier, budget/SNS gratuiti).
+
 ## 12. Decisioni prese
 - **Account AWS** `324908170418` (personale, dedicato), IAM Identity Center · **Regione** `eu-west-1`.
 - **Dominio** `guardianelcuore.it` (registrato nell'account main); zona `feed.` delegata
@@ -213,8 +223,13 @@ Con poche centinaia di utenti/mese, gran parte rientra nel **free tier**:
 - **Frontend Angular Material (M3)**, mobile-first, tema chiaro/scuro; mappa **Leaflet+OSM** (no costi).
 - **Approvazione iscrizioni** via trigger Cognito Pre-Authentication (§4).
 
-## 13. Prossimi passi
+## 13. Fatto di recente / prossimi passi
+Fatto: contenuti privati (login obbligatorio), proposte private di default con
+pubblicazione decisa dallo staff, **CI/CD** del frontend (GitHub Actions + OIDC),
+**monitoraggio** costi + allarmi operativi (§11bis).
+
+Da fare:
 - **SES production access** (uscita dalla sandbox) per recapitare le email a tutti.
-- **CI/CD** (GitHub Actions) per il deploy del frontend, oggi manuale.
 - **i18n IT/EN** (@ngx-translate), informativa **privacy/GDPR** + cancellazione account.
 - Restringere il **CORS** del bucket foto rimuovendo `localhost` a regime.
+- (Opzionale) schermata gestione **staff** nel backoffice; distinzione poteri admin/membro.
