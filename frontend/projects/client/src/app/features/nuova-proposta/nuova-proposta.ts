@@ -10,9 +10,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Category } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
+import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 
 /** Form di creazione di una nuova proposta/segnalazione del cittadino. */
 @Component({
@@ -37,6 +39,7 @@ export class NuovaProposta {
   private readonly service = inject(FeedbackService);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly categories = toSignal(this.service.getCategories(), { initialValue: [] as Category[] });
   readonly submitting = signal(false);
@@ -94,6 +97,12 @@ export class NuovaProposta {
       this.form.markAllAsTouched();
       return;
     }
+    // Promemoria regolamento: pubblica solo dopo l'accettazione.
+    this.dialog.open(RegolamentoDialog, { data: { mode: 'reminder' }, maxWidth: '92vw' })
+      .afterClosed().subscribe((ok) => { if (ok) this.doSubmit(); });
+  }
+
+  private doSubmit(): void {
     // La rotta è protetta dall'authGuard e l'interceptor allega il JWT:
     // qui l'utente è autenticato.
     this.submitting.set(true);

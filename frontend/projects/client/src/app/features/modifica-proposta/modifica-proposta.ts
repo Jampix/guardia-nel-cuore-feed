@@ -9,8 +9,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { Category, Feedback } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
+import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 
 /** Modifica di una propria proposta (solo testo, e solo se ancora privata). */
 @Component({
@@ -29,6 +31,7 @@ export class ModificaProposta {
   private readonly service = inject(FeedbackService);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   readonly id = input.required<string>();
 
@@ -65,6 +68,11 @@ export class ModificaProposta {
 
   submit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.dialog.open(RegolamentoDialog, { data: { mode: 'reminder' }, maxWidth: '92vw' })
+      .afterClosed().subscribe((ok) => { if (ok) this.doSubmit(); });
+  }
+
+  private doSubmit(): void {
     this.saving.set(true);
     const { titolo, descrizione, categoriaId, luogo } = this.form.getRawValue();
     this.service.updateOwn(this.id(), { titolo, descrizione, categoriaId, luogo: luogo || undefined }).subscribe({

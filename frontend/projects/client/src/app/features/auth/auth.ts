@@ -7,8 +7,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'shared';
+import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 
 type Mode = 'login' | 'register' | 'confirm';
 
@@ -37,6 +39,7 @@ export class Auth {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   /** login | register | confirm — dai `data` della rotta (component input binding). */
   readonly mode = input<Mode>('login');
@@ -74,11 +77,25 @@ export class Auth {
     code: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+  private regDialogShown = false;
+
   constructor() {
     // Precompila l'email nella conferma quando arriva dal query param.
     effect(() => {
       const e = this.email();
       if (e) this.confirmForm.patchValue({ email: e });
+    });
+
+    // In registrazione mostra subito il regolamento: va accettato per proseguire.
+    effect(() => {
+      if (this.mode() === 'register' && !this.regDialogShown) {
+        this.regDialogShown = true;
+        this.dialog.open(RegolamentoDialog, { data: { mode: 'full' }, disableClose: true, maxWidth: '92vw' })
+          .afterClosed().subscribe((accepted) => {
+            if (accepted) this.registerForm.controls.consenso.setValue(true);
+            else this.router.navigate(['/accedi']);
+          });
+      }
     });
   }
 
