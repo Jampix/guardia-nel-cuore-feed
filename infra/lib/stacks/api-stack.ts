@@ -196,12 +196,20 @@ export class ApiStack extends Stack {
       description: 'Guardia nel Cuore - voto feedback',
     });
     votes.grantReadWriteData(voteFn.fn);
-    feedbacks.grantWriteData(voteFn.fn);
+    feedbacks.grantReadWriteData(voteFn.fn); // read: readCount() legge numeroVoti; write: contatore (transazione)
 
+    // CORS ristretto ai domini reali (+ localhost per il dev). Deriva dal dominio
+    // configurato: client su `feed.<dominio>`, admin su `admin.feed.<dominio>`.
+    // TODO(go-live definitivo): rimuovere http://localhost:4200.
+    const domain = props.config.features.dns?.domain;
+    const allowOrigins = [
+      ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
+      'http://localhost:4200',
+    ];
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],
-      allowOrigins: ['*'], // TODO(Incremento 4): restringere ai domini reali
+      allowOrigins,
     });
     // Contenuti privati: bacheca e categorie richiedono l'autenticazione
     // (accesso riservato ai cittadini approvati).

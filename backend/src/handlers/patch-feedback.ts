@@ -70,11 +70,11 @@ export const handler = async (
   }
   if (body.rispostaPubblica !== undefined) {
     sets.push('rispostaPubblica = :rp');
-    values[':rp'] = String(body.rispostaPubblica);
+    values[':rp'] = String(body.rispostaPubblica).slice(0, 4000);
   }
   if (body.notaInterna !== undefined) {
     sets.push('notaInterna = :ni');
-    values[':ni'] = String(body.notaInterna);
+    values[':ni'] = String(body.notaInterna).slice(0, 4000);
   }
 
   let item: Record<string, any>;

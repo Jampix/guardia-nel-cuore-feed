@@ -42,7 +42,7 @@ export const handler = async (
 
   if (method === 'POST') {
     const body = parse(event.body);
-    const nome = String(body.nome ?? '').trim();
+    const nome = String(body.nome ?? '').trim().slice(0, 60);
     if (!nome) return resp(400, { message: 'Il nome è obbligatorio.' });
     const item = { id: randomUUID(), nome, attiva: true };
     await ddb.send(new PutCommand({ TableName: CATEGORIES_TABLE, Item: item }));
@@ -56,7 +56,7 @@ export const handler = async (
     const names: Record<string, string> = {};
     const values: Record<string, unknown> = {};
     if (body.nome !== undefined) {
-      const nome = String(body.nome).trim();
+      const nome = String(body.nome).trim().slice(0, 60);
       if (!nome) return resp(400, { message: 'Il nome non può essere vuoto.' });
       sets.push('#nome = :nome');
       names['#nome'] = 'nome';

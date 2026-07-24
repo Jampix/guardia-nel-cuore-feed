@@ -35,6 +35,14 @@ export const handler = async (
   if (!titolo || !descrizione) {
     return resp(400, { message: 'titolo e descrizione sono obbligatori' });
   }
+  // Limiti di lunghezza: evitano di salvare stringhe enormi.
+  if (titolo.length > 120) return resp(400, { message: 'titolo troppo lungo (max 120)' });
+  if (descrizione.length > 4000) return resp(400, { message: 'descrizione troppo lunga (max 4000)' });
+  const luogo = body.luogo ? String(body.luogo).trim().slice(0, 160) : null;
+
+  // Coordinate: accettate solo se numeri validi ed entro i range geografici.
+  const lat = coord(body.lat, 90);
+  const lng = coord(body.lng, 180);
 
   const now = new Date().toISOString();
   const item = {
@@ -48,9 +56,9 @@ export const handler = async (
     stato: 'proposta',
     autoreId,
     autoreNick,
-    lat: body.lat ?? null,
-    lng: body.lng ?? null,
-    luogo: body.luogo ? String(body.luogo) : null,
+    lat,
+    lng,
+    luogo,
     // Chiave S3 dell'eventuale foto (caricata via presigned PUT). L'URL di
     // lettura viene generato al volo dagli endpoint di lettura.
     fotoKey: body.fotoKey ? String(body.fotoKey) : null,
@@ -63,6 +71,12 @@ export const handler = async (
   await ddb.send(new PutCommand({ TableName: FEEDBACKS_TABLE, Item: item }));
   return resp(201, item);
 };
+
+/** Coerce a numero e valida entro ±max; altrimenti null (coordinata assente). */
+function coord(v: unknown, max: number): number | null {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+}
 
 function resp(statusCode: number, obj: unknown): APIGatewayProxyResultV2 {
   return {

@@ -2,9 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
   GetCommand,
-  PutCommand,
-  DeleteCommand,
-  UpdateCommand,
+  TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -18,9 +16,12 @@ const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 /**
  * /feedback/{id}/vote — voto del cittadino (autenticato).
  *  - GET: dice se l'utente ha già votato.
- *  - POST: aggiunge il voto (1 per utente, garantito dalla chiave) e incrementa il contatore.
+ *  - POST: aggiunge il voto (1 per utente) e incrementa il contatore.
  *  - DELETE: ritira il voto e decrementa.
- * L'utente è ricavato dal token (claim `sub`), mai dal body.
+ *
+ * Voto e contatore vengono scritti in un'unica **TransactWriteItems**:
+ * o vanno a buon fine entrambi o nessuno dei due (niente disallineamenti tra la
+ * tabella Votes e `Feedbacks.numeroVoti`). L'utente è dal token (`sub`).
  */
 export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -40,53 +41,79 @@ export const handler = async (
 
   if (method === 'POST') {
     try {
-      await ddb.send(
-        new PutCommand({
-          TableName: VOTES_TABLE,
-          Item: { feedbackId, userId, createdAt: new Date().toISOString() },
-          ConditionExpression: 'attribute_not_exists(feedbackId)',
-        }),
-      );
+      await ddb.send(new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: VOTES_TABLE,
+              Item: { feedbackId, userId, createdAt: new Date().toISOString() },
+              ConditionExpression: 'attribute_not_exists(feedbackId)',
+            },
+          },
+          {
+            Update: {
+              TableName: FEEDBACKS_TABLE,
+              Key: { id: feedbackId },
+              UpdateExpression: 'ADD numeroVoti :d',
+              ExpressionAttributeValues: { ':d': 1 },
+              ConditionExpression: 'attribute_exists(id)',
+            },
+          },
+        ],
+      }));
     } catch (e: any) {
-      if (e?.name === 'ConditionalCheckFailedException') return resp(200, { voted: true });
+      // Voto già presente (o feedback inesistente): stato invariato.
+      if (e?.name === 'TransactionCanceledException') {
+        return resp(200, { voted: true, numeroVoti: await readCount(feedbackId) });
+      }
       throw e;
     }
-    const upd = await bumpCounter(feedbackId, 1);
-    return resp(200, { voted: true, numeroVoti: upd });
+    return resp(200, { voted: true, numeroVoti: await readCount(feedbackId) });
   }
 
   if (method === 'DELETE') {
     try {
-      await ddb.send(
-        new DeleteCommand({
-          TableName: VOTES_TABLE,
-          Key: { feedbackId, userId },
-          ConditionExpression: 'attribute_exists(feedbackId)',
-        }),
-      );
+      await ddb.send(new TransactWriteCommand({
+        TransactItems: [
+          {
+            Delete: {
+              TableName: VOTES_TABLE,
+              Key: { feedbackId, userId },
+              ConditionExpression: 'attribute_exists(feedbackId)',
+            },
+          },
+          {
+            Update: {
+              TableName: FEEDBACKS_TABLE,
+              Key: { id: feedbackId },
+              UpdateExpression: 'ADD numeroVoti :d',
+              ExpressionAttributeValues: { ':d': -1 },
+              ConditionExpression: 'attribute_exists(id)',
+            },
+          },
+        ],
+      }));
     } catch (e: any) {
-      if (e?.name === 'ConditionalCheckFailedException') return resp(200, { voted: false });
+      // Voto non presente: stato invariato.
+      if (e?.name === 'TransactionCanceledException') {
+        return resp(200, { voted: false, numeroVoti: await readCount(feedbackId) });
+      }
       throw e;
     }
-    const upd = await bumpCounter(feedbackId, -1);
-    return resp(200, { voted: false, numeroVoti: upd });
+    return resp(200, { voted: false, numeroVoti: await readCount(feedbackId) });
   }
 
   return resp(405, { message: 'Metodo non supportato' });
 };
 
-/** Incrementa/decrementa numeroVoti in modo atomico e restituisce il nuovo valore. */
-async function bumpCounter(feedbackId: string, delta: number): Promise<number | undefined> {
-  const upd = await ddb.send(
-    new UpdateCommand({
-      TableName: FEEDBACKS_TABLE,
-      Key: { id: feedbackId },
-      UpdateExpression: 'ADD numeroVoti :d',
-      ExpressionAttributeValues: { ':d': delta },
-      ReturnValues: 'UPDATED_NEW',
-    }),
-  );
-  return upd.Attributes?.numeroVoti as number | undefined;
+/** Legge il contatore voti corrente del feedback. */
+async function readCount(feedbackId: string): Promise<number | undefined> {
+  const r = await ddb.send(new GetCommand({
+    TableName: FEEDBACKS_TABLE,
+    Key: { id: feedbackId },
+    ProjectionExpression: 'numeroVoti',
+  }));
+  return r.Item?.numeroVoti as number | undefined;
 }
 
 function resp(statusCode: number, obj: unknown): APIGatewayProxyResultV2 {
