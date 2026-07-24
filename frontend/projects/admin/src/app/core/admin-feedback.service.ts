@@ -32,4 +32,9 @@ export class AdminFeedbackService {
   update(id: string, patch: FeedbackPatch): Observable<Feedback> {
     return this.http.patch<Feedback>(`${this.api}/admin/feedback/${id}`, patch);
   }
+
+  /** Motivi delle segnalazioni ricevute da una proposta. */
+  getReports(id: string): Observable<{ motivo: string; createdAt?: string }[]> {
+    return this.http.get<{ motivo: string; createdAt?: string }[]>(`${this.api}/admin/feedback/${id}/reports`);
+  }
 }

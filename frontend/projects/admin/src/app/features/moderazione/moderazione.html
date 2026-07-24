@@ -21,6 +21,18 @@
       <p class="descr">{{ f.descrizione }}</p>
     </section>
 
+    @if (reports().length) {
+      <section class="reports">
+        <h2>⚑ Segnalazioni ({{ reports().length }})</h2>
+        @for (r of reports(); track $index) {
+          <div class="report">
+            <p class="motivo">{{ r.motivo || '(nessun motivo indicato)' }}</p>
+            @if (r.createdAt) { <span class="when">{{ r.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span> }
+          </div>
+        }
+      </section>
+    }
+
     <form class="mod-form" [formGroup]="form" (ngSubmit)="save()">
       <mat-form-field appearance="outline">
         <mat-label>Stato</mat-label>

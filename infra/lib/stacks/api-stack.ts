@@ -213,6 +213,14 @@ export class ApiStack extends Stack {
     comments.grantWriteData(reportFeedbackFn.fn);
     feedbacks.grantWriteData(reportFeedbackFn.fn);
 
+    // GET /admin/feedback/{id}/reports (staff) — motivi delle segnalazioni
+    const listReportsFn = new NodeFunctionConstruct(this, 'ListFeedbackReportsFn', {
+      entry: path.join(handlersDir, 'list-feedback-reports.ts'),
+      environment: { COMMENTS_TABLE: props.commentsTableName },
+      description: 'Guardia nel Cuore - motivi segnalazioni (backoffice)',
+    });
+    comments.grantReadData(listReportsFn.fn);
+
     // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)
     const deleteAccountFn = new NodeFunctionConstruct(this, 'DeleteAccountFn', {
       entry: path.join(handlersDir, 'delete-account.ts'),
@@ -264,6 +272,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.DELETE, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/account', deleteAccountFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback/{id}/report', reportFeedbackFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.GET, '/admin/feedback/{id}/reports', listReportsFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

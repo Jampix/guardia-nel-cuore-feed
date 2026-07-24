@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -19,6 +20,7 @@ const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazion
 @Component({
   selector: 'app-moderazione',
   imports: [
+    DatePipe,
     ReactiveFormsModule,
     RouterLink,
     MatFormFieldModule,
@@ -50,6 +52,8 @@ export class Moderazione {
 
   /** Visibilità gestita a parte (slide-toggle booleano): true = pubblico. */
   readonly pubblico = signal(false);
+  /** Motivi delle segnalazioni (caricati se la proposta è segnalata). */
+  readonly reports = signal<{ motivo: string; createdAt?: string }[]>([]);
 
   readonly form = this.fb.nonNullable.group({
     stato: ['proposta' as FeedbackStatus],
@@ -71,6 +75,10 @@ export class Moderazione {
           rispostaPubblica: f.rispostaPubblica ?? '',
           notaInterna: f.notaInterna ?? '',
         });
+        // Se ci sono segnalazioni, carica i motivi.
+        if ((f.segnalazioni ?? 0) > 0) {
+          this.service.getReports(f.id).subscribe((r) => this.reports.set(r));
+        }
       }
     });
   }
