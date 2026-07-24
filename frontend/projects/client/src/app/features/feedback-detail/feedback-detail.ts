@@ -38,6 +38,12 @@ export class FeedbackDetail {
     () => this.mine().find((f) => f.id === this.id()) ?? this.allFeedbacks().find((f) => f.id === this.id()),
   );
 
+  /** True se la proposta è dell'utente corrente (non ha senso segnalarsi da soli). */
+  readonly isOwn = computed(() => {
+    const f = this.feedback();
+    return !!f && f.autoreId === this.auth.user()?.userId;
+  });
+
   /** Stato voto (mantenuto separato per aggiornare al volo il pulsante/contatore). */
   readonly voted = signal(false);
   readonly voteCount = signal(0);

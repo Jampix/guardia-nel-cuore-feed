@@ -8,6 +8,9 @@
   <div class="stat"><div class="n">{{ inLavorazione() }}</div><div class="l">In lavorazione</div></div>
   <div class="stat"><div class="n">{{ risoltiMese() }}</div><div class="l">Risolti · mese</div></div>
   <div class="stat"><div class="n">{{ cittadini() }}</div><div class="l">Cittadini</div></div>
+  @if (segnalati()) {
+    <a class="stat reported" routerLink="/feedback"><div class="n alert">{{ segnalati() }}</div><div class="l">⚑ Segnalati</div></a>
+  }
 </div>
 
 <section class="queue">

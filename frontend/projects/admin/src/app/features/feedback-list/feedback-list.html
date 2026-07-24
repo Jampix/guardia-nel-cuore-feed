@@ -14,6 +14,12 @@
   }
 </mat-chip-listbox>
 
+@if (reportedCount()) {
+  <button class="reported-filter" [class.on]="onlyReported()" (click)="toggleReported()">
+    <mat-icon>flag</mat-icon> Segnalati ({{ reportedCount() }})
+  </button>
+}
+
 <div class="list">
   @for (f of feedbacks(); track f.id) {
     <a class="card" [routerLink]="['/feedback', f.id]">

@@ -30,6 +30,7 @@ export class Sintesi {
     }).length;
   });
   readonly cittadini = computed(() => new Set(this.feedbacks().map((f) => f.autoreId)).size);
+  readonly segnalati = computed(() => this.feedbacks().filter((f) => (f.segnalazioni ?? 0) > 0).length);
 
   /** Coda: proposte nuove e in valutazione, dalla più recente. */
   readonly coda = computed(() =>

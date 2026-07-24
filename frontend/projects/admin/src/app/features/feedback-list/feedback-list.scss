@@ -11,7 +11,25 @@
   .subtitle { margin: 3px 0 0; font-size: 13px; color: var(--mat-sys-on-surface-variant); }
 }
 
-.filters { display: block; margin-bottom: 14px; }
+.filters { display: block; margin-bottom: 10px; }
+
+.reported-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--mat-sys-error);
+  background: transparent;
+  border: 1px solid var(--mat-sys-error);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-bottom: 14px;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &.on { background: var(--mat-sys-error); color: #fff; }
+}
 
 .list { display: flex; flex-direction: column; gap: 10px; }
 

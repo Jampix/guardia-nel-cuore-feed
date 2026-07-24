@@ -21,13 +21,18 @@ export class FeedbackList {
 
   private readonly all = toSignal(this.service.getAll(), { initialValue: [] as Feedback[] });
   readonly statusFilter = signal<FeedbackStatus | null>(null);
+  readonly onlyReported = signal(false);
   readonly statuses = STATUSES;
   readonly statusLabel = FEEDBACK_STATUS_LABEL;
 
+  /** Quante proposte hanno almeno una segnalazione (per il filtro/contatore). */
+  readonly reportedCount = computed(() => this.all().filter((f) => (f.segnalazioni ?? 0) > 0).length);
+
   readonly feedbacks = computed(() => {
     const s = this.statusFilter();
-    const all = this.all();
-    return s ? all.filter((f) => f.stato === s) : all;
+    let list = s ? this.all().filter((f) => f.stato === s) : this.all();
+    if (this.onlyReported()) list = list.filter((f) => (f.segnalazioni ?? 0) > 0);
+    return list;
   });
 
   statusClass(s: FeedbackStatus): string {
@@ -36,5 +41,9 @@ export class FeedbackList {
 
   setFilter(s: FeedbackStatus | null): void {
     this.statusFilter.set(s);
+  }
+
+  toggleReported(): void {
+    this.onlyReported.update((v) => !v);
   }
 }
