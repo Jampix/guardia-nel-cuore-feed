@@ -190,6 +190,22 @@
   p { margin: 0; font-size: 14px; line-height: 1.5; }
 }
 
+.own-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  .del { --mat-outlined-button-label-text-color: var(--mat-sys-error); }
+  .locked-hint {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12.5px; color: var(--mat-sys-on-surface-variant);
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+  }
+}
+
 .notfound {
   display: flex;
   flex-direction: column;

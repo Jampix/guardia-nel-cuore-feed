@@ -43,6 +43,20 @@ export class FeedbackDetail {
     const f = this.feedback();
     return !!f && f.autoreId === this.auth.user()?.userId;
   });
+  /** Modificabile solo se tua e ancora privata (non pubblicata). */
+  readonly canEdit = computed(() => this.isOwn() && this.feedback()?.visibilita === 'privato');
+  readonly deleting = signal(false);
+
+  deleteOwn(): void {
+    const f = this.feedback();
+    if (!f || this.deleting()) return;
+    if (!confirm('Eliminare definitivamente questa proposta? L\'operazione è irreversibile.')) return;
+    this.deleting.set(true);
+    this.service.deleteOwn(f.id).subscribe({
+      next: () => this.router.navigate(['/miei']),
+      error: () => this.deleting.set(false),
+    });
+  }
 
   /** Stato voto (mantenuto separato per aggiornare al volo il pulsante/contatore). */
   readonly voted = signal(false);

@@ -73,4 +73,14 @@ export class FeedbackService {
   report(id: string, motivo?: string): Observable<{ reported: boolean }> {
     return this.http.post<{ reported: boolean }>(`${this.api}/feedback/${id}/report`, { motivo });
   }
+
+  /** Modifica una propria proposta (solo se ancora privata). */
+  updateOwn(id: string, patch: Partial<Pick<CreateFeedbackInput, 'titolo' | 'descrizione' | 'categoriaId' | 'luogo'>>): Observable<Feedback> {
+    return this.http.patch<Feedback>(`${this.api}/feedback/${id}`, patch);
+  }
+
+  /** Elimina una propria proposta (con foto/voti/segnalazioni collegati). */
+  deleteOwn(id: string): Observable<{ deleted: boolean }> {
+    return this.http.delete<{ deleted: boolean }>(`${this.api}/feedback/${id}`);
+  }
 }

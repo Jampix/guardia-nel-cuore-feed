@@ -59,6 +59,19 @@
         <p>{{ f.rispostaPubblica }}</p>
       </section>
     }
+
+    @if (isOwn()) {
+      <section class="own-actions">
+        @if (canEdit()) {
+          <a mat-stroked-button [routerLink]="['/modifica', f.id]"><mat-icon>edit</mat-icon> Modifica</a>
+        } @else {
+          <span class="locked-hint"><mat-icon>lock</mat-icon> Pubblicata: non modificabile</span>
+        }
+        <button mat-stroked-button class="del" [disabled]="deleting()" (click)="deleteOwn()">
+          <mat-icon>delete_outline</mat-icon> Elimina
+        </button>
+      </section>
+    }
   </article>
 } @else {
   <div class="notfound">

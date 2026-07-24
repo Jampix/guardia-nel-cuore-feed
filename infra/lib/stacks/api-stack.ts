@@ -221,6 +221,22 @@ export class ApiStack extends Stack {
     });
     comments.grantReadData(listReportsFn.fn);
 
+    // PATCH/DELETE /feedback/{id} (autenticata) — gestione della PROPRIA proposta
+    const feedbackOwnerFn = new NodeFunctionConstruct(this, 'FeedbackOwnerFn', {
+      entry: path.join(handlersDir, 'feedback-owner.ts'),
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        VOTES_TABLE: props.votesTableName,
+        COMMENTS_TABLE: props.commentsTableName,
+        PHOTO_BUCKET: props.photoBucketName,
+      },
+      description: 'Guardia nel Cuore - modifica/elimina propria proposta',
+    });
+    feedbacks.grantReadWriteData(feedbackOwnerFn.fn);
+    votes.grantReadWriteData(feedbackOwnerFn.fn);
+    comments.grantReadWriteData(feedbackOwnerFn.fn);
+    photoBucket.grantDelete(feedbackOwnerFn.fn);
+
     // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)
     const deleteAccountFn = new NodeFunctionConstruct(this, 'DeleteAccountFn', {
       entry: path.join(handlersDir, 'delete-account.ts'),
@@ -273,6 +289,8 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.DELETE, '/account', deleteAccountFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback/{id}/report', reportFeedbackFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/feedback/{id}/reports', listReportsFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.PATCH, '/feedback/{id}', feedbackOwnerFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.DELETE, '/feedback/{id}', feedbackOwnerFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

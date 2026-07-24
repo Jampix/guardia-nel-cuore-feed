@@ -1,0 +1,62 @@
+<header class="np-nav">
+  <a class="cancel" [routerLink]="['/feedback', id()]">Annulla</a>
+  <span class="np-title">Modifica proposta</span>
+  <span class="np-spacer"></span>
+</header>
+
+@if (feedback(); as f) {
+  @if (editable()) {
+    <form class="np-form" [formGroup]="form" (ngSubmit)="submit()">
+      <section class="group">
+        <mat-form-field appearance="outline">
+          <mat-label>Titolo</mat-label>
+          <input matInput formControlName="titolo" maxlength="80" />
+          @if (form.controls.titolo.touched && form.controls.titolo.invalid) {
+            <mat-error>Inserisci un titolo (almeno 5 caratteri).</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Descrizione</mat-label>
+          <textarea matInput formControlName="descrizione" rows="4"></textarea>
+          @if (form.controls.descrizione.touched && form.controls.descrizione.invalid) {
+            <mat-error>Descrivi meglio (almeno 10 caratteri).</mat-error>
+          }
+        </mat-form-field>
+      </section>
+
+      <section class="group">
+        <mat-form-field appearance="outline">
+          <mat-label>Categoria</mat-label>
+          <mat-select formControlName="categoriaId">
+            @for (c of categories(); track c.id) {
+              <mat-option [value]="c.id">{{ c.nome }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Luogo (facoltativo)</mat-label>
+          <input matInput formControlName="luogo" />
+          <mat-icon matSuffix>place</mat-icon>
+        </mat-form-field>
+      </section>
+
+      <button mat-flat-button type="submit" class="publish" [disabled]="saving()">
+        @if (saving()) { <mat-spinner diameter="22"></mat-spinner> } @else { Salva modifiche }
+      </button>
+    </form>
+  } @else {
+    <div class="notfound">
+      <mat-icon>lock</mat-icon>
+      <p>Questa proposta è già pubblicata e non è più modificabile.</p>
+      <a [routerLink]="['/feedback', id()]" mat-stroked-button>Torna al dettaglio</a>
+    </div>
+  }
+} @else {
+  <div class="notfound">
+    <mat-icon>search_off</mat-icon>
+    <p>Proposta non trovata tra le tue.</p>
+    <a routerLink="/miei" mat-stroked-button>I miei feedback</a>
+  </div>
+}
