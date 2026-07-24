@@ -51,6 +51,8 @@
     <mat-icon>map</mat-icon>
     <p>La mappa (Leaflet) arriverà qui: i feedback geolocalizzati su Guardia Piemontese.</p>
   </div>
+} @else if (loading()) {
+  <lib-loading label="Caricamento proposte…" />
 } @else {
   <div class="feed">
     @for (f of visible(); track f.id) {

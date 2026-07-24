@@ -1,13 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { RouterLink } from '@angular/router';
-import { AuthService, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
+import { AuthService, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Loading } from 'shared';
 import { AdminFeedbackService } from '../../core/admin-feedback.service';
 
 /** Dashboard di sintesi del backoffice: KPI + coda di moderazione (dati reali). */
 @Component({
   selector: 'app-sintesi',
-  imports: [RouterLink],
+  imports: [RouterLink, Loading],
   templateUrl: './sintesi.html',
   styleUrl: './sintesi.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -17,7 +18,11 @@ export class Sintesi {
   private readonly service = inject(AdminFeedbackService);
 
   readonly user = this.auth.user;
-  private readonly feedbacks = toSignal(this.service.getAll(), { initialValue: [] as Feedback[] });
+  readonly loading = signal(true);
+  private readonly feedbacks = toSignal(
+    this.service.getAll().pipe(finalize(() => this.loading.set(false))),
+    { initialValue: [] as Feedback[] },
+  );
 
   readonly daModerare = computed(() => this.feedbacks().filter((f) => f.stato === 'proposta').length);
   readonly inLavorazione = computed(() => this.feedbacks().filter((f) => f.stato === 'in_lavorazione').length);

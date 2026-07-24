@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Loading } from 'shared';
 import { AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
 
 type View = 'attesa' | 'attivi';
@@ -13,7 +14,7 @@ type View = 'attesa' | 'attivi';
 /** Gestione persone: iscrizioni in attesa (approva/rifiuta) + cittadini attivi. */
 @Component({
   selector: 'app-cittadini',
-  imports: [DatePipe, MatButtonToggleModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule],
+  imports: [DatePipe, MatButtonToggleModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, Loading],
   templateUrl: './cittadini.html',
   styleUrl: './cittadini.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +28,8 @@ export class Cittadini {
   readonly citizens = signal<Citizen[]>([]);
   readonly search = signal('');
   readonly acting = signal<string | null>(null);
+  readonly loadingPending = signal(true);
+  readonly loadingCitizens = signal(true);
 
   readonly filteredCitizens = computed(() => {
     const q = this.search().trim().toLowerCase();
@@ -44,15 +47,15 @@ export class Cittadini {
 
   private loadPending(): void {
     this.service.getPending().subscribe({
-      next: (p) => this.pending.set(p),
-      error: () => this.fail('Errore nel caricamento delle iscrizioni.'),
+      next: (p) => { this.pending.set(p); this.loadingPending.set(false); },
+      error: () => { this.loadingPending.set(false); this.fail('Errore nel caricamento delle iscrizioni.'); },
     });
   }
 
   private loadCitizens(): void {
     this.service.getCitizens().subscribe({
-      next: (c) => this.citizens.set(c),
-      error: () => this.fail('Errore nel caricamento dei cittadini.'),
+      next: (c) => { this.citizens.set(c); this.loadingCitizens.set(false); },
+      error: () => { this.loadingCitizens.set(false); this.fail('Errore nel caricamento dei cittadini.'); },
     });
   }
 

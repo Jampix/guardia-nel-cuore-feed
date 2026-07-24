@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatChipsModule } from '@angular/material/chips';
@@ -8,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
+import { Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Loading } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
 
 type View = 'lista' | 'mappa';
@@ -21,7 +22,7 @@ const PAGE = 12;
   selector: 'app-bacheca',
   imports: [
     RouterLink, MatButtonToggleModule, MatChipsModule, MatCardModule,
-    MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule,
+    MatIconModule, MatFormFieldModule, MatInputModule, MatButtonModule, Loading,
   ],
   templateUrl: './bacheca.html',
   styleUrl: './bacheca.scss',
@@ -31,7 +32,11 @@ export class Bacheca {
   private readonly service = inject(FeedbackService);
 
   readonly categories = toSignal(this.service.getCategories(), { initialValue: [] as Category[] });
-  private readonly allFeedbacks = toSignal(this.service.getPublicFeedbacks(), { initialValue: [] as Feedback[] });
+  readonly loading = signal(true);
+  private readonly allFeedbacks = toSignal(
+    this.service.getPublicFeedbacks().pipe(finalize(() => this.loading.set(false))),
+    { initialValue: [] as Feedback[] },
+  );
 
   readonly view = signal<View>('lista');
   readonly selectedCategory = signal<string | null>(null);

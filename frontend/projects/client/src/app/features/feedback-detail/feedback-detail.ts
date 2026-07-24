@@ -1,17 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { AuthService, Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
+import { AuthService, Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Loading } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 
 /** Dettaglio di un singolo feedback (raggiunto dalla bacheca). */
 @Component({
   selector: 'app-feedback-detail',
-  imports: [RouterLink, MatIconModule, MatButtonModule, FeedbackMap],
+  imports: [RouterLink, MatIconModule, MatButtonModule, FeedbackMap, Loading],
   templateUrl: './feedback-detail.html',
   styleUrl: './feedback-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,11 +24,22 @@ export class FeedbackDetail {
   /** Id del feedback dalla rotta `feedback/:id` (component input binding). */
   readonly id = input.required<string>();
 
-  private readonly allFeedbacks = toSignal(this.service.getPublicFeedbacks(), { initialValue: [] as Feedback[] });
+  private readonly loadingPublic = signal(true);
+  private readonly loadingMine = signal(true);
+  /** True finché entrambe le sorgenti (pubblici + propri) non hanno risposto. */
+  readonly loading = computed(() => this.loadingPublic() || this.loadingMine());
+
+  private readonly allFeedbacks = toSignal(
+    this.service.getPublicFeedbacks().pipe(finalize(() => this.loadingPublic.set(false))),
+    { initialValue: [] as Feedback[] },
+  );
   // Include anche le proprie proposte (per aprire quelle private dall'area "I miei").
   // Se non autenticato l'endpoint dà 401: lo assorbiamo con una lista vuota.
   private readonly mine = toSignal(
-    this.service.getMine().pipe(catchError(() => of([] as Feedback[]))),
+    this.service.getMine().pipe(
+      catchError(() => of([] as Feedback[])),
+      finalize(() => this.loadingMine.set(false)),
+    ),
     { initialValue: [] as Feedback[] },
   );
   private readonly categories = toSignal(this.service.getCategories(), { initialValue: [] as Category[] });

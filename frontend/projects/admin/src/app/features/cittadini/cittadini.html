@@ -8,7 +8,9 @@
 </mat-button-toggle-group>
 
 @if (view() === 'attesa') {
-  @if (pending().length) {
+  @if (loadingPending()) {
+    <lib-loading label="Caricamento…" />
+  } @else if (pending().length) {
     <div class="list">
       @for (u of pending(); track u.username) {
         <div class="card">
@@ -38,7 +40,9 @@
       [value]="search()" (input)="search.set($any($event.target).value)" />
   </mat-form-field>
 
-  @if (filteredCitizens().length) {
+  @if (loadingCitizens()) {
+    <lib-loading label="Caricamento…" />
+  } @else if (filteredCitizens().length) {
     <div class="list">
       @for (c of filteredCitizens(); track c.username) {
         <div class="card">

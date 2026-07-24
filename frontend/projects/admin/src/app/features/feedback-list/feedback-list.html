@@ -20,6 +20,9 @@
   </button>
 }
 
+@if (loading()) {
+  <lib-loading label="Caricamento…" />
+} @else {
 <div class="list">
   @for (f of feedbacks(); track f.id) {
     <a class="card" [routerLink]="['/feedback', f.id]">
@@ -40,3 +43,4 @@
     <p class="empty">Nessun feedback per questo filtro.</p>
   }
 </div>
+}

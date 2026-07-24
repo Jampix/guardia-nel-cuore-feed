@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL } from 'shared';
+import { Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Loading } from 'shared';
 import { AdminFeedbackService } from '../../core/admin-feedback.service';
 
 const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazione', 'risolto', 'archiviato'];
@@ -11,7 +12,7 @@ const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazion
 /** Elenco di tutti i feedback (backoffice), filtrabile per stato. */
 @Component({
   selector: 'app-feedback-list',
-  imports: [RouterLink, MatChipsModule, MatIconModule],
+  imports: [RouterLink, MatChipsModule, MatIconModule, Loading],
   templateUrl: './feedback-list.html',
   styleUrl: './feedback-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -19,7 +20,11 @@ const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazion
 export class FeedbackList {
   private readonly service = inject(AdminFeedbackService);
 
-  private readonly all = toSignal(this.service.getAll(), { initialValue: [] as Feedback[] });
+  readonly loading = signal(true);
+  private readonly all = toSignal(
+    this.service.getAll().pipe(finalize(() => this.loading.set(false))),
+    { initialValue: [] as Feedback[] },
+  );
   readonly statusFilter = signal<FeedbackStatus | null>(null);
   readonly onlyReported = signal(false);
   readonly statuses = STATUSES;

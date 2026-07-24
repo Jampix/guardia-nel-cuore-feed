@@ -3,7 +3,9 @@
   <p class="subtitle">{{ feedbacks().length }} proposte</p>
 </header>
 
-@if (feedbacks().length) {
+@if (loading()) {
+  <lib-loading label="Caricamento…" />
+} @else if (feedbacks().length) {
   <div class="list">
     @for (f of feedbacks(); track f.id) {
       <a class="card" [routerLink]="['/feedback', f.id]">

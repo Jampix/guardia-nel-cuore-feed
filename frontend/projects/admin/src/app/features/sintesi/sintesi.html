@@ -3,6 +3,9 @@
   @if (user(); as u) { <p class="welcome">Ciao {{ u.nickname || 'staff' }} 👋</p> }
 </header>
 
+@if (loading()) {
+  <lib-loading label="Caricamento…" />
+} @else {
 <div class="kpi-grid">
   <div class="stat"><div class="n alert">{{ daModerare() }}</div><div class="l">Da moderare</div></div>
   <div class="stat"><div class="n">{{ inLavorazione() }}</div><div class="l">In lavorazione</div></div>
@@ -31,3 +34,4 @@
     <p class="empty">Nessuna proposta in attesa. Tutto in ordine ✨</p>
   }
 </section>
+}
