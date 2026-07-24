@@ -60,6 +60,24 @@ export class FeedbackDetail {
     });
   }
 
+  readonly reporting = signal(false);
+  readonly reported = signal(false);
+
+  report(): void {
+    const f = this.feedback();
+    if (!f || this.reporting() || this.reported()) return;
+    if (!this.isAuthenticated()) {
+      this.router.navigate(['/accedi'], { queryParams: { returnUrl: `/feedback/${f.id}` } });
+      return;
+    }
+    const motivo = prompt('Perché segnali questa proposta? (facoltativo)') ?? undefined;
+    this.reporting.set(true);
+    this.service.report(f.id, motivo || undefined).subscribe({
+      next: () => { this.reported.set(true); this.reporting.set(false); },
+      error: () => this.reporting.set(false),
+    });
+  }
+
   toggleVote(): void {
     const f = this.feedback();
     if (!f || this.voting()) return;

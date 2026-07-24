@@ -22,6 +22,7 @@
         <span class="meta">
           di {{ f.autoreNick }}
           @if (f.visibilita === 'privato') { · <mat-icon class="lock">lock</mat-icon> privato }
+          @if (f.segnalazioni) { · <span class="reported"><mat-icon>flag</mat-icon>{{ f.segnalazioni }}</span> }
         </span>
       </div>
       <div class="right">

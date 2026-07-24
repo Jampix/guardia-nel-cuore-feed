@@ -68,4 +68,9 @@ export class FeedbackService {
   unvote(id: string): Observable<{ voted: boolean; numeroVoti?: number }> {
     return this.http.delete<{ voted: boolean; numeroVoti?: number }>(`${this.api}/feedback/${id}/vote`);
   }
+
+  /** Segnala una proposta come inappropriata (richiede JWT). */
+  report(id: string, motivo?: string): Observable<{ reported: boolean }> {
+    return this.http.post<{ reported: boolean }>(`${this.api}/feedback/${id}/report`, { motivo });
+  }
 }

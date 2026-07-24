@@ -51,7 +51,8 @@
             }
           </mat-form-field>
           <mat-checkbox formControlName="consenso" class="consent">
-            Ho letto e accetto l'<a routerLink="/privacy" target="_blank">informativa sulla privacy</a>.
+            Ho letto e accetto il <a routerLink="/regolamento" target="_blank">regolamento</a>
+            e l'<a routerLink="/privacy" target="_blank">informativa sulla privacy</a>.
           </mat-checkbox>
           <p class="approval-note">Dopo la registrazione, l'accesso sarà possibile solo dopo l'approvazione dello staff.</p>
           <button mat-flat-button type="submit" class="primary" [disabled]="loading() || registerForm.controls.consenso.invalid">
@@ -106,6 +107,6 @@
       }
     }
 
-    <p class="back"><a routerLink="/privacy">Informativa sulla privacy</a></p>
+    <p class="back"><a routerLink="/regolamento">Regolamento</a> · <a routerLink="/privacy">Privacy</a></p>
   </div>
 </div>

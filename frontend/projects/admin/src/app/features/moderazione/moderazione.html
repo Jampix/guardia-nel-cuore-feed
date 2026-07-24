@@ -16,7 +16,7 @@
         }
       </div>
       <h1 class="title">{{ f.titolo }}</h1>
-      <p class="meta">di <strong>{{ f.autoreNick }}</strong> · {{ f.numeroVoti }} sostegni@if (f.luogo) { · {{ f.luogo }} }</p>
+      <p class="meta">di <strong>{{ f.autoreNick }}</strong> · {{ f.numeroVoti }} sostegni@if (f.luogo) { · {{ f.luogo }} }@if (f.segnalazioni) { · <strong class="rep">⚑ {{ f.segnalazioni }} segnalazioni</strong> }</p>
       @if (f.fotoUrl) { <img class="foto" [src]="f.fotoUrl" alt="Foto della proposta" /> }
       <p class="descr">{{ f.descrizione }}</p>
     </section>

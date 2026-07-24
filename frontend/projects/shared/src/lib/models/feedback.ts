@@ -38,6 +38,8 @@ export interface Feedback {
   /** Etichetta leggibile del luogo, es. "Via Roma". */
   luogo?: string;
   numeroVoti: number;
+  /** Numero di segnalazioni ricevute (per la moderazione). */
+  segnalazioni?: number;
   /**
    * Ultima risposta pubblica dell'associazione (denormalizzata sul feedback
    * per comodità di lettura). La cronologia completa vivrà in FeedbackComments.

@@ -2,8 +2,9 @@
   <a class="back" routerLink="/" aria-label="Torna alla bacheca">
     <mat-icon>arrow_back_ios_new</mat-icon><span>Bacheca</span>
   </a>
-  <button class="share" mat-icon-button aria-label="Condividi">
-    <mat-icon>ios_share</mat-icon>
+  <button class="share" mat-icon-button aria-label="Segnala" [disabled]="reporting() || reported()" (click)="report()"
+    [title]="reported() ? 'Segnalata' : 'Segnala'">
+    <mat-icon>{{ reported() ? 'flag' : 'outlined_flag' }}</mat-icon>
   </button>
 </header>
 

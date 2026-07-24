@@ -27,6 +27,8 @@ export interface ApiStackProps extends StackProps {
   categoriesTableName: string;
   votesTableArn: string;
   votesTableName: string;
+  commentsTableArn: string;
+  commentsTableName: string;
   // Da StorageStack (stringhe)
   photoBucketArn: string;
   photoBucketName: string;
@@ -62,6 +64,7 @@ export class ApiStack extends Stack {
     const categories = Table.fromTableArn(this, 'CategoriesTable', props.categoriesTableArn);
     const photoBucket = Bucket.fromBucketArn(this, 'PhotoBucket', props.photoBucketArn);
     const votes = Table.fromTableArn(this, 'VotesTable', props.votesTableArn);
+    const comments = Table.fromTableArn(this, 'CommentsTable', props.commentsTableArn);
 
     // GET /categories (pubblica)
     const categoriesFn = new NodeFunctionConstruct(this, 'CategoriesFn', {
@@ -198,6 +201,18 @@ export class ApiStack extends Stack {
     votes.grantReadWriteData(voteFn.fn);
     feedbacks.grantReadWriteData(voteFn.fn); // read: readCount() legge numeroVoti; write: contatore (transazione)
 
+    // POST /feedback/{id}/report (autenticata) — segnalazione contenuti
+    const reportFeedbackFn = new NodeFunctionConstruct(this, 'ReportFeedbackFn', {
+      entry: path.join(handlersDir, 'report-feedback.ts'),
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        COMMENTS_TABLE: props.commentsTableName,
+      },
+      description: 'Guardia nel Cuore - segnalazione contenuti',
+    });
+    comments.grantWriteData(reportFeedbackFn.fn);
+    feedbacks.grantWriteData(reportFeedbackFn.fn);
+
     // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)
     const deleteAccountFn = new NodeFunctionConstruct(this, 'DeleteAccountFn', {
       entry: path.join(handlersDir, 'delete-account.ts'),
@@ -248,6 +263,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.POST, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/account', deleteAccountFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/feedback/{id}/report', reportFeedbackFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

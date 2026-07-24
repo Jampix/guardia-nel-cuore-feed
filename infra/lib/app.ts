@@ -142,6 +142,8 @@ export class InfrastructureApp {
       categoriesTableName: data.categoriesTableName,
       votesTableArn: data.votesTableArn,
       votesTableName: data.votesTableName,
+      commentsTableArn: data.commentsTableArn,
+      commentsTableName: data.commentsTableName,
       photoBucketArn: storage.photoBucketArn,
       photoBucketName: storage.photoBucketName,
       alertEmail: this.config.alerts?.email,
