@@ -57,3 +57,14 @@ recapita solo a destinatari verificati finché non è concessa la *production ac
 ## Dipendenze
 `@aws-sdk/*`: `client-dynamodb` + `lib-dynamodb`, `client-s3` + `s3-request-presigner`,
 `client-sesv2`, `client-cognito-identity-provider`.
+
+## Test
+Unit test con **Vitest** + **aws-sdk-client-mock** (SDK AWS simulato, nessuna chiamata
+reale). File `*.test.ts` accanto agli handler — non vengono inclusi nei bundle Lambda.
+```bash
+npm test          # esegue la suite
+npm run test:watch
+```
+Coprono la logica critica: proposta privata di default + validazione, voto atomico
+(TransactWriteItems) + idempotenza, gate staff (403/404), `notaInterna` mai esposta,
+blocco login dei non approvati (pre-auth).
