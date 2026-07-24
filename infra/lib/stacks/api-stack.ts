@@ -198,6 +198,22 @@ export class ApiStack extends Stack {
     votes.grantReadWriteData(voteFn.fn);
     feedbacks.grantReadWriteData(voteFn.fn); // read: readCount() legge numeroVoti; write: contatore (transazione)
 
+    // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)
+    const deleteAccountFn = new NodeFunctionConstruct(this, 'DeleteAccountFn', {
+      entry: path.join(handlersDir, 'delete-account.ts'),
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        VOTES_TABLE: props.votesTableName,
+        PHOTO_BUCKET: props.photoBucketName,
+        USER_POOL_ID: props.userPoolId,
+      },
+      description: 'Guardia nel Cuore - cancellazione account (GDPR)',
+    });
+    feedbacks.grantReadWriteData(deleteAccountFn.fn);
+    votes.grantReadWriteData(deleteAccountFn.fn);
+    photoBucket.grantDelete(deleteAccountFn.fn);
+    userPool.grant(deleteAccountFn.fn, 'cognito-idp:AdminDeleteUser');
+
     // CORS ristretto ai domini reali (+ localhost per il dev). Deriva dal dominio
     // configurato: client su `feed.<dominio>`, admin su `admin.feed.<dominio>`.
     // TODO(go-live definitivo): rimuovere http://localhost:4200.
@@ -231,6 +247,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.GET, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.DELETE, '/account', deleteAccountFn.fn, { authenticated: true });
 
     this.apiUrl = api.api.apiEndpoint;
     new CfnOutput(this, 'ApiUrl', {

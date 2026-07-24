@@ -50,8 +50,11 @@
               <mat-error>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-error>
             }
           </mat-form-field>
+          <mat-checkbox formControlName="consenso" class="consent">
+            Ho letto e accetto l'<a routerLink="/privacy" target="_blank">informativa sulla privacy</a>.
+          </mat-checkbox>
           <p class="approval-note">Dopo la registrazione, l'accesso sarà possibile solo dopo l'approvazione dello staff.</p>
-          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading() || registerForm.controls.consenso.invalid">
             @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Registrati }
           </button>
         </form>
@@ -103,6 +106,6 @@
       }
     }
 
-    <p class="back"><a routerLink="/">‹ Torna alla bacheca</a></p>
+    <p class="back"><a routerLink="/privacy">Informativa sulla privacy</a></p>
   </div>
 </div>

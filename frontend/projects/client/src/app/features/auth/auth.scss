@@ -104,6 +104,12 @@
   margin: 4px 2px 0;
 }
 
+.consent {
+  margin: 6px 0 2px;
+  font-size: 13.5px;
+  a { color: var(--mat-sys-primary); font-weight: 600; }
+}
+
 form {
   display: flex;
   flex-direction: column;

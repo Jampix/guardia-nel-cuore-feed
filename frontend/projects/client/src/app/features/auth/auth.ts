@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'shared';
 
@@ -25,6 +26,7 @@ const PWD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatCheckboxModule,
   ],
   templateUrl: './auth.html',
   styleUrl: './auth.scss',
@@ -65,6 +67,7 @@ export class Auth {
     nickname: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.pattern(PWD_PATTERN)]],
+    consenso: [false, Validators.requiredTrue],
   });
   readonly confirmForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

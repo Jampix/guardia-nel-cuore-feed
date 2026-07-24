@@ -49,3 +49,25 @@
   border-radius: 14px;
   font-weight: 600;
 }
+
+.danger {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  h2 { font-size: 16px; font-weight: 650; margin: 0 0 6px; color: var(--mat-sys-error); }
+  p { font-size: 13px; color: var(--mat-sys-on-surface-variant); margin: 0 0 12px; }
+}
+.delete {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  font-weight: 600;
+  --mat-outlined-button-label-text-color: var(--mat-sys-error);
+  mat-spinner { margin: 0 auto; }
+}
+
+.privacy-link {
+  text-align: center;
+  margin-top: 24px;
+  a { color: var(--mat-sys-on-surface-variant); font-size: 13px; text-decoration: none; }
+}

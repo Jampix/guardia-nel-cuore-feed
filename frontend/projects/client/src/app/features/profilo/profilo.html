@@ -14,4 +14,17 @@
   <button mat-stroked-button class="logout" (click)="logout()">
     <mat-icon>logout</mat-icon> Esci
   </button>
+
+  <section class="danger">
+    <h2>Elimina account</h2>
+    <p>Rimuove definitivamente il tuo profilo, le tue proposte, le foto e i tuoi voti.
+       L'operazione è irreversibile.</p>
+    <button mat-stroked-button class="delete" [disabled]="deleting()" (click)="deleteAccount()">
+      @if (deleting()) { <mat-spinner diameter="20"></mat-spinner> } @else {
+        <ng-container><mat-icon>delete_forever</mat-icon> Elimina il mio account</ng-container>
+      }
+    </button>
+  </section>
+
+  <p class="privacy-link"><a routerLink="/privacy">Informativa sulla privacy</a></p>
 }
