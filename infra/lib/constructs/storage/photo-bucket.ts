@@ -46,6 +46,10 @@ export class PhotoBucketConstruct extends Construct {
       // Svuota gli oggetti su `cdk destroy` (solo perché in fase di build:
       // TODO(go-live) rimuovere insieme al passaggio a RETAIN).
       autoDeleteObjects: props.removalPolicy === RemovalPolicy.DESTROY,
+      // Versioning: una cancellazione/sovrascrittura non è definitiva (le
+      // versioni precedenti restano recuperabili). Le versioni non correnti
+      // vengono comunque eliminate dopo 90 giorni per contenere i costi.
+      versioned: true,
       // CORS: l'upload presigned parte dal browser (PUT/GET) → vanno
       // autorizzate esplicitamente le origini del frontend.
       cors: [
@@ -59,7 +63,12 @@ export class PhotoBucketConstruct extends Construct {
       // Housekeeping: aborta gli upload multipart incompleti (upload orfani
       // dal browser) dopo 1 giorno, così non accumulano costi.
       lifecycleRules: [
-        { abortIncompleteMultipartUploadAfter: Duration.days(1) },
+        {
+          abortIncompleteMultipartUploadAfter: Duration.days(1),
+          // Le versioni non correnti (post-cancellazione/sovrascrittura) si
+          // eliminano dopo 90 giorni: recupero possibile senza costi illimitati.
+          noncurrentVersionExpiration: Duration.days(90),
+        },
       ],
     });
   }
