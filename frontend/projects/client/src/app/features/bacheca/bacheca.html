@@ -1,6 +1,6 @@
 <header class="page-head">
   <h1>Bacheca</h1>
-  <p class="subtitle">Guardia Piemontese · {{ feedbacks().length }} proposte</p>
+  <p class="subtitle">Guardia Piemontese · {{ filtered().length }} proposte</p>
 </header>
 
 <mat-button-toggle-group
@@ -28,6 +28,24 @@
   }
 </mat-chip-listbox>
 
+@if (view() !== 'mappa') {
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="search">
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput placeholder="Cerca tra le proposte"
+        [value]="query()" (input)="query.set($any($event.target).value)" />
+      @if (query()) {
+        <button matSuffix mat-icon-button aria-label="Pulisci" (click)="query.set('')"><mat-icon>close</mat-icon></button>
+      }
+    </mat-form-field>
+    <mat-button-toggle-group class="sort" [value]="sort()" (change)="sort.set($event.value)"
+      hideSingleSelectionIndicator aria-label="Ordina">
+      <mat-button-toggle value="recenti">Recenti</mat-button-toggle>
+      <mat-button-toggle value="votati">Più votati</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+}
+
 @if (view() === 'mappa') {
   <div class="map-placeholder">
     <mat-icon>map</mat-icon>
@@ -35,7 +53,7 @@
   </div>
 } @else {
   <div class="feed">
-    @for (f of feedbacks(); track f.id) {
+    @for (f of visible(); track f.id) {
       <mat-card class="fcard" appearance="outlined" [routerLink]="['/feedback', f.id]">
         <div class="thumb" [style.background]="categoryGradient(f.categoriaId)">
           @if (f.fotoUrl) { <img [src]="f.fotoUrl" alt="" loading="lazy" /> }
@@ -54,7 +72,12 @@
         </div>
       </mat-card>
     } @empty {
-      <p class="empty">Nessuna proposta in questa categoria.</p>
+      <p class="empty">Nessuna proposta trovata.</p>
     }
   </div>
+  @if (hasMore()) {
+    <div class="load-more">
+      <button mat-stroked-button (click)="loadMore()">Carica altri</button>
+    </div>
+  }
 }
