@@ -26,4 +26,25 @@ describe('pre-auth (gate login)', () => {
     cognito.on(AdminListGroupsForUserCommand).resolves({ Groups: [{ GroupName: 'admin' }] });
     await expect(handler(event)).resolves.toBe(event);
   });
+
+  it('NON parla di approvazione per una email inesistente (userNotFound)', async () => {
+    // PreventUserExistenceErrors=ENABLED: il trigger scatta anche senza utente.
+    const notFound = { ...event, request: { userNotFound: true } } as any;
+    await expect(handler(notFound)).resolves.toBe(notFound);
+    expect(cognito.calls()).toHaveLength(0);
+  });
+
+  it('NON parla di approvazione se Cognito risponde UserNotFoundException', async () => {
+    const err: any = new Error('User does not exist.');
+    err.name = 'UserNotFoundException';
+    cognito.on(AdminListGroupsForUserCommand).rejects(err);
+    await expect(handler(event)).resolves.toBe(event);
+  });
+
+  it('NON fa passare in caso di errore transitorio di Cognito', async () => {
+    const err: any = new Error('Rate exceeded');
+    err.name = 'TooManyRequestsException';
+    cognito.on(AdminListGroupsForUserCommand).rejects(err);
+    await expect(handler(event)).rejects.toThrow(/Rate exceeded/);
+  });
 });

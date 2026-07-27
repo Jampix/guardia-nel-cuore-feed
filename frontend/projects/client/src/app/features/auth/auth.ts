@@ -161,9 +161,15 @@ export class Auth {
 
   private humanError(e: any): string {
     // Blocco dal trigger Pre-Authentication (cittadino non ancora approvato).
+    // Riconosciuto dal MESSAGGIO del trigger, non dal solo tipo: altri errori
+    // della Lambda arrivano come UserLambdaValidationException e non c'entrano
+    // con l'approvazione (mostrarli così confonde chi ha sbagliato email).
     const msg = String(e?.message ?? '');
-    if (e?.name === 'UserLambdaValidationException' || /approvazione/i.test(msg)) {
+    if (/approvazione/i.test(msg)) {
       return 'Il tuo account è in attesa di approvazione da parte dello staff.';
+    }
+    if (e?.name === 'UserLambdaValidationException') {
+      return 'Accesso momentaneamente non disponibile. Riprova tra poco.';
     }
     const map: Record<string, string> = {
       NotAuthorizedException: 'Email o password non corretti.',
