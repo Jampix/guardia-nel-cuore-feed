@@ -64,6 +64,13 @@
 
       @case ('confirm') {
         <p class="lead">Inserisci il codice a 6 cifre che ti abbiamo inviato via email.</p>
+        <!-- Il codice lo invia il mailer di Cognito da un mittente AWS condiviso
+             (no-reply@verificationemail.com): finisce spesso in spam. -->
+        <div class="notice" role="status">
+          <mat-icon>mark_email_unread</mat-icon>
+          Non lo trovi? Controlla <strong>spam</strong> e <strong>posta indesiderata</strong>: arriva
+          da <em>no-reply&#64;verificationemail.com</em>. Se è lì, segnalalo come "Non è spam".
+        </div>
         <form [formGroup]="confirmForm" (ngSubmit)="doConfirm()">
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
