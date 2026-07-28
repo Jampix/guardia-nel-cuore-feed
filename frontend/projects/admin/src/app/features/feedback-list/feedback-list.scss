@@ -26,9 +26,48 @@
   border: 1px solid var(--mat-sys-error);
   border-radius: 999px;
   padding: 6px 12px;
-  margin-bottom: 14px;
   mat-icon { font-size: 16px; width: 16px; height: 16px; }
   &.on { background: var(--mat-sys-error); color: #fff; }
+}
+
+// Visibilità e segnalazioni condividono una riga, per non spingere la lista
+// sotto la piega. `align-items: center` allinea le due pillole fra loro.
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+// Filtri visibilità: stessa forma a pillola dei filtri di stato; l'asse e'
+// indipendente e si combina con quello dello stato.
+.vis-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--mat-sys-on-surface-variant);
+    background: transparent;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 999px;
+    padding: 6px 12px;
+    mat-icon { font-size: 15px; width: 15px; height: 15px; }
+
+    &.on {
+      color: var(--mat-sys-on-secondary-container);
+      background: var(--mat-sys-secondary-container);
+      border-color: transparent;
+    }
+  }
 }
 
 .list { display: flex; flex-direction: column; gap: 10px; }
@@ -63,6 +102,7 @@
     mat-icon { font-size: 13px; width: 13px; height: 13px; }
   }
   .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
+  .pills { display: flex; align-items: center; gap: 6px; }
   .votes {
     display: inline-flex;
     align-items: center;
@@ -73,6 +113,58 @@
     color: var(--mat-sys-on-surface-variant);
     mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--mat-sys-primary); }
   }
+}
+
+// Badge visibilità. Si distingue dallo stato per FORMA (pieno vs contornato),
+// non solo per colore: le tinte semantiche degli stati (grigio/ambra/blu/verde)
+// e il rosso delle segnalazioni sono gia' occupate, e la forma resta leggibile
+// anche a chi non distingue le tinte.
+.vis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  mat-icon { font-size: 13px; width: 13px; height: 13px; }
+
+  // In bacheca: pieno e neutro scuro. NON uso il rosso primario: competerebbe
+  // col rosso delle segnalazioni, e le tinte semantiche degli stati sono gia'
+  // prese. Il contrasto pieno/contornato porta il significato senza nuove tinte.
+  &.pub {
+    color: var(--mat-sys-surface);
+    background: var(--mat-sys-on-surface);
+    mat-icon { color: inherit; }
+  }
+  // Non pubblicata: contorno tratteggiato, "e' una bozza".
+  &.priv {
+    color: var(--mat-sys-on-surface-variant);
+    background: transparent;
+    border: 1px dashed var(--mat-sys-outline);
+    padding: 2px 8px;
+  }
+}
+
+// Su schermi stretti resta la sola icona: il titolo della proposta ha priorita'.
+@media (max-width: 520px) {
+  .vis .lbl { display: none; }
+}
+
+// Su mobile i filtri andrebbero a capo occupando mezza schermata prima della
+// lista: restano su una riga sola scorrevole in orizzontale.
+@media (max-width: 600px) {
+  .filters-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    &::-webkit-scrollbar { display: none; }
+    > * { flex: 0 0 auto; }
+  }
+  .vis-filters { flex-wrap: nowrap; }
 }
 
 .status {

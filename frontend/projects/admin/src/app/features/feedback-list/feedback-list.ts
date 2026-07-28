@@ -9,6 +9,9 @@ import { AdminFeedbackService } from '../../core/admin-feedback.service';
 
 const STATUSES: FeedbackStatus[] = ['proposta', 'in_valutazione', 'in_lavorazione', 'risolto', 'archiviato'];
 
+/** Asse visibilità, indipendente dallo stato: una risolta può essere ancora privata. */
+export type VisFilter = 'tutte' | 'pubbliche' | 'private';
+
 /** Elenco di tutti i feedback (backoffice), filtrabile per stato. */
 @Component({
   selector: 'app-feedback-list',
@@ -26,6 +29,7 @@ export class FeedbackList {
     { initialValue: [] as Feedback[] },
   );
   readonly statusFilter = signal<FeedbackStatus | null>(null);
+  readonly visFilter = signal<VisFilter>('tutte');
   readonly onlyReported = signal(false);
   readonly statuses = STATUSES;
   readonly statusLabel = FEEDBACK_STATUS_LABEL;
@@ -33,9 +37,18 @@ export class FeedbackList {
   /** Quante proposte hanno almeno una segnalazione (per il filtro/contatore). */
   readonly reportedCount = computed(() => this.all().filter((f) => (f.segnalazioni ?? 0) > 0).length);
 
+  /** Conteggi per visibilità: mostrati sui filtri, così il numero si vede subito. */
+  readonly publicCount = computed(() => this.all().filter((f) => f.visibilita === 'pubblico').length);
+  readonly privateCount = computed(() => this.all().filter((f) => f.visibilita !== 'pubblico').length);
+
   readonly feedbacks = computed(() => {
     const s = this.statusFilter();
     let list = s ? this.all().filter((f) => f.stato === s) : this.all();
+    const v = this.visFilter();
+    if (v !== 'tutte') {
+      const wantPublic = v === 'pubbliche';
+      list = list.filter((f) => (f.visibilita === 'pubblico') === wantPublic);
+    }
     if (this.onlyReported()) list = list.filter((f) => (f.segnalazioni ?? 0) > 0);
     return list;
   });
@@ -46,6 +59,10 @@ export class FeedbackList {
 
   setFilter(s: FeedbackStatus | null): void {
     this.statusFilter.set(s);
+  }
+
+  setVisFilter(v: VisFilter): void {
+    this.visFilter.set(v);
   }
 
   toggleReported(): void {

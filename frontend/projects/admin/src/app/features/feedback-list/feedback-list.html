@@ -14,11 +14,26 @@
   }
 </mat-chip-listbox>
 
-@if (reportedCount()) {
-  <button class="reported-filter" [class.on]="onlyReported()" (click)="toggleReported()">
-    <mat-icon>flag</mat-icon> Segnalati ({{ reportedCount() }})
-  </button>
-}
+<!-- Visibilità e segnalazioni sulla stessa riga: sono assi separati dallo stato
+     e si combinano con esso, ma tenerli su righe distinte spingeva la lista
+     sotto la piega (su mobile erano quattro righe di filtri). -->
+<div class="filters-row">
+  <div class="vis-filters" role="group" aria-label="Filtra per visibilità">
+    <button type="button" [class.on]="visFilter() === 'tutte'" (click)="setVisFilter('tutte')">Tutte</button>
+    <button type="button" [class.on]="visFilter() === 'pubbliche'" (click)="setVisFilter('pubbliche')">
+      <mat-icon>public</mat-icon> In bacheca ({{ publicCount() }})
+    </button>
+    <button type="button" [class.on]="visFilter() === 'private'" (click)="setVisFilter('private')">
+      <mat-icon>lock</mat-icon> Non pubblicate ({{ privateCount() }})
+    </button>
+  </div>
+
+  @if (reportedCount()) {
+    <button class="reported-filter" [class.on]="onlyReported()" (click)="toggleReported()">
+      <mat-icon>flag</mat-icon> Segnalati ({{ reportedCount() }})
+    </button>
+  }
+</div>
 
 @if (loading()) {
   <lib-loading label="Caricamento…" />
@@ -30,12 +45,25 @@
         <span class="t">{{ f.titolo }}</span>
         <span class="meta">
           di {{ f.autoreNick }}
-          @if (f.visibilita === 'privato') { · <mat-icon class="lock">lock</mat-icon> privato }
           @if (f.segnalazioni) { · <span class="reported"><mat-icon>flag</mat-icon>{{ f.segnalazioni }}</span> }
         </span>
       </div>
       <div class="right">
-        <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+        <!-- Visibilità e stato sulla stessa riga: in colonna la card cresceva
+             di un terzo. Badge SEMPRE presente, anche per le pubbliche:
+             riconoscerle dall'assenza di un segno non funziona. -->
+        <div class="pills">
+          @if (f.visibilita === 'pubblico') {
+            <span class="vis pub" title="Visibile ai cittadini in bacheca">
+              <mat-icon>public</mat-icon><span class="lbl">In bacheca</span>
+            </span>
+          } @else {
+            <span class="vis priv" title="Visibile solo all'autore e allo staff">
+              <mat-icon>lock</mat-icon><span class="lbl">Non pubblicata</span>
+            </span>
+          }
+          <span class="status" [class]="statusClass(f.stato)">{{ statusLabel[f.stato] }}</span>
+        </div>
         <span class="votes"><mat-icon>favorite</mat-icon>{{ f.numeroVoti }}</span>
       </div>
     </a>
