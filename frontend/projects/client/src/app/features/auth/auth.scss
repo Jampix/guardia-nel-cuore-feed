@@ -96,6 +96,10 @@
   padding: 12px 14px;
   margin-bottom: 16px;
   mat-icon { font-size: 18px; width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; }
+  // Il testo va in UN solo figlio: essendo il box un flex, <strong>/<em> sciolti
+  // diventerebbero flex item affiancati (testo a colonne che esce dal box).
+  // min-width: 0 + overflow-wrap servono per stringhe lunghe tipo un'email.
+  > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 }
 
 .approval-note {

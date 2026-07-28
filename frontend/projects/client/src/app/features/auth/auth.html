@@ -20,7 +20,7 @@
     @if (showRegistered()) {
       <div class="notice" role="status">
         <mat-icon>schedule</mat-icon>
-        Registrazione completata! Il tuo account dev'essere approvato dallo staff prima del primo accesso: riceverai conferma appena sarà attivo.
+        <span>Registrazione completata! Il tuo account dev'essere approvato dallo staff prima del primo accesso: riceverai conferma appena sarà attivo.</span>
       </div>
     }
 
@@ -68,8 +68,11 @@
              (no-reply@verificationemail.com): finisce spesso in spam. -->
         <div class="notice" role="status">
           <mat-icon>mark_email_unread</mat-icon>
-          Non lo trovi? Controlla <strong>spam</strong> e <strong>posta indesiderata</strong>: arriva
-          da <em>no-reply&#64;verificationemail.com</em>. Se è lì, segnalalo come "Non è spam".
+          <span>
+            Non lo trovi? Controlla anche <strong>spam</strong> e <strong>posta indesiderata</strong>:
+            arriva da <em>no-reply&#64;verificationemail.com</em>. Se è lì, segnalalo come
+            &ldquo;Non è spam&rdquo;.
+          </span>
         </div>
         <form [formGroup]="confirmForm" (ngSubmit)="doConfirm()">
           <mat-form-field appearance="outline">
