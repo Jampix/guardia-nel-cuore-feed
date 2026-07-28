@@ -11,6 +11,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'shared';
 import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
+import { CodiceEmailDialog } from './codice-email-dialog';
 
 type Mode = 'login' | 'register' | 'confirm';
 
@@ -78,6 +79,7 @@ export class Auth {
   });
 
   private regDialogShown = false;
+  private codeDialogShown = false;
 
   constructor() {
     // Precompila l'email nella conferma quando arriva dal query param.
@@ -97,6 +99,23 @@ export class Auth {
           });
       }
     });
+
+    // In conferma spieghiamo subito dove cercare il codice: l'email finisce
+    // spesso in spam e chi non la trova abbandona senza dirlo a nessuno.
+    effect(() => {
+      if (this.mode() === 'confirm' && !this.codeDialogShown) {
+        this.codeDialogShown = true;
+        this.openCodeHelp();
+      }
+    });
+  }
+
+  /** Dialog "dove trovare il codice"; da lì si può anche chiedere il rinvio. */
+  openCodeHelp(): void {
+    this.dialog.open(CodiceEmailDialog, { maxWidth: '92vw', autoFocus: false })
+      .afterClosed().subscribe((action) => {
+        if (action === 'resend') this.resend();
+      });
   }
 
   async doLogin(): Promise<void> {

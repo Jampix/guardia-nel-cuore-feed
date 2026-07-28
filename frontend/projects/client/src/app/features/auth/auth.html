@@ -64,16 +64,8 @@
 
       @case ('confirm') {
         <p class="lead">Inserisci il codice a 6 cifre che ti abbiamo inviato via email.</p>
-        <!-- Il codice lo invia il mailer di Cognito da un mittente AWS condiviso
-             (no-reply@verificationemail.com): finisce spesso in spam. -->
-        <div class="notice" role="status">
-          <mat-icon>mark_email_unread</mat-icon>
-          <span>
-            Non lo trovi? Controlla anche <strong>spam</strong> e <strong>posta indesiderata</strong>:
-            arriva da <em>no-reply&#64;verificationemail.com</em>. Se è lì, segnalalo come
-            &ldquo;Non è spam&rdquo;.
-          </span>
-        </div>
+        <!-- Il dettaglio (mittente, cartella spam) sta nel dialog CodiceEmailDialog,
+             aperto all'arrivo e riapribile da qui: nel banner non ci stava. -->
         <form [formGroup]="confirmForm" (ngSubmit)="doConfirm()">
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
@@ -90,7 +82,7 @@
             @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Conferma }
           </button>
         </form>
-        <p class="switch"><a (click)="resend()" tabindex="0" role="button">Non hai ricevuto il codice? Rinvia</a></p>
+        <p class="switch"><a (click)="openCodeHelp()" tabindex="0" role="button">Non hai ricevuto il codice?</a></p>
       }
 
       @default {
