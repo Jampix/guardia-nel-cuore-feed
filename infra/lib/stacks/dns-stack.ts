@@ -1,6 +1,6 @@
 import { Construct } from 'constructs';
-import { Stack, StackProps, CfnOutput, Fn } from 'aws-cdk-lib';
-import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { Stack, StackProps, CfnOutput, Fn, Duration } from 'aws-cdk-lib';
+import { HostedZone, TxtRecord } from 'aws-cdk-lib/aws-route53';
 import { EmailIdentity, Identity } from 'aws-cdk-lib/aws-ses';
 import { ProjectConfig } from '../config/interfaces';
 
@@ -42,6 +42,26 @@ export class DnsStack extends Stack {
       // noreply@<domain> con verifica DKIM. Vedi §Email (SES) architettura.
       new EmailIdentity(this, 'FeedEmailIdentity', {
         identity: Identity.publicHostedZone(this.hostedZone),
+      });
+
+      // SPF: autorizza SES come unico mittente per il dominio. Nota: per
+      // default SES usa un MAIL FROM su amazonses.com, quindi l'SPF non è
+      // "allineato" ai fini DMARC (ci pensa il DKIM, che è allineato). Serve
+      // comunque perché diversi filtri controllano l'SPF del dominio del From.
+      new TxtRecord(this, 'SpfRecord', {
+        zone: this.hostedZone,
+        values: ['v=spf1 include:amazonses.com -all'],
+        ttl: Duration.hours(1),
+      });
+
+      // DMARC: dichiara la policy per il dominio, così i filtri sanno che il
+      // From è presidiato. Si parte da p=none (solo osservazione, non scarta
+      // nulla) — da alzare a quarantine dopo aver verificato la consegna.
+      new TxtRecord(this, 'DmarcRecord', {
+        zone: this.hostedZone,
+        recordName: '_dmarc',
+        values: ['v=DMARC1; p=none; adkim=r; aspf=r'],
+        ttl: Duration.hours(1),
       });
     }
   }
