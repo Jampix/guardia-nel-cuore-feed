@@ -1,0 +1,31 @@
+// Correzioni ai form field di Angular Material condivise fra client e admin.
+//
+// Material riserva sotto ogni campo un'area di ALTEZZA FISSA (20px, una riga)
+// per hint ed errori, e vi posiziona il testo in `position: absolute`. Un hint
+// o un errore che va a capo esce da quell'area (overflow visible) e si
+// sovrappone al campo successivo: si vede col testo dell'hint sopra la label
+// del campo sotto. Succede sugli schermi stretti, dove i testi vanno a capo.
+//
+// Qui l'area torna ad altezza automatica e il testo al flusso normale, cosi'
+// il campo cresce di quanto serve e non invade nulla.
+// Doppia classe per vincere sulla regola di Material (una classe sola).
+// `min-height` e non solo `height: auto`: conserva la riga riservata da Material
+// (20px) cosi' la spaziatura delle form esistenti non cambia e il contenuto
+// sotto non sobbalza quando compare un errore; l'area cresce solo se il testo
+// va a capo.
+.mat-mdc-form-field .mat-mdc-form-field-subscript-wrapper {
+  height: auto;
+  min-height: 20px;
+}
+
+.mat-mdc-form-field .mat-mdc-form-field-hint-wrapper,
+.mat-mdc-form-field .mat-mdc-form-field-error-wrapper {
+  position: static;
+}
+
+// Material riserva la riga con un ::before vuoto alto 16px. Con i testi tornati
+// nel flusso quello spazio resterebbe vuoto sopra l'hint, staccandolo dal
+// proprio campo (sembrerebbe appartenere al campo successivo).
+.mat-mdc-form-field .mat-mdc-form-field-bottom-align::before {
+  content: none;
+}

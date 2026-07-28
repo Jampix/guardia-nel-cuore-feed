@@ -2,6 +2,7 @@
 // Palette calda generata in libreria condivisa (seed #C0392B / #E67E22).
 @use '@angular/material' as mat;
 @use '../../shared/styles/theme-colors' as theme;
+@use '../../shared/styles/form-field';
 
 // Stack di sistema Apple: su macOS/iOS rende SF Pro, nessuna webfont da caricare.
 $sf-plain: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;

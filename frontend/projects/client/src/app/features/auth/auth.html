@@ -44,10 +44,33 @@
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput type="password" formControlName="password" autocomplete="new-password" />
+            <input matInput [type]="showPwd() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
+            <button mat-icon-button matSuffix type="button" tabindex="-1"
+                    (click)="showPwd.set(!showPwd())"
+                    [attr.aria-label]="showPwd() ? 'Nascondi password' : 'Mostra password'"
+                    [attr.aria-pressed]="showPwd()">
+              <mat-icon>{{ showPwd() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
             <mat-hint>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-hint>
             @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
               <mat-error>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ripeti password</mat-label>
+            <input matInput [type]="showPwd2() ? 'text' : 'password'" formControlName="password2" autocomplete="new-password" />
+            <button mat-icon-button matSuffix type="button" tabindex="-1"
+                    (click)="showPwd2.set(!showPwd2())"
+                    [attr.aria-label]="showPwd2() ? 'Nascondi password' : 'Mostra password'"
+                    [attr.aria-pressed]="showPwd2()">
+              <mat-icon>{{ showPwd2() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <!-- Catena piatta: dentro @if annidati il <mat-error> non viene
+                 proiettato nell'area sotto il campo e finisce nel riquadro. -->
+            @if (registerForm.controls.password2.touched && registerForm.controls.password2.hasError('mismatch')) {
+              <mat-error>Le due password non coincidono.</mat-error>
+            } @else if (registerForm.controls.password2.touched && registerForm.controls.password2.invalid) {
+              <mat-error>Ripeti la password.</mat-error>
             }
           </mat-form-field>
           <mat-checkbox formControlName="consenso" class="consent">
@@ -96,7 +119,13 @@
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput type="password" formControlName="password" autocomplete="current-password" />
+            <input matInput [type]="showPwd() ? 'text' : 'password'" formControlName="password" autocomplete="current-password" />
+            <button mat-icon-button matSuffix type="button" tabindex="-1"
+                    (click)="showPwd.set(!showPwd())"
+                    [attr.aria-label]="showPwd() ? 'Nascondi password' : 'Mostra password'"
+                    [attr.aria-pressed]="showPwd()">
+              <mat-icon>{{ showPwd() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
             @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
               <mat-error>Inserisci la password.</mat-error>
             }

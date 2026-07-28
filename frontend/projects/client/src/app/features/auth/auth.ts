@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -17,6 +24,16 @@ type Mode = 'login' | 'register' | 'confirm';
 
 // min 8, con minuscola, maiuscola e cifra (allineato alla password policy Cognito).
 const PWD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+/**
+ * Verifica che la ripetizione coincida con la password. Sta sul controllo
+ * `password2` (e non sul gruppo) perche' cosi' il <mat-error> del campo lo
+ * mostra da solo: un errore a livello di gruppo lascerebbe il campo valido.
+ */
+const matchPassword: ValidatorFn = (control: AbstractControl) => {
+  const pwd = control.parent?.get('password')?.value;
+  return pwd && control.value && pwd !== control.value ? { mismatch: true } : null;
+};
 
 /** Accesso / registrazione / conferma codice (mode da rotta). */
 @Component({
@@ -71,6 +88,7 @@ export class Auth {
     nickname: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.pattern(PWD_PATTERN)]],
+    password2: ['', [Validators.required, matchPassword]],
     consenso: [false, Validators.requiredTrue],
   });
   readonly confirmForm = this.fb.nonNullable.group({
@@ -78,10 +96,24 @@ export class Auth {
     code: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+  /** Password in chiaro: un signal per il campo principale, uno per la ripetizione
+   *  (login e registrazione non sono mai a schermo insieme, quindi condividono il primo). */
+  readonly showPwd = signal(false);
+  readonly showPwd2 = signal(false);
+
   private regDialogShown = false;
   private codeDialogShown = false;
 
   constructor() {
+    // Il validatore di corrispondenza sta su `password2`: se l'utente cambia la
+    // password DOPO aver riempito la ripetizione, va rivalutato a mano.
+    this.registerForm.controls.password.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        const p2 = this.registerForm.controls.password2;
+        if (p2.value) p2.updateValueAndValidity({ emitEvent: false });
+      });
+
     // Precompila l'email nella conferma quando arriva dal query param.
     effect(() => {
       const e = this.email();
