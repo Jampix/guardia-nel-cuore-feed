@@ -4,10 +4,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 /**
- * Dialog "dove trovo il codice". Il codice di verifica lo invia il mailer
- * interno di Cognito da un mittente AWS condiviso, non allineato al nostro
- * dominio: finisce spesso in spam anche su Gmail. Lo spieghiamo al cittadino
- * appena arriva sulla conferma, prima che vada a cercare l'email e si arrenda.
+ * Dialog "dove trovo il codice". Da quando Cognito invia via SES dal nostro
+ * dominio (DKIM+SPF+DMARC allineati) la consegna in inbox è la norma, ma un
+ * primo messaggio verso un destinatario nuovo può ancora finire in spam:
+ * indichiamo mittente e oggetto esatti prima che il cittadino esca a cercare
+ * l'email e si arrenda.
+ *
+ * ⚠️ Il mittente qui sotto deve restare allineato al `From` configurato nello
+ * user pool (vedi `UserPoolConstruct`, prop `emailDomain`).
  *
  * `afterClosed()` restituisce 'resend' se l'utente chiede di rinviare il codice.
  */
@@ -26,7 +30,7 @@ import { MatIconModule } from '@angular/material/icon';
       <div class="sender">
         <div>
           <span class="sender-label">Mittente</span>
-          <code>no-reply&#64;verificationemail.com</code>
+          <code>noreply&#64;feed.guardianelcuore.it</code>
         </div>
         <div>
           <span class="sender-label">Oggetto</span>

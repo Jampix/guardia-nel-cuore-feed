@@ -4,6 +4,7 @@ import {
   CfnUserPoolGroup,
   UserPool,
   UserPoolClient,
+  UserPoolEmail,
   VerificationEmailStyle,
 } from 'aws-cdk-lib/aws-cognito';
 import { Construct } from 'constructs';
@@ -11,6 +12,15 @@ import { Construct } from 'constructs';
 export interface UserPoolConstructProps {
   /** RemovalPolicy per lo user pool (DESTROY in costruzione, RETAIN a go-live). */
   removalPolicy: RemovalPolicy;
+  /**
+   * Dominio SES verificato da cui inviare (es. `feed.guardianelcuore.it`).
+   * Se assente si resta sul mittente Cognito di default.
+   *
+   * ⚠️ Richiede la PRODUCTION ACCESS di SES: in sandbox SES consegna solo ai
+   * destinatari verificati, quindi il codice di verifica non arriverebbe ai
+   * nuovi cittadini e nessuno potrebbe registrarsi.
+   */
+  emailDomain?: string;
 }
 
 /**
@@ -22,8 +32,8 @@ export interface UserPoolConstructProps {
  * - Due app client SPA (public, senza secret): uno per il frontend cittadini,
  *   uno per il backoffice admin.
  *
- * Nessun nome fisico impostato (naming auto CDK). Email inviate tramite il
- * mittente Cognito di default in v1; il passaggio a SES è previsto più avanti.
+ * Nessun nome fisico impostato (naming auto CDK). Email inviate via SES dal
+ * dominio del progetto quando `emailDomain` è valorizzato (vedi props).
  */
 export class UserPoolConstruct extends Construct {
   public readonly userPool: UserPool;
@@ -55,6 +65,18 @@ export class UserPoolConstruct extends Construct {
         emailSubject: 'Guardia nel Cuore — codice di verifica',
         emailBody: 'Il tuo codice di verifica è {####}',
       },
+      // Invio via SES dal nostro dominio (DKIM allineato) invece del mittente
+      // AWS condiviso `no-reply@verificationemail.com`, che finiva in spam e
+      // aveva un tetto di 50 email al giorno.
+      ...(props.emailDomain
+        ? {
+            email: UserPoolEmail.withSES({
+              fromEmail: `noreply@${props.emailDomain}`,
+              fromName: 'Guardia nel Cuore',
+              sesVerifiedDomain: props.emailDomain,
+            }),
+          }
+        : {}),
       removalPolicy: props.removalPolicy,
     });
 

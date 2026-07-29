@@ -30,7 +30,12 @@ export class AuthStack extends Stack {
     // Go-live: RETAIN per non perdere gli utenti a un destroy accidentale.
     const removalPolicy = RemovalPolicy.RETAIN;
 
-    const auth = new UserPoolConstruct(this, 'Auth', { removalPolicy });
+    // Mittente delle email Cognito: il dominio della zona `feed`, verificato
+    // in SES con DKIM dal DnsStack. Preso dalla config, non fisso nel codice.
+    const dns = props.config.features.dns;
+    const emailDomain = dns?.enabled ? dns.domain : undefined;
+
+    const auth = new UserPoolConstruct(this, 'Auth', { removalPolicy, emailDomain });
 
     // Trigger Pre-Authentication: blocca il login dei cittadini non approvati
     // (chi non è in alcun gruppo). L'approvazione avviene dal backoffice
