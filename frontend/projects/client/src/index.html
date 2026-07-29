@@ -5,7 +5,15 @@
   <title>Guardia nel Cuore</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Cuore rosso, stessa forma del marchio in pagina. L'SVG e' la versione
+       principale (nitida a ogni dimensione e si adatta alle tab scure); la .ico
+       resta come riserva per i browser che non leggono favicon SVG. -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- iOS: icona per "Aggiungi alla schermata Home" (la trasparenza non e'
+       gestita, quindi ha il fondo crema dell'app). -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#fff8f5">
   <!-- Font: stack di sistema Apple (SF), gestito in styles.scss — niente webfont Roboto. -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>

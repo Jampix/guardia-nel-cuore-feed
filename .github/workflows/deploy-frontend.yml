@@ -78,16 +78,22 @@ jobs:
         run: |
           # Asset con hash nel nome (main-XXXX.js, ...): mai piu' modificati a
           # parita' di nome, quindi cache lunga e immutable.
+          # ⚠️ Vanno esclusi TUTTI i file dal nome fisso, non solo l'html: con
+          # `immutable` un favicon.ico sostituito resterebbe quello vecchio nei
+          # browser fino a un anno, e l'invalidazione CloudFront non aiuta
+          # perche' pulisce la CDN, non le cache dei browser.
           aws s3 sync frontend/dist/client/browser "s3://${CLIENT_BUCKET}" --delete \
             --exclude "*.html" --exclude "*.webmanifest" \
+            --exclude "favicon.*" --exclude "apple-touch-icon.png" \
             --cache-control "public, max-age=31536000, immutable"
-          # index.html invece cambia a ogni deploy ed e' quello che decide quali
-          # bundle caricare: senza no-cache il browser applica caching euristico
-          # e resta su una versione vecchia dell'app anche dopo l'invalidazione.
+          # File dal nome fisso: index.html decide quali bundle caricare, le icone
+          # possono cambiare. Senza no-cache il browser applica caching euristico
+          # e resta su una versione vecchia.
           # cp e non sync: sync salterebbe il file se dimensione e data coincidono,
           # lasciando l'header vecchio.
           aws s3 cp frontend/dist/client/browser "s3://${CLIENT_BUCKET}" --recursive \
             --exclude "*" --include "*.html" --include "*.webmanifest" \
+            --include "favicon.*" --include "apple-touch-icon.png" \
             --cache-control "no-cache"
           aws cloudfront create-invalidation --distribution-id "${CLIENT_DISTRIBUTION_ID}" --paths "/*"
 
@@ -114,11 +120,13 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy admin
         run: |
-          # Vedi le note sul job client: asset hashati immutable, html no-cache.
+          # Vedi le note sul job client: hashati immutable, nomi fissi no-cache.
           aws s3 sync frontend/dist/admin/browser "s3://${ADMIN_BUCKET}" --delete \
             --exclude "*.html" --exclude "*.webmanifest" \
+            --exclude "favicon.*" --exclude "apple-touch-icon.png" \
             --cache-control "public, max-age=31536000, immutable"
           aws s3 cp frontend/dist/admin/browser "s3://${ADMIN_BUCKET}" --recursive \
             --exclude "*" --include "*.html" --include "*.webmanifest" \
+            --include "favicon.*" --include "apple-touch-icon.png" \
             --cache-control "no-cache"
           aws cloudfront create-invalidation --distribution-id "${ADMIN_DISTRIBUTION_ID}" --paths "/*"
