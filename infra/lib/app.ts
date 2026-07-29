@@ -118,8 +118,10 @@ export class InfrastructureApp {
     const domain = this.config.features.dns?.domain;
     const allowedOrigins = [
       ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
-      // Dev: consente l'upload presigned dal dev server Angular locale.
-      // TODO(go-live): rimuovere localhost dalle origini CORS.
+      // Consente l'upload presigned dal dev server locale dei cittadini. Solo
+      // la 4200: l'admin non carica foto, e per mostrarle usa <img>, che non
+      // passa dal CORS. Scelta consapevole in assenza di un ambiente di dev —
+      // da rimuovere al lancio pubblico, vedi README.md § Lancio pubblico.
       'http://localhost:4200',
     ];
     const storage = new StorageStack(this.app, this.stackName('StorageStack'), {

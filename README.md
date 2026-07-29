@@ -76,8 +76,9 @@ npx ng serve admin  --port 4300   # → http://localhost:4300
 ```
 
 Le due app puntano all'API di produzione (`environment.apiUrl`); non serve un
-backend locale. Il CORS del bucket foto include `http://localhost:4200` per gli
-upload in sviluppo.
+backend locale. Il CORS dell'API include **entrambe** le porte (`4200` e `4300`),
+quello del bucket foto solo la `4200` (l'admin non carica foto). Le porte non
+sono arbitrarie: usarne altre fa fallire le chiamate con un errore CORS.
 
 ## Deploy
 
@@ -125,17 +126,48 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 
 - **Costi**: budget mensile (**15 USD**) con avvisi email a 50/80/100% + previsione.
 - **Operativi**: allarmi CloudWatch → email su errori Lambda e 5xx dell'API.
+- **Reputazione email**: allarmi sul tasso di rimbalzo (>5%) e di lamentele
+  (>0,1%) di SES, le soglie oltre le quali AWS può sospendere l'invio. Servono
+  perché le notifiche di rimbalzo di SES sono inoltrate all'indirizzo del
+  mittente (`noreply@`), che non è una casella: senza allarmi si perderebbero.
 - Email e soglia in `infra/lib/config/environments/prod.ts` (`alerts`). Dettagli:
   `docs/02-architettura-aws.md` §11bis.
 
 ## Stato e note operative
 
-- ✅ **In produzione** su feed./admin.feed.guardianelcuore.it.
+- ✅ **In produzione** su feed./admin.feed.guardianelcuore.it, **in test con i
+  membri dell'associazione**: l'app è raggiungibile ma non ancora annunciata ai
+  cittadini.
 - ✅ **CI/CD** frontend attivo (GitHub Actions + OIDC, deploy su push a `main`).
-- ⏳ **SES**: in *sandbox* → le email transazionali arrivano solo a destinatari
-  verificati finché AWS non concede la *production access* (richiesta inviata).
-  La verifica email di registrazione (mittente Cognito) funziona già per tutti.
-- 🔜 i18n IT/EN, rimozione di `localhost` dal CORS a regime, UI gestione staff.
+- ✅ **SES in produzione** (production access concessa il 2026-07-29: 50.000
+  email/giorno, 14/s). Tutte le email partono dal dominio del progetto con DKIM,
+  SPF e DMARC allineati — comprese quelle di Cognito (verifica registrazione e
+  recupero password), che prima usavano il mittente AWS condiviso.
+- ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
+  contro l'API di produzione è l'unico modo di provare una modifica prima di
+  esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
+- 🔜 test frontend/e2e, i18n IT/EN, UI gestione staff, casella email
+  dell'associazione (`Reply-To` delle email transazionali).
+
+## Lancio pubblico (checklist)
+
+Da fare **prima di annunciare l'app ai cittadini**, non prima: durante il test
+con i membri queste voci sono scelte consapevoli, non dimenticanze.
+
+- [ ] **Rimuovere le origini `localhost` dal CORS** — `http://localhost:4200` e
+      `:4300` in `infra/lib/stacks/api-stack.ts`, `http://localhost:4200` nel
+      bucket foto in `infra/lib/app.ts`.
+      *Perché non è urgente:* il CORS non è un controllo d'accesso (chiunque può
+      chiamare l'API con `curl` ignorandolo) e l'autenticazione usa token Bearer
+      in `localStorage`, vincolato all'origine, non cookie. Diventa **urgente**
+      se si passa all'autenticazione con cookie.
+      *Costo della rimozione:* si perde lo sviluppo locale contro l'API, a meno
+      di configurare prima il **proxy del dev server** Angular (richiede di
+      introdurre `fileReplacements` in `angular.json`: oggi c'è un solo
+      `environment.ts` per app, con l'URL dell'API in assoluto).
+- [ ] **`Reply-To`** sulle email transazionali verso una casella letta da una
+      persona: oggi le risposte dei cittadini arriverebbero a `noreply@`.
+- [ ] Alzare il **TTL del record NS** `feed` nella zona apex (ora 300s).
 
 ## Documentazione
 
