@@ -349,6 +349,42 @@ export class ApiStack extends Stack {
         treatMissingData: TreatMissingData.NOT_BREACHING,
         alarmDescription: 'L\'API ha restituito errori 5xx ai client.',
       }).addAlarmAction(action);
+
+      // 3) Reputazione SES. Fuori dalla sandbox AWS giudica il dominio su
+      // rimbalzi e lamentele: mette l'account sotto osservazione oltre il 5% di
+      // bounce e lo 0,1% di complaint, e può sospendere l'invio. Sono metriche
+      // a livello di ACCOUNT (nessuna dimensione), quindi non serve alcun
+      // riferimento all'identità SES: niente dipendenze fra stack.
+      // Con i volumi attuali (poche email al giorno) un singolo rimbalzo supera
+      // già il 5%: è voluto, a questa scala ogni rimbalzo va guardato.
+      const sesReputation = (metricName: string, label: string) =>
+        new Metric({
+          namespace: 'AWS/SES',
+          metricName,
+          statistic: 'Average',
+          period: Duration.hours(1),
+          label,
+        });
+
+      new Alarm(this, 'SesBounceRateAlarm', {
+        metric: sesReputation('Reputation.BounceRate', 'Tasso di rimbalzo SES'),
+        threshold: 0.05,
+        evaluationPeriods: 1,
+        comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        treatMissingData: TreatMissingData.NOT_BREACHING,
+        alarmDescription:
+          'Tasso di rimbalzo SES oltre il 5%: rischio sospensione invio. Verificare gli indirizzi dei destinatari.',
+      }).addAlarmAction(action);
+
+      new Alarm(this, 'SesComplaintRateAlarm', {
+        metric: sesReputation('Reputation.ComplaintRate', 'Tasso di lamentele SES'),
+        threshold: 0.001,
+        evaluationPeriods: 1,
+        comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+        treatMissingData: TreatMissingData.NOT_BREACHING,
+        alarmDescription:
+          'Tasso di lamentele SES oltre lo 0,1%: qualcuno ha segnalato le email come spam.',
+      }).addAlarmAction(action);
     }
   }
 }
