@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { RouterLink } from '@angular/router';
@@ -22,6 +22,14 @@ export type VisFilter = 'tutte' | 'pubbliche' | 'private';
 })
 export class FeedbackList {
   private readonly service = inject(AdminFeedbackService);
+
+  /**
+   * Filtri iniziali dai query param (`?vis=pubbliche|private`, `?segnalati=1`),
+   * così i KPI della Sintesi aprono la lista già filtrata.
+   * Arrivano come input grazie a `withComponentInputBinding()`.
+   */
+  readonly vis = input<string>('');
+  readonly segnalati = input<string>('');
 
   readonly loading = signal(true);
   private readonly all = toSignal(
@@ -52,6 +60,19 @@ export class FeedbackList {
     if (this.onlyReported()) list = list.filter((f) => (f.segnalazioni ?? 0) > 0);
     return list;
   });
+
+  constructor() {
+    // Applica i filtri passati nell'URL dai KPI della Sintesi. L'effect dipende
+    // solo dagli input: impostare i signal qui non lo fa ripartire, quindi non
+    // sovrascrive le scelte fatte poi a mano dall'utente.
+    effect(() => {
+      const v = this.vis();
+      if (v === 'pubbliche' || v === 'private') this.visFilter.set(v);
+    });
+    effect(() => {
+      if (this.segnalati() === '1') this.onlyReported.set(true);
+    });
+  }
 
   statusClass(s: FeedbackStatus): string {
     return `st-${s}`;

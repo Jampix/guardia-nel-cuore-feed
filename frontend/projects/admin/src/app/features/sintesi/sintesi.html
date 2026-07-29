@@ -11,8 +11,19 @@
   <div class="stat"><div class="n">{{ inLavorazione() }}</div><div class="l">In lavorazione</div></div>
   <div class="stat"><div class="n">{{ risoltiMese() }}</div><div class="l">Risolti · mese</div></div>
   <div class="stat"><div class="n">{{ cittadini() }}</div><div class="l">Cittadini</div></div>
+  <!-- Cliccabili: aprono la lista Feedback GIA' filtrata (query param). -->
+  <a class="stat link" routerLink="/feedback" [queryParams]="{ vis: 'private' }">
+    <!-- Neutro, non `alert`: il rosso resta a cio' che richiede intervento
+         (Da moderare, Segnalati), altrimenti perde forza. -->
+    <div class="n">{{ nonPubblicate() }}</div><div class="l">🔒 Non pubblicate</div>
+  </a>
+  <a class="stat link" routerLink="/feedback" [queryParams]="{ vis: 'pubbliche' }">
+    <div class="n">{{ inBacheca() }}</div><div class="l">🌐 In bacheca</div>
+  </a>
   @if (segnalati()) {
-    <a class="stat reported" routerLink="/feedback"><div class="n alert">{{ segnalati() }}</div><div class="l">⚑ Segnalati</div></a>
+    <a class="stat link" routerLink="/feedback" [queryParams]="{ segnalati: 1 }">
+      <div class="n alert">{{ segnalati() }}</div><div class="l">⚑ Segnalati</div>
+    </a>
   }
 </div>
 

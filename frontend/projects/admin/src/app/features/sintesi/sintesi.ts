@@ -37,6 +37,15 @@ export class Sintesi {
   readonly cittadini = computed(() => new Set(this.feedbacks().map((f) => f.autoreId)).size);
   readonly segnalati = computed(() => this.feedbacks().filter((f) => (f.segnalazioni ?? 0) > 0).length);
 
+  /**
+   * Conteggi per visibilità. Devono usare lo STESSO criterio del filtro nella
+   * lista Feedback (che questi KPI aprono): un numero diverso da quello che si
+   * vede dopo il clic rende inaffidabile la dashboard. Per questo qui NON si
+   * escludono le archiviate.
+   */
+  readonly inBacheca = computed(() => this.feedbacks().filter((f) => f.visibilita === 'pubblico').length);
+  readonly nonPubblicate = computed(() => this.feedbacks().filter((f) => f.visibilita !== 'pubblico').length);
+
   /** Coda: proposte nuove e in valutazione, dalla più recente. */
   readonly coda = computed(() =>
     this.feedbacks()
