@@ -98,13 +98,22 @@ export const handler = async (
 
 /** Invia al cittadino l'email di benvenuto dopo l'approvazione. */
 async function notifyApproved(username: string): Promise<void> {
-  if (!FROM_EMAIL) return;
+  // Le due uscite qui sotto erano SILENZIOSE: se non si inviava per mancanza
+  // di configurazione o di indirizzo, nei log non restava nulla e sembrava che
+  // l'email fosse partita. Ora ogni esito lascia traccia.
+  if (!FROM_EMAIL) {
+    console.warn('Email approvazione non inviata: FROM_EMAIL non configurato');
+    return;
+  }
   const user = await cognito.send(
     new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: username }),
   );
   const email = attr(user.UserAttributes, 'email');
   const nickname = attr(user.UserAttributes, 'nickname');
-  if (!email) return;
+  if (!email) {
+    console.warn('Email approvazione non inviata: utente senza indirizzo', { username });
+    return;
+  }
 
   const link = CLIENT_URL ? `${CLIENT_URL}/accedi` : '';
   const text =
@@ -126,6 +135,7 @@ async function notifyApproved(username: string): Promise<void> {
       },
     }),
   );
+  console.log('Email approvazione inviata', { username });
 }
 
 function attr(
