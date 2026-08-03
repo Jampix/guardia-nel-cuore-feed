@@ -54,6 +54,31 @@ export class AuthStack extends Stack {
       }),
     );
 
+    // Trigger Post-Confirmation: appena il cittadino verifica l'email avvisa lo
+    // STAFF che c'è qualcuno in attesa di approvazione (prima l'unico modo di
+    // accorgersene era aprire il backoffice, e alcuni iscritti hanno aspettato
+    // giorni) e conferma al CITTADINO che la registrazione è arrivata.
+    const staffEmail = props.config.alerts?.email;
+    if (emailDomain && staffEmail) {
+      const postConfirmFn = new NodeFunctionConstruct(this, 'PostConfirmFn', {
+        entry: path.join(__dirname, '..', '..', '..', 'backend', 'src', 'handlers', 'post-confirmation.ts'),
+        description: 'Guardia nel Cuore - avvisi di nuova iscrizione',
+        environment: {
+          FROM_EMAIL: `noreply@${emailDomain}`,
+          STAFF_EMAIL: staffEmail,
+          CLIENT_URL: `https://${emailDomain}`,
+          ADMIN_URL: `https://admin.${emailDomain}`,
+        },
+      });
+      auth.userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, postConfirmFn.fn);
+      postConfirmFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+    }
+
     this.userPoolId = auth.userPool.userPoolId;
     this.userPoolArn = auth.userPool.userPoolArn;
     this.clientAppClientId = auth.clientAppClient.userPoolClientId;

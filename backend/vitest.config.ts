@@ -13,6 +13,8 @@ export default defineConfig({
       USER_POOL_ID: 'eu-west-1_TEST',
       FROM_EMAIL: 'noreply@feed.guardianelcuore.it',
       CLIENT_URL: 'https://feed.guardianelcuore.it',
+      ADMIN_URL: 'https://admin.feed.guardianelcuore.it',
+      STAFF_EMAIL: 'staff@example.com',
     },
   },
 });
