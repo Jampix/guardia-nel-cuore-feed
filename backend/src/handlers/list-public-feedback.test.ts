@@ -18,7 +18,7 @@ describe('list-public-feedback', () => {
     ddb.on(QueryCommand).resolves({
       Items: [{ id: 'f1', titolo: 'Test', visibilita: 'pubblico', notaInterna: 'segreto staff' }],
     });
-    const { status, body } = parseResult(await handler({} as any));
+    const { status, body } = parseResult(await handler());
     expect(status).toBe(200);
     expect(body[0].titolo).toBe('Test');
     expect(body[0].notaInterna).toBeUndefined();
@@ -28,7 +28,7 @@ describe('list-public-feedback', () => {
     ddb.on(QueryCommand).resolves({
       Items: [{ id: 'f2', visibilita: 'pubblico', fotoKey: 'feedback/x.jpg' }],
     });
-    const { body } = parseResult(await handler({} as any));
+    const { body } = parseResult(await handler());
     expect(body[0].fotoUrl).toBe('https://signed.example/photo.jpg');
   });
 });

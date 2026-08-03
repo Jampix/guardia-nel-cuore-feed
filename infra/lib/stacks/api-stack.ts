@@ -142,7 +142,10 @@ export class ApiStack extends Stack {
       },
       description: 'Guardia nel Cuore - moderazione feedback',
     });
-    feedbacks.grantWriteData(patchFeedbackFn.fn);
+    // ReadWrite e non solo Write: l'handler LEGGE la proposta prima di
+    // aggiornarla, per capire cosa è davvero cambiato e non spedire un'email a
+    // ogni salvataggio (la schermata di moderazione invia sempre tutti i campi).
+    feedbacks.grantReadWriteData(patchFeedbackFn.fn);
     userPool.grant(patchFeedbackFn.fn, 'cognito-idp:AdminGetUser');
     if (emailDomain) {
       patchFeedbackFn.fn.addToRolePolicy(
