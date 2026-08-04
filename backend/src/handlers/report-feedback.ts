@@ -1,13 +1,18 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
 } from 'aws-lambda';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const ses = new SESv2Client({});
 const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE as string;
+const FROM_EMAIL = process.env.FROM_EMAIL as string;
+const STAFF_EMAIL = process.env.STAFF_EMAIL as string;
+const ADMIN_URL = process.env.ADMIN_URL as string;
 
 /**
  * POST /feedback/{id}/report — segnala una proposta (autenticato).
@@ -61,12 +66,60 @@ export const handler = async (
   } catch (e: any) {
     if (e?.name === 'TransactionCanceledException') {
       // Già segnalata da questo utente (o feedback assente): idempotente.
+      // Nessun avviso allo staff: premere due volte non deve moltiplicare le email.
       return resp(200, { reported: true });
     }
     throw e;
   }
+
+  // Avvisa lo staff: prima una segnalazione si notava solo aprendo il
+  // backoffice, quindi un contenuto offensivo poteva restare in bacheca per
+  // giorni. Best-effort: un errore di invio non fa fallire la segnalazione.
+  await avvisaStaff(feedbackId, motivo).catch((err) =>
+    console.error('Avviso segnalazione non inviato:', err),
+  );
+
   return resp(200, { reported: true });
 };
+
+/** Email allo staff con titolo, motivo e link diretto alla moderazione. */
+async function avvisaStaff(feedbackId: string, motivo: string): Promise<void> {
+  if (!FROM_EMAIL || !STAFF_EMAIL) {
+    console.warn('Avviso segnalazione non inviato: mittente o destinatario non configurati');
+    return;
+  }
+
+  // Titolo e conteggio servono a decidere in fretta: la transazione non li
+  // restituisce, quindi si rileggono dopo.
+  const item = (
+    await ddb.send(new GetCommand({ TableName: FEEDBACKS_TABLE, Key: { id: feedbackId } }))
+  ).Item;
+  const titolo = String(item?.titolo ?? '(titolo non disponibile)');
+  const totale = Number(item?.segnalazioni ?? 1);
+  const link = ADMIN_URL ? `${ADMIN_URL}/feedback/${feedbackId}` : '';
+
+  const text =
+    `Una proposta è stata segnalata da un cittadino.\n\n` +
+    `«${titolo}»\n` +
+    `Segnalazioni totali: ${totale}\n` +
+    (motivo ? `Motivo indicato: ${motivo}\n` : 'Nessun motivo indicato.\n') +
+    (link ? `\nVerifica qui: ${link}` : '') +
+    '\n\nGuardia nel Cuore';
+
+  await ses.send(
+    new SendEmailCommand({
+      FromEmailAddress: FROM_EMAIL,
+      Destination: { ToAddresses: [STAFF_EMAIL] },
+      Content: {
+        Simple: {
+          Subject: { Data: `Proposta segnalata — ${titolo}`.slice(0, 200) },
+          Body: { Text: { Data: text } },
+        },
+      },
+    }),
+  );
+  console.log('Avviso segnalazione inviato', { feedbackId, totale });
+}
 
 function resp(statusCode: number, obj: unknown): APIGatewayProxyResultV2 {
   return {

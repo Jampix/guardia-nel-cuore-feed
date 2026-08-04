@@ -210,11 +210,29 @@ export class ApiStack extends Stack {
       environment: {
         FEEDBACKS_TABLE: props.feedbacksTableName,
         COMMENTS_TABLE: props.commentsTableName,
+        // Avviso allo staff a ogni nuova segnalazione.
+        ...(emailDomain && props.alertEmail
+          ? {
+              FROM_EMAIL: `noreply@${emailDomain}`,
+              STAFF_EMAIL: props.alertEmail,
+              ADMIN_URL: `https://admin.${emailDomain}`,
+            }
+          : {}),
       },
       description: 'Guardia nel Cuore - segnalazione contenuti',
     });
     comments.grantWriteData(reportFeedbackFn.fn);
-    feedbacks.grantWriteData(reportFeedbackFn.fn);
+    // ReadWrite: dopo la transazione rilegge titolo e conteggio per l'avviso
+    // allo staff (TransactWriteItems non restituisce valori).
+    feedbacks.grantReadWriteData(reportFeedbackFn.fn);
+    if (emailDomain && props.alertEmail) {
+      reportFeedbackFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+    }
 
     // GET /admin/feedback/{id}/reports (staff) — motivi delle segnalazioni
     const listReportsFn = new NodeFunctionConstruct(this, 'ListFeedbackReportsFn', {

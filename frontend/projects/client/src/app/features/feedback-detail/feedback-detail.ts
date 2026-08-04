@@ -4,9 +4,12 @@ import { catchError, finalize, of } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService, Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL, Loading } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
+import { SegnalaDialog } from './segnala-dialog';
 
 /** Dettaglio di un singolo feedback (raggiunto dalla bacheca). */
 @Component({
@@ -20,6 +23,8 @@ export class FeedbackDetail {
   private readonly service = inject(FeedbackService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly snack = inject(MatSnackBar);
 
   /** Id del feedback dalla rotta `feedback/:id` (component input binding). */
   readonly id = input.required<string>();
@@ -101,12 +106,28 @@ export class FeedbackDetail {
       this.router.navigate(['/accedi'], { queryParams: { returnUrl: `/feedback/${f.id}` } });
       return;
     }
-    const motivo = prompt('Perché segnali questa proposta? (facoltativo)') ?? undefined;
-    this.reporting.set(true);
-    this.service.report(f.id, motivo || undefined).subscribe({
-      next: () => { this.reported.set(true); this.reporting.set(false); },
-      error: () => this.reporting.set(false),
-    });
+    this.dialog
+      .open(SegnalaDialog, { maxWidth: '92vw', autoFocus: false })
+      .afterClosed()
+      .subscribe((motivo: string | null) => {
+        if (!motivo) return; // annullata
+        this.reporting.set(true);
+        this.service.report(f.id, motivo).subscribe({
+          next: () => {
+            this.reported.set(true);
+            this.reporting.set(false);
+            // Conferma esplicita: segnalare ha un peso, e l'icona che si
+            // riempie da sola è un segnale troppo debole.
+            this.snack.open('Segnalazione inviata: lo staff la verificherà.', 'OK', { duration: 5000 });
+          },
+          error: () => {
+            this.reporting.set(false);
+            // Prima l'errore veniva ingoiato: il pulsante tornava attivo e chi
+            // segnalava non sapeva se fosse andata a buon fine.
+            this.snack.open('Segnalazione non inviata. Riprova.', 'OK', { duration: 5000 });
+          },
+        });
+      });
   }
 
   toggleVote(): void {
