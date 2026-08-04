@@ -6,6 +6,7 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -39,10 +40,7 @@ export const handler = async (
   if (method === 'GET') {
     // GET /admin/users → cittadini attivi (gruppo `cittadino`).
     if (!(event.rawPath ?? '').endsWith('/pending')) {
-      const r = await cognito.send(
-        new ListUsersInGroupCommand({ UserPoolId: USER_POOL_ID, GroupName: 'cittadino' }),
-      );
-      const citizens = (r.Users ?? []).map((u) => ({
+      const citizens = (await tuttiNelGruppo('cittadino')).map((u) => ({
         username: u.Username,
         email: attr(u.Attributes, 'email'),
         nickname: attr(u.Attributes, 'nickname'),
@@ -55,14 +53,10 @@ export const handler = async (
     // GET /admin/users/pending → confermati ma non in alcun gruppo.
     const approved = new Set<string>();
     for (const g of GROUPS) {
-      const r = await cognito.send(
-        new ListUsersInGroupCommand({ UserPoolId: USER_POOL_ID, GroupName: g }),
-      );
-      for (const u of r.Users ?? []) if (u.Username) approved.add(u.Username);
+      for (const u of await tuttiNelGruppo(g)) if (u.Username) approved.add(u.Username);
     }
 
-    const all = await cognito.send(new ListUsersCommand({ UserPoolId: USER_POOL_ID }));
-    const pending = (all.Users ?? [])
+    const pending = (await tuttiGliUtenti())
       .filter((u) => u.UserStatus === 'CONFIRMED' && u.Username && !approved.has(u.Username))
       .map((u) => ({
         username: u.Username,
@@ -95,6 +89,45 @@ export const handler = async (
 
   return resp(400, { message: 'Richiesta non valida' });
 };
+
+/**
+ * Cognito restituisce al massimo 60 utenti per pagina. Senza seguire il token
+ * di paginazione, oltre quella soglia l'insieme degli approvati sarebbe
+ * incompleto: i gia' approvati ricomparirebbero fra quelli "in attesa" e altri
+ * sparirebbero dalla lista senza che nessuno se ne accorga — lo stesso tipo di
+ * guasto silenzioso che ha gia' lasciato dei cittadini in attesa per giorni.
+ *
+ * ⚠️ Le due API usano nomi diversi per il token: `NextToken` per
+ * ListUsersInGroup, `PaginationToken` per ListUsers.
+ */
+async function tuttiNelGruppo(gruppo: string): Promise<UserType[]> {
+  const out: UserType[] = [];
+  let token: string | undefined;
+  do {
+    const r = await cognito.send(new ListUsersInGroupCommand({
+      UserPoolId: USER_POOL_ID,
+      GroupName: gruppo,
+      NextToken: token,
+    }));
+    out.push(...(r.Users ?? []));
+    token = r.NextToken;
+  } while (token);
+  return out;
+}
+
+async function tuttiGliUtenti(): Promise<UserType[]> {
+  const out: UserType[] = [];
+  let token: string | undefined;
+  do {
+    const r = await cognito.send(new ListUsersCommand({
+      UserPoolId: USER_POOL_ID,
+      PaginationToken: token,
+    }));
+    out.push(...(r.Users ?? []));
+    token = r.PaginationToken;
+  } while (token);
+  return out;
+}
 
 /** Invia al cittadino l'email di benvenuto dopo l'approvazione. */
 async function notifyApproved(username: string): Promise<void> {
