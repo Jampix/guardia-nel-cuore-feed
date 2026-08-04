@@ -7,6 +7,7 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -14,10 +15,14 @@ import type {
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
+const ses = new SESv2Client({});
 const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 const VOTES_TABLE = process.env.VOTES_TABLE as string;
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE as string;
 const PHOTO_BUCKET = process.env.PHOTO_BUCKET as string;
+const FROM_EMAIL = process.env.FROM_EMAIL as string;
+const STAFF_EMAIL = process.env.STAFF_EMAIL as string;
+const ADMIN_URL = process.env.ADMIN_URL as string;
 
 /**
  * /feedback/{id} — gestione della PROPRIA proposta da parte del cittadino.
@@ -43,6 +48,12 @@ export const handler = async (
   const method = event.requestContext.http.method;
 
   if (method === 'DELETE') {
+    // Avvisa lo staff PRIMA di cancellare: dopo, titolo e segnalazioni non
+    // esisterebbero più. Serve perché eliminare è anche una via di fuga dalla
+    // moderazione: chi viene segnalato può far sparire proposta E segnalazioni.
+    await avvisaStaffSeRilevante(item).catch((e) =>
+      console.error('Avviso eliminazione non inviato:', e),
+    );
     if (item.fotoKey) {
       await s3.send(new DeleteObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(item.fotoKey) }))
         .catch((e) => console.error('Foto non eliminata:', e));
@@ -54,7 +65,14 @@ export const handler = async (
 
   if (method === 'PATCH') {
     if (item.visibilita === 'pubblico') {
-      return resp(409, { message: 'La proposta è già pubblicata: non è più modificabile. Puoi eliminarla.' });
+      // Non si suggerisce l'eliminazione: era un invito all'azione distruttiva
+      // proprio nel momento in cui la proposta ha già voti e magari una
+      // risposta. Si indirizza allo staff, che può correggere o ritirarla.
+      return resp(409, {
+        message:
+          'La proposta è già pubblicata e non è più modificabile: altri cittadini ' +
+          'l\'hanno letta e votata così. Per una correzione scrivi allo staff.',
+      });
     }
     let body: Record<string, unknown>;
     try {
@@ -100,6 +118,51 @@ export const handler = async (
 
   return resp(405, { message: 'Metodo non supportato' });
 };
+
+/**
+ * Avvisa lo staff dell'eliminazione, ma solo se c'era qualcosa da sapere:
+ * proposta già pubblicata (altri l'hanno vista e votata) oppure con
+ * segnalazioni aperte. Una proposta privata e mai segnalata è affare
+ * dell'autore e non serve disturbare nessuno.
+ */
+async function avvisaStaffSeRilevante(item: Record<string, any>): Promise<void> {
+  const pubblicata = item.visibilita === 'pubblico';
+  const segnalazioni = Number(item.segnalazioni ?? 0);
+  if (!pubblicata && segnalazioni === 0) return;
+  if (!FROM_EMAIL || !STAFF_EMAIL) {
+    console.warn('Avviso eliminazione non inviato: mittente o destinatario non configurati');
+    return;
+  }
+
+  const titolo = String(item.titolo ?? '(senza titolo)');
+  const voti = Number(item.numeroVoti ?? 0);
+  const text =
+    `L'autore ha eliminato una sua proposta.\n\n` +
+    `«${titolo}»\n` +
+    `Era ${pubblicata ? 'PUBBLICATA in bacheca' : 'privata'}.\n` +
+    `Sostegni ricevuti: ${voti}\n` +
+    `Segnalazioni aperte: ${segnalazioni}\n` +
+    (segnalazioni > 0
+      ? '\n⚠️ La proposta era segnalata: con l\'eliminazione sono spariti anche i motivi. ' +
+        'Se il comportamento si ripete, questo messaggio è l\'unica traccia rimasta.\n'
+      : '') +
+    (ADMIN_URL ? `\nBackoffice: ${ADMIN_URL}/feedback` : '') +
+    '\n\nGuardia nel Cuore';
+
+  await ses.send(
+    new SendEmailCommand({
+      FromEmailAddress: FROM_EMAIL,
+      Destination: { ToAddresses: [STAFF_EMAIL] },
+      Content: {
+        Simple: {
+          Subject: { Data: `Proposta eliminata dall'autore — ${titolo}`.slice(0, 200) },
+          Body: { Text: { Data: text } },
+        },
+      },
+    }),
+  );
+  console.log('Avviso eliminazione inviato', { id: item.id, pubblicata, segnalazioni });
+}
 
 /** Elimina voti e segnalazioni collegati a una proposta. */
 async function deleteAllForFeedback(feedbackId: string): Promise<void> {

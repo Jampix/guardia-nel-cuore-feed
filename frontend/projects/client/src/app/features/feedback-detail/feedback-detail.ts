@@ -10,6 +10,7 @@ import { AuthService, Category, Feedback, FeedbackStatus, FEEDBACK_STATUS_LABEL,
 import { FeedbackService } from '../../core/feedback.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 import { SegnalaDialog } from './segnala-dialog';
+import { EliminaDialog } from './elimina-dialog';
 
 /** Dettaglio di un singolo feedback (raggiunto dalla bacheca). */
 @Component({
@@ -66,12 +67,34 @@ export class FeedbackDetail {
   deleteOwn(): void {
     const f = this.feedback();
     if (!f || this.deleting()) return;
-    if (!confirm('Eliminare definitivamente questa proposta? L\'operazione è irreversibile.')) return;
-    this.deleting.set(true);
-    this.service.deleteOwn(f.id).subscribe({
-      next: () => this.router.navigate(['/miei']),
-      error: () => this.deleting.set(false),
-    });
+    this.dialog
+      .open(EliminaDialog, {
+        maxWidth: '92vw',
+        autoFocus: false,
+        // Le conseguenze reali: un "sei sicuro?" generico non le comunica.
+        data: {
+          titolo: f.titolo,
+          voti: this.voteCount(),
+          haRisposta: !!f.rispostaPubblica,
+          pubblicata: f.visibilita === 'pubblico',
+        },
+      })
+      .afterClosed()
+      .subscribe((conferma: boolean) => {
+        if (!conferma) return;
+        this.deleting.set(true);
+        this.service.deleteOwn(f.id).subscribe({
+          next: () => {
+            this.snack.open('Proposta eliminata.', 'OK', { duration: 4000 });
+            this.router.navigate(['/miei']);
+          },
+          error: () => {
+            this.deleting.set(false);
+            // Prima l'errore era muto: restava solo il pulsante riattivato.
+            this.snack.open('Eliminazione non riuscita. Riprova.', 'OK', { duration: 5000 });
+          },
+        });
+      });
   }
 
   /** Stato voto (mantenuto separato per aggiornare al volo il pulsante/contatore). */

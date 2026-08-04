@@ -250,6 +250,15 @@ export class ApiStack extends Stack {
         VOTES_TABLE: props.votesTableName,
         COMMENTS_TABLE: props.commentsTableName,
         PHOTO_BUCKET: props.photoBucketName,
+        // Avviso allo staff quando l'autore elimina una proposta pubblicata o
+        // con segnalazioni aperte.
+        ...(emailDomain && props.alertEmail
+          ? {
+              FROM_EMAIL: `noreply@${emailDomain}`,
+              STAFF_EMAIL: props.alertEmail,
+              ADMIN_URL: `https://admin.${emailDomain}`,
+            }
+          : {}),
       },
       description: 'Guardia nel Cuore - modifica/elimina propria proposta',
     });
@@ -257,6 +266,14 @@ export class ApiStack extends Stack {
     votes.grantReadWriteData(feedbackOwnerFn.fn);
     comments.grantReadWriteData(feedbackOwnerFn.fn);
     photoBucket.grantDelete(feedbackOwnerFn.fn);
+    if (emailDomain && props.alertEmail) {
+      feedbackOwnerFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+    }
 
     // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)
     const deleteAccountFn = new NodeFunctionConstruct(this, 'DeleteAccountFn', {
