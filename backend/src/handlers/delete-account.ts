@@ -21,6 +21,7 @@ const s3 = new S3Client({});
 const cognito = new CognitoIdentityProviderClient({});
 const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 const VOTES_TABLE = process.env.VOTES_TABLE as string;
+const COMMENTS_TABLE = process.env.COMMENTS_TABLE as string;
 const PHOTO_BUCKET = process.env.PHOTO_BUCKET as string;
 const USER_POOL_ID = process.env.USER_POOL_ID as string;
 
@@ -30,7 +31,9 @@ const USER_POOL_ID = process.env.USER_POOL_ID as string;
  * Elimina, per l'utente autenticato (claim `sub`):
  *  1. le sue proposte (GSI `byAutore`): foto su S3 + voti ricevuti + la proposta;
  *  2. i voti che ha espresso su proposte altrui (con decremento del contatore);
- *  3. l'account Cognito (per ultimo).
+ *  3. le segnalazioni che ha fatto (con decremento del contatore): senza questo
+ *     resterebbe un riferimento a chi ha chiesto di essere cancellato;
+ *  4. l'account Cognito (per ultimo).
  * Operazione irreversibile.
  */
 export const handler = async (
@@ -63,6 +66,16 @@ export const handler = async (
     for (const v of votes.Items ?? []) {
       await ddb.send(new DeleteCommand({ TableName: VOTES_TABLE, Key: { feedbackId, userId: v.userId } }));
     }
+    // Segnalazioni RICEVUTE da questa proposta: senza questo restavano orfane,
+    // puntando a una proposta che non esiste più.
+    const ricevute = await ddb.send(new QueryCommand({
+      TableName: COMMENTS_TABLE,
+      KeyConditionExpression: 'feedbackId = :f',
+      ExpressionAttributeValues: { ':f': feedbackId },
+    }));
+    for (const c of ricevute.Items ?? []) {
+      await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
+    }
     await ddb.send(new DeleteCommand({ TableName: FEEDBACKS_TABLE, Key: { id: feedbackId } }));
   }
 
@@ -84,7 +97,30 @@ export const handler = async (
     })).catch(() => { /* proposta già rimossa: ignora */ });
   }
 
-  // 3. Account Cognito (per ultimo).
+  // 3. Segnalazioni FATTE dall'utente su proposte altrui. Senza questo passo
+  //    restavano con il suo identificativo dentro — un riferimento a una
+  //    persona che ha chiesto di essere cancellata — e il contatore continuava
+  //    a pesare su quelle proposte con un'accusa il cui autore non esiste più.
+  const fatte = await ddb.send(new ScanCommand({
+    TableName: COMMENTS_TABLE,
+    FilterExpression: 'autoreId = :u',
+    ExpressionAttributeValues: { ':u': userId },
+  }));
+  for (const c of fatte.Items ?? []) {
+    const feedbackId = String(c.feedbackId);
+    await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
+    if (String(c.tipo) === 'REPORT') {
+      await ddb.send(new UpdateCommand({
+        TableName: FEEDBACKS_TABLE,
+        Key: { id: feedbackId },
+        UpdateExpression: 'ADD segnalazioni :d',
+        ExpressionAttributeValues: { ':d': -1 },
+        ConditionExpression: 'attribute_exists(id)',
+      })).catch(() => { /* proposta già rimossa: ignora */ });
+    }
+  }
+
+  // 4. Account Cognito (per ultimo).
   await cognito.send(new AdminDeleteUserCommand({ UserPoolId: USER_POOL_ID, Username: username }));
 
   return resp(200, { deleted: true });

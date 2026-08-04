@@ -281,6 +281,9 @@ export class ApiStack extends Stack {
       environment: {
         FEEDBACKS_TABLE: props.feedbacksTableName,
         VOTES_TABLE: props.votesTableName,
+        // Serve per rimuovere le segnalazioni fatte e ricevute: senza questo la
+        // cancellazione lasciava riferimenti a chi chiedeva di essere cancellato.
+        COMMENTS_TABLE: props.commentsTableName,
         PHOTO_BUCKET: props.photoBucketName,
         USER_POOL_ID: props.userPoolId,
       },
@@ -288,6 +291,7 @@ export class ApiStack extends Stack {
     });
     feedbacks.grantReadWriteData(deleteAccountFn.fn);
     votes.grantReadWriteData(deleteAccountFn.fn);
+    comments.grantReadWriteData(deleteAccountFn.fn);
     photoBucket.grantDelete(deleteAccountFn.fn);
     userPool.grant(deleteAccountFn.fn, 'cognito-idp:AdminDeleteUser');
 
