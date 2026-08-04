@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { AuthService } from 'shared';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthService, ConfermaDialog } from 'shared';
 import { AccountService } from '../../core/account.service';
 
 /** Profilo del cittadino: dati account, logout, cancellazione account (GDPR). */
@@ -22,6 +24,7 @@ export class Profilo {
   private readonly snack = inject(MatSnackBar);
 
   readonly user = this.auth.user;
+  private readonly dialog = inject(MatDialog);
   readonly deleting = signal(false);
 
   async logout(): Promise<void> {
@@ -30,8 +33,29 @@ export class Profilo {
   }
 
   async deleteAccount(): Promise<void> {
-    const ok = confirm(
-      'Eliminare definitivamente il tuo account? Verranno rimossi il profilo, le tue proposte, le foto e i tuoi voti. L\'operazione è irreversibile.',
+    // Conferma DIGITATA: è l'azione più distruttiva dell'app e prima bastava un
+    // clic su una finestra di sistema che non spiegava nulla.
+    const ok = await firstValueFrom(
+      this.dialog
+        .open(ConfermaDialog, {
+          maxWidth: '92vw',
+          autoFocus: false,
+          data: {
+            titolo: 'Eliminare il tuo account?',
+            messaggio:
+              'L\'operazione è immediata e irreversibile: non potremo recuperare nulla, ' +
+              'nemmeno su richiesta.',
+            elenco: [
+              'Il tuo profilo e le credenziali di accesso',
+              'Tutte le proposte che hai scritto, con le loro foto',
+              'I sostegni che hai ricevuto e quelli che hai dato ad altri',
+              'Le segnalazioni che hai inviato',
+            ],
+            azione: 'Elimina il mio account',
+            parolaChiave: 'ELIMINA',
+          },
+        })
+        .afterClosed(),
     );
     if (!ok) return;
     this.deleting.set(true);

@@ -5,7 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Category } from 'shared';
+import { MatDialog } from '@angular/material/dialog';
+import { Category, ConfermaDialog } from 'shared';
 import { AdminCategoryService } from '../../core/admin-category.service';
 
 /** Gestione categorie del backoffice: crea, rinomina, attiva/disattiva, elimina. */
@@ -18,6 +19,7 @@ import { AdminCategoryService } from '../../core/admin-category.service';
 })
 export class Categorie {
   private readonly service = inject(AdminCategoryService);
+  private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
 
   readonly categories = signal<Category[]>([]);
@@ -74,10 +76,25 @@ export class Categorie {
   }
 
   remove(cat: Category): void {
-    if (!confirm(`Eliminare la categoria "${cat.nome}"?`)) return;
-    this.service.remove(cat.id).subscribe({
-      next: () => this.load(),
-      error: () => this.fail('Eliminazione non riuscita.'),
-    });
+    this.dialog
+      .open(ConfermaDialog, {
+        maxWidth: '92vw',
+        autoFocus: false,
+        data: {
+          titolo: 'Eliminare questa categoria?',
+          messaggio:
+            `«${cat.nome}» non sarà più selezionabile per le nuove proposte. ` +
+            'Le proposte esistenti che la usano restano, ma perdono l\'etichetta.',
+          azione: 'Elimina',
+        },
+      })
+      .afterClosed()
+      .subscribe((ok: boolean) => {
+        if (!ok) return;
+        this.service.remove(cat.id).subscribe({
+          next: () => this.load(),
+          error: () => this.fail('Eliminazione non riuscita.'),
+        });
+      });
   }
 }

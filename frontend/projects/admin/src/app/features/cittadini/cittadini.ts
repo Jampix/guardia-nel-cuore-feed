@@ -6,7 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Loading } from 'shared';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfermaDialog, Loading } from 'shared';
 import { AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
 
 type View = 'attesa' | 'attivi';
@@ -21,6 +22,7 @@ type View = 'attesa' | 'attivi';
 })
 export class Cittadini {
   private readonly service = inject(AdminUsersService);
+  private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
 
   readonly view = signal<View>('attesa');
@@ -77,7 +79,25 @@ export class Cittadini {
   }
 
   reject(u: PendingUser): void {
-    if (!confirm(`Rifiutare e rimuovere l'iscrizione di ${u.nickname || u.email}?`)) return;
+    // Rifiutare CANCELLA l'account: la persona dovrebbe rifare tutto da capo,
+    // quindi l'effetto va dichiarato invece di chiedere un generico "sei sicuro".
+    this.dialog
+      .open(ConfermaDialog, {
+        maxWidth: '92vw',
+        autoFocus: false,
+        data: {
+          titolo: 'Rifiutare questa iscrizione?',
+          messaggio:
+            `L'account di ${u.nickname || u.email} viene eliminato. Se in futuro volesse ` +
+            'partecipare dovrebbe registrarsi di nuovo e attendere una nuova approvazione.',
+          azione: 'Rifiuta ed elimina',
+        },
+      })
+      .afterClosed()
+      .subscribe((ok: boolean) => { if (ok) this.doReject(u); });
+  }
+
+  private doReject(u: PendingUser): void {
     this.acting.set(u.username);
     this.service.reject(u.username).subscribe({
       next: () => {
