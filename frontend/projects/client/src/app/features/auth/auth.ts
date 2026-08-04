@@ -20,7 +20,7 @@ import { AuthService } from 'shared';
 import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 import { CodiceEmailDialog } from './codice-email-dialog';
 
-type Mode = 'login' | 'register' | 'confirm';
+type Mode = 'login' | 'register' | 'confirm' | 'reset' | 'reset-confirm';
 
 // min 8, con minuscola, maiuscola e cifra (allineato alla password policy Cognito).
 const PWD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -76,6 +76,8 @@ export class Auth {
     switch (this.mode()) {
       case 'register': return 'Crea un account';
       case 'confirm': return 'Conferma la tua email';
+      case 'reset': return 'Password dimenticata';
+      case 'reset-confirm': return 'Scegli una nuova password';
       default: return 'Accedi';
     }
   });
@@ -95,6 +97,17 @@ export class Auth {
     email: ['', [Validators.required, Validators.email]],
     code: ['', [Validators.required, Validators.minLength(6)]],
   });
+  /** Password dimenticata, passo 1: a quale indirizzo mandare il codice. */
+  readonly resetForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+  /** Passo 2: codice + nuova password (stesse regole della registrazione). */
+  readonly resetConfirmForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    code: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.pattern(PWD_PATTERN)]],
+    password2: ['', [Validators.required, matchPassword]],
+  });
 
   /** Password in chiaro: un signal per il campo principale, uno per la ripetizione
    *  (login e registrazione non sono mai a schermo insieme, quindi condividono il primo). */
@@ -107,17 +120,20 @@ export class Auth {
   constructor() {
     // Il validatore di corrispondenza sta su `password2`: se l'utente cambia la
     // password DOPO aver riempito la ripetizione, va rivalutato a mano.
-    this.registerForm.controls.password.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        const p2 = this.registerForm.controls.password2;
+    for (const form of [this.registerForm, this.resetConfirmForm]) {
+      form.controls.password.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+        const p2 = form.controls.password2;
         if (p2.value) p2.updateValueAndValidity({ emitEvent: false });
       });
+    }
 
-    // Precompila l'email nella conferma quando arriva dal query param.
+    // Precompila l'email quando arriva dal query param (conferma e nuova password).
     effect(() => {
       const e = this.email();
-      if (e) this.confirmForm.patchValue({ email: e });
+      if (e) {
+        this.confirmForm.patchValue({ email: e });
+        this.resetConfirmForm.patchValue({ email: e });
+      }
     });
 
     // In registrazione mostra subito il regolamento: va accettato per proseguire.
@@ -134,8 +150,11 @@ export class Auth {
 
     // In conferma spieghiamo subito dove cercare il codice: l'email finisce
     // spesso in spam e chi non la trova abbandona senza dirlo a nessuno.
+    // Vale anche per la nuova password: il codice arriva dalla stessa email e
+    // rischia la stessa sorte nello spam.
     effect(() => {
-      if (this.mode() === 'confirm' && !this.codeDialogShown) {
+      const m = this.mode();
+      if ((m === 'confirm' || m === 'reset-confirm') && !this.codeDialogShown) {
         this.codeDialogShown = true;
         this.openCodeHelp();
       }
@@ -189,9 +208,52 @@ export class Auth {
     });
   }
 
+  /** Passo 1: chiede il codice per reimpostare la password. */
+  async doReset(): Promise<void> {
+    if (this.resetForm.invalid) { this.resetForm.markAllAsTouched(); return; }
+    await this.run(async () => {
+      const { email } = this.resetForm.getRawValue();
+      await this.auth.requestPasswordReset(email);
+      // Formula al condizionale: il pool non rivela quali indirizzi sono
+      // iscritti, e l'interfaccia non deve smentirlo promettendo un invio.
+      this.snack.open('Se l\'indirizzo è registrato, riceverai un codice.', 'OK', { duration: 5000 });
+      this.router.navigate(['/nuova-password'], { queryParams: { email } });
+    }, (e) => {
+      // Anche l'utente inesistente porta al passo 2: dire "non esiste" qui
+      // permetterebbe di scoprire chi è iscritto.
+      if (e?.name === 'UserNotFoundException') {
+        this.router.navigate(['/nuova-password'], {
+          queryParams: { email: this.resetForm.getRawValue().email },
+        });
+        return true;
+      }
+      return false;
+    });
+  }
+
+  /** Passo 2: imposta la nuova password col codice ricevuto. */
+  async doResetConfirm(): Promise<void> {
+    if (this.resetConfirmForm.invalid) { this.resetConfirmForm.markAllAsTouched(); return; }
+    await this.run(async () => {
+      const { email, code, password } = this.resetConfirmForm.getRawValue();
+      await this.auth.confirmPasswordReset(email, code, password);
+      this.snack.open('Password aggiornata: ora puoi accedere.', 'OK', { duration: 5000 });
+      this.router.navigate(['/accedi']);
+    });
+  }
+
+  /**
+   * Rinvia il codice. I due flussi usano codici DIVERSI: quello di verifica
+   * dell'account e quello di reimpostazione password. Rinviare il primo mentre
+   * si reimposta la password non servirebbe a nulla.
+   */
   async resend(): Promise<void> {
     await this.run(async () => {
-      await this.auth.resendCode(this.confirmForm.getRawValue().email);
+      if (this.mode() === 'reset-confirm') {
+        await this.auth.requestPasswordReset(this.resetConfirmForm.getRawValue().email);
+      } else {
+        await this.auth.resendCode(this.confirmForm.getRawValue().email);
+      }
       this.snack.open('Codice reinviato.', 'OK', { duration: 3000 });
     });
   }

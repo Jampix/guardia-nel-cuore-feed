@@ -108,6 +108,73 @@
         <p class="switch"><a (click)="openCodeHelp()" tabindex="0" role="button">Non hai ricevuto il codice?</a></p>
       }
 
+      @case ('reset') {
+        <p class="lead">Inserisci l'email con cui ti sei registrato: ti mandiamo un codice per scegliere una nuova password.</p>
+        <form [formGroup]="resetForm" (ngSubmit)="doReset()">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+            @if (resetForm.controls.email.touched && resetForm.controls.email.invalid) {
+              <mat-error>Inserisci un'email valida.</mat-error>
+            }
+          </mat-form-field>
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Invia il codice }
+          </button>
+        </form>
+        <p class="switch"><a routerLink="/accedi">Torna all'accesso</a></p>
+      }
+
+      @case ('reset-confirm') {
+        <p class="lead">Inserisci il codice che ti abbiamo inviato e scegli la nuova password.</p>
+        <form [formGroup]="resetConfirmForm" (ngSubmit)="doResetConfirm()">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" autocomplete="email" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Codice di verifica</mat-label>
+            <input matInput formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" />
+            @if (resetConfirmForm.controls.code.touched && resetConfirmForm.controls.code.invalid) {
+              <mat-error>Inserisci il codice a 6 cifre.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Nuova password</mat-label>
+            <input matInput [type]="showPwd() ? 'text' : 'password'" formControlName="password" autocomplete="new-password" />
+            <button mat-icon-button matSuffix type="button" tabindex="-1"
+                    (click)="showPwd.set(!showPwd())"
+                    [attr.aria-label]="showPwd() ? 'Nascondi password' : 'Mostra password'"
+                    [attr.aria-pressed]="showPwd()">
+              <mat-icon>{{ showPwd() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-hint>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-hint>
+            @if (resetConfirmForm.controls.password.touched && resetConfirmForm.controls.password.invalid) {
+              <mat-error>Almeno 8 caratteri, con maiuscola, minuscola e numero.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ripeti la nuova password</mat-label>
+            <input matInput [type]="showPwd2() ? 'text' : 'password'" formControlName="password2" autocomplete="new-password" />
+            <button mat-icon-button matSuffix type="button" tabindex="-1"
+                    (click)="showPwd2.set(!showPwd2())"
+                    [attr.aria-label]="showPwd2() ? 'Nascondi password' : 'Mostra password'"
+                    [attr.aria-pressed]="showPwd2()">
+              <mat-icon>{{ showPwd2() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (resetConfirmForm.controls.password2.touched && resetConfirmForm.controls.password2.hasError('mismatch')) {
+              <mat-error>Le due password non coincidono.</mat-error>
+            } @else if (resetConfirmForm.controls.password2.touched && resetConfirmForm.controls.password2.invalid) {
+              <mat-error>Ripeti la password.</mat-error>
+            }
+          </mat-form-field>
+          <button mat-flat-button type="submit" class="primary" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Salva la nuova password }
+          </button>
+        </form>
+        <p class="switch"><a (click)="openCodeHelp()" tabindex="0" role="button">Non hai ricevuto il codice?</a></p>
+      }
+
       @default {
         <form [formGroup]="loginForm" (ngSubmit)="doLogin()">
           <mat-form-field appearance="outline">
@@ -134,6 +201,7 @@
             @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Accedi }
           </button>
         </form>
+        <p class="switch"><a routerLink="/password-dimenticata">Password dimenticata?</a></p>
         <p class="switch">Non hai un account? <a routerLink="/registrati">Registrati</a></p>
       }
     }

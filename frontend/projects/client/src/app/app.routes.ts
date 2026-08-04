@@ -21,6 +21,8 @@ export const routes: Routes = [
   { path: 'accedi', component: Auth, data: { mode: 'login' }, title: 'Accedi · Guardia nel Cuore' },
   { path: 'registrati', component: Auth, data: { mode: 'register' }, title: 'Registrati · Guardia nel Cuore' },
   { path: 'conferma', component: Auth, data: { mode: 'confirm' }, title: 'Conferma · Guardia nel Cuore' },
+  { path: 'password-dimenticata', component: Auth, data: { mode: 'reset' }, title: 'Password dimenticata · Guardia nel Cuore' },
+  { path: 'nuova-password', component: Auth, data: { mode: 'reset-confirm' }, title: 'Nuova password · Guardia nel Cuore' },
   { path: 'privacy', component: Privacy, title: 'Privacy · Guardia nel Cuore' },
   { path: 'regolamento', component: Regolamento, title: 'Regolamento · Guardia nel Cuore' },
   { path: 'profilo', component: Profilo, canActivate: [authGuard], title: 'Profilo · Guardia nel Cuore' },

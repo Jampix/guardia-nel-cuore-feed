@@ -3,6 +3,8 @@ import {
   signUp,
   confirmSignUp,
   resendSignUpCode,
+  resetPassword,
+  confirmResetPassword,
   signIn,
   signOut,
   getCurrentUser,
@@ -56,6 +58,20 @@ export class AuthService {
   /** Rinvia il codice di verifica. */
   resendCode(email: string) {
     return resendSignUpCode({ username: email });
+  }
+
+  /**
+   * Password dimenticata: chiede a Cognito di inviare un codice all'email
+   * verificata. Il pool ha `preventUserExistenceErrors` attivo, quindi non
+   * rivela se l'indirizzo è iscritto: l'interfaccia non deve prometterlo.
+   */
+  requestPasswordReset(email: string) {
+    return resetPassword({ username: email });
+  }
+
+  /** Imposta la nuova password usando il codice ricevuto via email. */
+  confirmPasswordReset(email: string, code: string, newPassword: string) {
+    return confirmResetPassword({ username: email, confirmationCode: code, newPassword });
   }
 
   /** Login con email + password. Al successo aggiorna lo stato utente. */
