@@ -109,6 +109,25 @@ describe('delete-account', () => {
     expect(cancellati('Comments-test')).toContainEqual({ feedbackId: 'mia', sk: 'REPORT#altro' });
   });
 
+  it('cancella anche i voti oltre la PRIMA PAGINA', async () => {
+    // DynamoDB restituisce max 1 MB per pagina: senza seguire LastEvaluatedKey
+    // i voti oltre la prima pagina non venivano cancellati e i contatori delle
+    // proposte altrui restavano gonfiati — dati non rimossi in una richiesta di
+    // oblio, senza alcun errore visibile.
+    ddb.on(ScanCommand, { TableName: 'Votes-test' })
+      .resolvesOnce({ Items: [{ feedbackId: 'pag1', userId: UT }], LastEvaluatedKey: { k: 1 } })
+      .resolvesOnce({ Items: [{ feedbackId: 'pag2', userId: UT }] });
+
+    await handler(apiEvent({ method: 'DELETE', claims }));
+
+    expect(cancellati('Votes-test')).toContainEqual({ feedbackId: 'pag1', userId: UT });
+    expect(cancellati('Votes-test')).toContainEqual({ feedbackId: 'pag2', userId: UT });
+    // Entrambi i contatori vanno scalati, non solo il primo.
+    const ids = decrementi().filter((d) => d.expr === 'ADD numeroVoti :d').map((d) => d.id);
+    expect(ids).toContain('pag1');
+    expect(ids).toContain('pag2');
+  });
+
   it('elimina l\'account Cognito per ULTIMO', async () => {
     await handler(apiEvent({ method: 'DELETE', claims }));
 

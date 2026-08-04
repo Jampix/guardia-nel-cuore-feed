@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { scanAll } from '../lib/ddb-paginate';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type {
@@ -28,8 +29,10 @@ export const handler = async (
     return resp(403, { message: 'Accesso riservato allo staff.' });
   }
 
-  const res = await ddb.send(new ScanCommand({ TableName: FEEDBACKS_TABLE }));
-  const sorted = (res.Items ?? []).sort((a, b) =>
+  // Paginato: oltre 1 MB di proposte lo Scan ne restituirebbe solo una parte e
+  // il backoffice smetterebbe di mostrarne alcune senza alcun errore.
+  const all = await scanAll(ddb, { TableName: FEEDBACKS_TABLE });
+  const sorted = all.sort((a, b) =>
     String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')),
   );
 

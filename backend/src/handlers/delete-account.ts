@@ -1,11 +1,10 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
-  QueryCommand,
-  ScanCommand,
   DeleteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
+import { queryAll, scanAll } from '../lib/ddb-paginate';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import {
   CognitoIdentityProviderClient,
@@ -45,47 +44,49 @@ export const handler = async (
   if (!userId) return resp(401, { message: 'Non autenticato' });
 
   // 1. Proposte dell'utente.
-  const mine = await ddb.send(new QueryCommand({
+  // Tutte le pagine: qui una pagina mancante significa dati NON cancellati in
+  // una richiesta di oblio, cioè il difetto peggiore possibile su questo flusso.
+  const mine = await queryAll(ddb, {
     TableName: FEEDBACKS_TABLE,
     IndexName: 'byAutore',
     KeyConditionExpression: 'autoreId = :a',
     ExpressionAttributeValues: { ':a': userId },
-  }));
-  for (const f of mine.Items ?? []) {
+  });
+  for (const f of mine) {
     const feedbackId = String(f.id);
     if (f.fotoKey) {
       await s3.send(new DeleteObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(f.fotoKey) }))
         .catch((e) => console.error('Foto non eliminata:', e));
     }
     // Voti ricevuti da questa proposta (di chiunque): PK = feedbackId.
-    const votes = await ddb.send(new QueryCommand({
+    const votes = await queryAll(ddb, {
       TableName: VOTES_TABLE,
       KeyConditionExpression: 'feedbackId = :f',
       ExpressionAttributeValues: { ':f': feedbackId },
-    }));
-    for (const v of votes.Items ?? []) {
+    });
+    for (const v of votes) {
       await ddb.send(new DeleteCommand({ TableName: VOTES_TABLE, Key: { feedbackId, userId: v.userId } }));
     }
     // Segnalazioni RICEVUTE da questa proposta: senza questo restavano orfane,
     // puntando a una proposta che non esiste più.
-    const ricevute = await ddb.send(new QueryCommand({
+    const ricevute = await queryAll(ddb, {
       TableName: COMMENTS_TABLE,
       KeyConditionExpression: 'feedbackId = :f',
       ExpressionAttributeValues: { ':f': feedbackId },
-    }));
-    for (const c of ricevute.Items ?? []) {
+    });
+    for (const c of ricevute) {
       await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
     }
     await ddb.send(new DeleteCommand({ TableName: FEEDBACKS_TABLE, Key: { id: feedbackId } }));
   }
 
   // 2. Voti espressi dall'utente su proposte altrui (rimaste).
-  const cast = await ddb.send(new ScanCommand({
+  const cast = await scanAll(ddb, {
     TableName: VOTES_TABLE,
     FilterExpression: 'userId = :u',
     ExpressionAttributeValues: { ':u': userId },
-  }));
-  for (const v of cast.Items ?? []) {
+  });
+  for (const v of cast) {
     const feedbackId = String(v.feedbackId);
     await ddb.send(new DeleteCommand({ TableName: VOTES_TABLE, Key: { feedbackId, userId } }));
     await ddb.send(new UpdateCommand({
@@ -101,12 +102,12 @@ export const handler = async (
   //    restavano con il suo identificativo dentro — un riferimento a una
   //    persona che ha chiesto di essere cancellata — e il contatore continuava
   //    a pesare su quelle proposte con un'accusa il cui autore non esiste più.
-  const fatte = await ddb.send(new ScanCommand({
+  const fatte = await scanAll(ddb, {
     TableName: COMMENTS_TABLE,
     FilterExpression: 'autoreId = :u',
     ExpressionAttributeValues: { ':u': userId },
-  }));
-  for (const c of fatte.Items ?? []) {
+  });
+  for (const c of fatte) {
     const feedbackId = String(c.feedbackId);
     await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
     if (String(c.tipo) === 'REPORT') {
