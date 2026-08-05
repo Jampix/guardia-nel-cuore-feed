@@ -6,4 +6,9 @@
     {{ locating() ? 'Individuo la posizione…' : 'Usa la mia posizione' }}
   </button>
   <p class="hint">Tocca la mappa per posizionare il segnalino, oppure usa la tua posizione.</p>
+  @if (geoError(); as err) {
+    <p class="geo-err" role="alert">
+      <mat-icon>location_off</mat-icon><span>{{ err }}</span>
+    </p>
+  }
 }

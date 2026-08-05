@@ -38,16 +38,34 @@
     </mat-form-field>
 
     <mat-form-field appearance="outline">
-      <mat-label>Luogo (facoltativo)</mat-label>
-      <input matInput formControlName="luogo" placeholder="Es. Via Roma, Lungomare…" />
+      <mat-label>Indirizzo o luogo (facoltativo)</mat-label>
+      <input matInput formControlName="luogo" placeholder="Es. Via Roma 12, Lungomare…"
+             (keydown.enter)="$event.preventDefault(); trovaSullaMappa()" />
       <mat-icon matSuffix>place</mat-icon>
-      <mat-hint>Etichetta leggibile del luogo (facoltativa).</mat-hint>
+      <mat-hint>
+        @if (cercandoIndirizzo()) { Sto ricavando l'indirizzo dal punto scelto… }
+        @else { Puoi scriverlo e cercarlo sulla mappa, oppure lasciarlo a parole: va bene anche «davanti al bar della piazza». }
+      </mat-hint>
     </mat-form-field>
+    <!-- La ricerca parte solo da qui, non mentre si scrive: la politica d'uso di
+         Nominatim vieta una chiamata per ogni tasto premuto. -->
+    <button type="button" mat-stroked-button class="trova"
+            [disabled]="cercandoPunto() || !form.controls.luogo.value.trim()"
+            (click)="trovaSullaMappa()">
+      <mat-icon>travel_explore</mat-icon>
+      {{ cercandoPunto() ? 'Cerco…' : 'Trova sulla mappa' }}
+    </button>
+    @if (esitoRicerca(); as msg) {
+      <p class="esito-ricerca" role="status">{{ msg }}</p>
+    }
   </section>
 
   <section class="block">
     <span class="block-label">Posizione sulla mappa</span>
-    <app-feedback-map [editable]="true" (pick)="onPickLocation($event)"></app-feedback-map>
+    <!-- lat/lng passati alla mappa: così il segnalino si sposta anche quando il
+         punto arriva dalla ricerca dell'indirizzo, non solo dal tocco. -->
+    <app-feedback-map [editable]="true" [lat]="lat() ?? undefined" [lng]="lng() ?? undefined"
+                      (pick)="onPickLocation($event)"></app-feedback-map>
   </section>
 
   <section class="block">

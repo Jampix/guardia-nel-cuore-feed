@@ -133,3 +133,12 @@ mat-button-toggle-group {
   font-weight: 600;
   margin-top: 4px;
 }
+
+/* Ricerca dell'indirizzo: azione esplicita, non un campo che cerca da sé. */
+.trova { align-self: flex-start; margin: -4px 0 4px; }
+.esito-ricerca {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mat-sys-on-surface-variant);
+}

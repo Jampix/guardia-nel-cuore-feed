@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { Category } from 'shared';
 import { FeedbackService } from '../../core/feedback.service';
+import { GeocodingService } from '../../core/geocoding.service';
 import { FeedbackMap } from '../../components/feedback-map/feedback-map';
 import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 
@@ -37,6 +38,7 @@ import { RegolamentoDialog } from '../regolamento/regolamento-dialog';
 export class NuovaProposta {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(FeedbackService);
+  private readonly geo = inject(GeocodingService);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
@@ -57,7 +59,45 @@ export class NuovaProposta {
   onPickLocation(e: { lat: number; lng: number }): void {
     this.lat.set(e.lat);
     this.lng.set(e.lng);
+    // Il punto scelto diventa un indirizzo leggibile. Non si sovrascrive quanto
+    // ha scritto la persona: un "davanti al bar della piazza" vale più di una
+    // via, e cancellarlo sarebbe irritante.
+    if (this.form.controls.luogo.value.trim()) return;
+    this.cercandoIndirizzo.set(true);
+    this.geo.cercaIndirizzoDaPunto(e.lat, e.lng).subscribe((ind) => {
+      this.cercandoIndirizzo.set(false);
+      if (ind && !this.form.controls.luogo.value.trim()) {
+        this.form.controls.luogo.setValue(ind);
+      }
+    });
   }
+
+  /** Cerca sulla mappa l'indirizzo scritto a mano. */
+  trovaSullaMappa(): void {
+    const q = this.form.controls.luogo.value.trim();
+    if (!q || this.cercandoPunto()) return;
+    this.cercandoPunto.set(true);
+    this.esitoRicerca.set(null);
+    this.geo.cercaIndirizzo(q).subscribe((luogo) => {
+      this.cercandoPunto.set(false);
+      if (!luogo) {
+        // Non è un errore bloccante: l'indirizzo scritto resta valido comunque.
+        this.esitoRicerca.set(
+          'Non ho trovato questo indirizzo. Puoi lasciarlo scritto così e, se vuoi, ' +
+          'toccare la mappa per indicare il punto.',
+        );
+        return;
+      }
+      this.lat.set(luogo.lat);
+      this.lng.set(luogo.lng);
+      this.esitoRicerca.set(null);
+    });
+  }
+
+  /** Stati delle due ricerche: dal punto all'indirizzo e viceversa. */
+  readonly cercandoIndirizzo = signal(false);
+  readonly cercandoPunto = signal(false);
+  readonly esitoRicerca = signal<string | null>(null);
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;

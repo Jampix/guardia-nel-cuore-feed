@@ -5,6 +5,7 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
+  effect,
   input,
   output,
   signal,
@@ -44,9 +45,28 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
   readonly pick = output<{ lat: number; lng: number }>();
 
   readonly locating = signal(false);
+  /** Motivo del mancato rilevamento, mostrato all'utente (prima era muto). */
+  readonly geoError = signal<string | null>(null);
 
   private map?: L.Map;
   private marker?: L.Marker;
+  /** Ultimo punto scelto QUI dentro: serve a non ricentrare la mappa quando le
+   *  coordinate rientrano dal padre come input (sarebbe uno scatto inutile). */
+  private ultimoScelto?: { lat: number; lng: number };
+
+  constructor() {
+    // Le coordinate possono arrivare DOPO la creazione della mappa — per esempio
+    // dalla ricerca di un indirizzo. Senza questo, il segnalino non si muoverebbe.
+    effect(() => {
+      const lat = this.lat();
+      const lng = this.lng();
+      if (!this.map || lat == null || lng == null) return;
+      const suo = this.ultimoScelto;
+      const stessoPunto = suo && Math.abs(suo.lat - lat) < 1e-9 && Math.abs(suo.lng - lng) < 1e-9;
+      this.setMarker(lat, lng);
+      if (!stessoPunto) this.map.setView([lat, lng], Math.max(this.map.getZoom(), 17));
+    });
+  }
 
   ngAfterViewInit(): void {
     const hasCoords = this.lat() != null && this.lng() != null;
@@ -73,9 +93,31 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
     setTimeout(() => this.map?.invalidateSize(), 0);
   }
 
+  /**
+   * Posizione attuale del dispositivo.
+   *
+   * Prima l'errore veniva scartato (`() => this.locating.set(false)`): quando
+   * falliva, la rotellina si fermava e non accadeva nulla — l'utente non poteva
+   * sapere se aveva negato il permesso, se la posizione non era disponibile o se
+   * era scaduto il tempo, e nei log non restava traccia.
+   *
+   * Su Safari l'alta precisione passa da CoreLocation e su Mac senza GPS (o con
+   * i Servizi di localizzazione disattivati per Safari) risponde spesso
+   * "posizione non disponibile", mentre Chrome ricade sulla stima via WiFi. Per
+   * questo, se il primo tentativo non riesce, si riprova SENZA alta precisione:
+   * un punto approssimato è comunque meglio di nessun punto.
+   */
   useMyLocation(): void {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      this.geoError.set('Questo browser non è in grado di rilevare la posizione.');
+      return;
+    }
+    this.geoError.set(null);
     this.locating.set(true);
+    this.chiediPosizione(true);
+  }
+
+  private chiediPosizione(altaPrecisione: boolean): void {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -83,9 +125,40 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
         this.select(latitude, longitude);
         this.locating.set(false);
       },
-      () => this.locating.set(false),
-      { enableHighAccuracy: true, timeout: 10000 },
+      (err) => {
+        // Permesso negato: riprovare non serve, l'esito sarebbe identico.
+        if (altaPrecisione && err.code !== err.PERMISSION_DENIED) {
+          console.warn('Posizione: ritento senza alta precisione', err.code, err.message);
+          this.chiediPosizione(false);
+          return;
+        }
+        console.error('Posizione non ottenuta', err.code, err.message);
+        this.locating.set(false);
+        this.geoError.set(this.messaggioGeo(err));
+      },
+      altaPrecisione
+        ? { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+        : { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
     );
+  }
+
+  /** Messaggio per ciascun motivo, con cosa può fare l'utente. */
+  private messaggioGeo(err: GeolocationPositionError): string {
+    switch (err.code) {
+      case err.PERMISSION_DENIED:
+        return 'Non ci hai dato accesso alla posizione. Puoi consentirlo dalle ' +
+          'impostazioni del browser per questo sito, oppure toccare la mappa.';
+      case err.POSITION_UNAVAILABLE:
+        return 'La posizione non è disponibile. Su iPhone e Mac controlla che i ' +
+          'servizi di localizzazione siano attivi per il browser; intanto puoi ' +
+          'toccare la mappa.';
+      case err.TIMEOUT:
+        return 'Ci è voluto troppo tempo per rilevare la posizione. Riprova, ' +
+          'oppure tocca la mappa.';
+      default:
+        return 'Non è stato possibile rilevare la posizione: tocca la mappa per ' +
+          'indicare il punto.';
+    }
   }
 
   private setMarker(lat: number, lng: number): void {
@@ -94,6 +167,7 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
   }
 
   private select(lat: number, lng: number): void {
+    this.ultimoScelto = { lat, lng };
     this.setMarker(lat, lng);
     this.pick.emit({ lat, lng });
   }

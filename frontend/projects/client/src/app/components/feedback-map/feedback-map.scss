@@ -20,3 +20,21 @@
   color: var(--mat-sys-on-surface-variant);
   margin: 6px 2px 0;
 }
+
+/* Esito negativo della geolocalizzazione: prima non c'era modo di comunicarlo,
+   e il fallimento era indistinguibile da "non è successo niente". */
+.geo-err {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mat-sys-on-secondary-container);
+  background: var(--mat-sys-secondary-container);
+  border-radius: 10px;
+  padding: 9px 11px;
+
+  mat-icon { flex: 0 0 auto; font-size: 17px; width: 17px; height: 17px; margin-top: 1px; }
+  > span { flex: 1 1 auto; min-width: 0; }
+}
