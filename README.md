@@ -18,13 +18,19 @@ d'esercizio previsto **< 5 €/mese**.
 - **Voto** ("Sostieni") — 1 per utente
 - **Nuova proposta**: titolo, categoria, descrizione, **foto** (upload sicuro),
   **posizione** (mappa + geolocalizzazione), visibilità pubblico/privato
-- **I miei feedback**
-- Registrazione/login (Cognito) con **approvazione dell'associazione**
+- **I miei feedback**: modifica e eliminazione della propria proposta (la modifica
+  solo finché è privata: chi ha votato l'ha fatto per quel testo)
+- **Segnalazione** di un contenuto allo staff (motivo scelto, autore non rivelato)
+- Registrazione/login (Cognito) con **approvazione dell'associazione**, e
+  **recupero password** self-service
 
 **Backoffice** (`admin.`, solo staff)
 - Sintesi con KPI + coda "richiede attenzione"
 - Elenco feedback (filtro per stato)
-- **Moderazione**: cambio stato (→ email al cittadino), nota interna, risposta pubblica
+- **Moderazione**: cambio stato, pubblicazione in bacheca, risposta pubblica,
+  nota interna e **correzione del testo** (l'autore viene avvisato). Ogni
+  cambiamento visibile al cittadino gli manda una email
+- Feedback **segnalati**: badge, filtro e motivi delle segnalazioni
 - Gestione **categorie**
 - Gestione **cittadini**: approvazione iscrizioni + elenco attivi
 
@@ -39,8 +45,11 @@ API Gateway HTTP  ──(JWT Cognito authorizer)
 Lambda (Node.js 20 / TypeScript)
    ├─ DynamoDB  (Feedbacks, Votes, Categories, FeedbackComments)
    ├─ S3        (foto, bucket privato, upload/lettura via URL prefirmati)
-   ├─ Cognito   (User Pool, gruppi cittadino/membro/admin, trigger pre-auth)
-   └─ SES       (email transazionali: cambio stato, approvazione iscrizione)
+   ├─ Cognito   (User Pool, gruppi cittadino/membro/admin,
+   │             trigger pre-auth = gate approvazione, post-confirmation = avvisi)
+   └─ SES       (tutte le email: verifica registrazione e recupero password di
+                 Cognito, approvazione, stato/risposta/pubblicazione, avvisi
+                 allo staff per iscrizioni, segnalazioni ed eliminazioni)
 ```
 
 Dettagli completi in [`docs/02-architettura-aws.md`](docs/02-architettura-aws.md).
@@ -121,6 +130,9 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   (nemmeno via API). Le proposte nascono **private**: solo lo staff può pubblicarle.
 - **Gestione staff**: aggiungere/rimuovere admin/membro si fa via CLI/console Cognito
   (`admin-add-user-to-group`), non c'è ancora una UI dedicata.
+- **Azioni distruttive**: passano da un dialog che dichiara l'effetto; per
+  l'eliminazione dell'account serve digitare `ELIMINA`. Nessuna finestra nativa
+  del browser in tutta l'app.
 
 ## Monitoraggio e avvisi
 
@@ -142,12 +154,16 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - ✅ **SES in produzione** (production access concessa il 2026-07-29: 50.000
   email/giorno, 14/s). Tutte le email partono dal dominio del progetto con DKIM,
   SPF e DMARC allineati — comprese quelle di Cognito (verifica registrazione e
-  recupero password), che prima usavano il mittente AWS condiviso.
+  recupero password), che prima usavano il mittente AWS condiviso. **DMARC in
+  `quarantine`** dal 2026-08-05.
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
   contro l'API di produzione è l'unico modo di provare una modifica prima di
   esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
-- 🔜 test frontend/e2e, i18n IT/EN, UI gestione staff, casella email
-  dell'associazione (`Reply-To` delle email transazionali).
+- ✅ **Test**: 114 backend (Vitest, ogni handler coperto) + 53 frontend (Karma su
+  Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
+  push a `main` e su ogni PR.
+- 🔜 test e2e, i18n IT/EN, UI gestione staff, casella email dell'associazione
+  (`Reply-To`), portabilità dei dati ("scarica i miei dati").
 
 ## Lancio pubblico (checklist)
 
