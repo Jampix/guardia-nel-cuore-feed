@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -57,6 +57,11 @@ export class Moderazione {
 
   readonly form = this.fb.nonNullable.group({
     stato: ['proposta' as FeedbackStatus],
+    // Correzione del testo: l'autore non può più modificare una proposta
+    // pubblicata, e prima non poteva farlo nessuno — un refuso in bacheca era
+    // incorreggibile. L'autore viene avvisato della correzione.
+    titolo: ['', [Validators.required, Validators.maxLength(120)]],
+    descrizione: ['', [Validators.required, Validators.maxLength(4000)]],
     rispostaPubblica: [''],
     notaInterna: [''],
   });
@@ -72,6 +77,8 @@ export class Moderazione {
         this.pubblico.set(f.visibilita === 'pubblico');
         this.form.patchValue({
           stato: f.stato,
+          titolo: f.titolo,
+          descrizione: f.descrizione,
           rispostaPubblica: f.rispostaPubblica ?? '',
           notaInterna: f.notaInterna ?? '',
         });
@@ -88,6 +95,13 @@ export class Moderazione {
   }
 
   save(): void {
+    // Titolo e descrizione sono obbligatori: senza questo controllo un campo
+    // svuotato per sbaglio arriverebbe all'API e tornerebbe un 400 opaco.
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.snack.open('Controlla i campi evidenziati.', 'OK', { duration: 4000 });
+      return;
+    }
     this.saving.set(true);
     const patch = {
       ...this.form.getRawValue(),

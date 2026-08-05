@@ -34,6 +34,24 @@
     }
 
     <form class="mod-form" [formGroup]="form" (ngSubmit)="save()">
+      <!-- Correzione del testo: l'autore non può più modificarlo dopo la
+           pubblicazione, quindi un refuso resterebbe altrimenti per sempre.
+           Viene avvisato della correzione. -->
+      <mat-form-field appearance="outline">
+        <mat-label>Titolo</mat-label>
+        <input matInput formControlName="titolo" maxlength="120" />
+        <mat-hint>Correggi solo refusi e formattazione: l'autore viene avvisato.</mat-hint>
+        @if (form.controls.titolo.touched && form.controls.titolo.invalid) {
+          <mat-error>Il titolo è obbligatorio (max 120 caratteri).</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Descrizione</mat-label>
+        <textarea matInput formControlName="descrizione" rows="4" maxlength="4000"></textarea>
+        @if (form.controls.descrizione.touched && form.controls.descrizione.invalid) {
+          <mat-error>La descrizione è obbligatoria (max 4000 caratteri).</mat-error>
+        }
+      </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Stato</mat-label>
         <mat-select formControlName="stato">

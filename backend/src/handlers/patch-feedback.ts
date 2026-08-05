@@ -64,6 +64,18 @@ const AVVISO_RISPOSTA: Avviso = {
 };
 
 /**
+ * Correggere le parole di un cittadino senza dirglielo si presterebbe a essere
+ * letto come manipolazione, su un'app che esiste perché si senta ascoltato.
+ * Quindi si avvisa, invitandolo a controllare.
+ */
+const AVVISO_TESTO: Avviso = {
+  oggetto: 'Il testo della tua proposta è stato corretto',
+  frase:
+    'Lo staff ha corretto il testo della tua proposta (di norma refusi o formattazione). ' +
+    'Dai un\'occhiata: se non ti ritrovi, scrivici.',
+};
+
+/**
  * PATCH /admin/feedback/{id} — moderazione (staff). Aggiorna in modo parziale
  * `stato`, `visibilita`, `rispostaPubblica` (visibile ai cittadini) e
  * `notaInterna` (solo staff). Avvisa l'autore per email quando cambia qualcosa
@@ -113,6 +125,23 @@ export const handler = async (
     const vis = body.visibilita === 'pubblico' ? 'pubblico' : 'privato';
     sets.push('visibilita = :vis');
     values[':vis'] = vis;
+  }
+  // Correzione del testo da parte dello staff. L'autore non può più modificare
+  // una proposta pubblicata (chi ha votato l'ha fatto per quel testo), ma prima
+  // non poteva farlo NESSUNO: un refuso in bacheca era incorreggibile e l'unica
+  // via era eliminare tutto. La modifica di un moderatore non riapre il
+  // problema del cambio di carte in tavola.
+  if (body.titolo !== undefined) {
+    const t = String(body.titolo).trim();
+    if (!t || t.length > 120) return resp(400, { message: 'titolo non valido (1-120)' });
+    sets.push('titolo = :t');
+    values[':t'] = t;
+  }
+  if (body.descrizione !== undefined) {
+    const d = String(body.descrizione).trim();
+    if (!d || d.length > 4000) return resp(400, { message: 'descrizione non valida (1-4000)' });
+    sets.push('descrizione = :d');
+    values[':d'] = d;
   }
   if (body.rispostaPubblica !== undefined) {
     sets.push('rispostaPubblica = :rp');
@@ -172,6 +201,10 @@ function motivoAvviso(
   const rispostaDopo = String(dopo.rispostaPubblica ?? '').trim();
   if (rispostaDopo && rispostaDopo !== rispostaPrima) {
     return AVVISO_RISPOSTA;
+  }
+  // Ultimo in ordine: se è cambiato anche lo stato, quello è più significativo.
+  if (prima.titolo !== dopo.titolo || prima.descrizione !== dopo.descrizione) {
+    return AVVISO_TESTO;
   }
   return null;
 }

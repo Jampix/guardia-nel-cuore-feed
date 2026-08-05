@@ -7,6 +7,9 @@ import { environment } from '../../environments/environment';
 /** Campi modificabili dalla moderazione. */
 export interface FeedbackPatch {
   stato?: FeedbackStatus;
+  /** Correzione del testo da parte dello staff (refusi/formattazione). */
+  titolo?: string;
+  descrizione?: string;
   visibilita?: Visibility;
   rispostaPubblica?: string;
   notaInterna?: string;

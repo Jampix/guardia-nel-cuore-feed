@@ -121,6 +121,42 @@ describe('patch-feedback', () => {
       expect(mail?.testo).toContain('la valuteremo in consiglio');
     });
 
+    it('lo staff può correggere titolo e descrizione, e l\'autore viene avvisato', async () => {
+      // Prima non poteva farlo NESSUNO: un refuso in una proposta pubblicata era
+      // incorreggibile e l'unica via era eliminare tutto.
+      scenario(PRIMA, { titolo: 'Pista ciclabile (corretto)' });
+      const { status } = parseResult(await handler(apiEvent({
+        method: 'PATCH', claims: staff, pathParameters: { id: 'f1' },
+        body: { titolo: 'Pista ciclabile (corretto)' },
+      })));
+
+      expect(status).toBe(200);
+      expect(emailInviata()?.oggetto).toBe('Il testo della tua proposta è stato corretto');
+    });
+
+    it('il cambio di stato prevale sull\'avviso di correzione', async () => {
+      scenario(PRIMA, { stato: 'risolto', titolo: 'Ritoccato' });
+      await handler(apiEvent({
+        method: 'PATCH', claims: staff, pathParameters: { id: 'f1' },
+        body: { stato: 'risolto', titolo: 'Ritoccato' },
+      }));
+
+      expect(emailInviata()?.oggetto).toBe('La tua proposta è stata risolta');
+    });
+
+    it('rifiuta un titolo vuoto o troppo lungo', async () => {
+      for (const titolo of ['', '   ', 'x'.repeat(121)]) {
+        ddb.reset(); ses.reset();
+        ses.on(SendEmailCommand).resolves({});
+        cognito.on(AdminGetUserCommand).resolves({ UserAttributes: [{ Name: 'email', Value: 'a@b.it' }] });
+        scenario(PRIMA, {});
+        const { status } = parseResult(await handler(apiEvent({
+          method: 'PATCH', claims: staff, pathParameters: { id: 'f1' }, body: { titolo },
+        })));
+        expect(status, JSON.stringify(titolo)).toBe(400);
+      }
+    });
+
     it('NON avvisa per la sola nota interna', async () => {
       scenario(PRIMA, { notaInterna: 'Sentire l\'ufficio tecnico' });
       await handler(apiEvent({
