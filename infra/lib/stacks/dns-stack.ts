@@ -54,13 +54,23 @@ export class DnsStack extends Stack {
         ttl: Duration.hours(1),
       });
 
-      // DMARC: dichiara la policy per il dominio, così i filtri sanno che il
-      // From è presidiato. Si parte da p=none (solo osservazione, non scarta
-      // nulla) — da alzare a quarantine dopo aver verificato la consegna.
+      // DMARC in `quarantine`: chi riceve tratta come sospetta la posta che si
+      // spaccia per questo dominio senza esserne autorizzata. Alzato da `none`
+      // dopo due settimane di dati: 50 invii, 50 consegne, zero rimbalzi e zero
+      // lamentele — consegna al 100%, quindi l'allineamento DKIM regge su tutta
+      // la posta (l'unico mittente e' SES con l'identita' del dominio).
+      //
+      // Allineamento `r` (relaxed) e non `s`: per default SES usa un MAIL FROM
+      // su amazonses.com, quindi l'SPF non e' allineato e a portare il DMARC e'
+      // il DKIM. Con `s` non cambierebbe l'esito, ma `r` non lascia margini.
+      //
+      // ⚠️ NON passare a `reject` finche' non si ricevono i report DMARC (manca
+      // `rua`, vedi README § Lancio pubblico): senza visibilita' si scarterebbe
+      // posta legittima senza accorgersene.
       new TxtRecord(this, 'DmarcRecord', {
         zone: this.hostedZone,
         recordName: '_dmarc',
-        values: ['v=DMARC1; p=none; adkim=r; aspf=r'],
+        values: ['v=DMARC1; p=quarantine; adkim=r; aspf=r'],
         ttl: Duration.hours(1),
       });
     }

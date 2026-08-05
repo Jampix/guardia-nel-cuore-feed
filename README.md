@@ -167,6 +167,11 @@ con i membri queste voci sono scelte consapevoli, non dimenticanze.
       `environment.ts` per app, con l'URL dell'API in assoluto).
 - [ ] **`Reply-To`** sulle email transazionali verso una casella letta da una
       persona: oggi le risposte dei cittadini arriverebbero a `noreply@`.
+- [ ] **Report DMARC (`rua=`)** verso una casella che li riceva, poi valutare
+      `p=reject`. Oggi la policy è `quarantine` senza report: senza visibilità
+      non si passa a `reject`, perché si scarterebbe posta legittima senza
+      accorgersene. Serve prima una destinazione sul dominio (SES inbound) o un
+      servizio esterno.
 - [ ] Alzare il **TTL del record NS** `feed` nella zona apex (ora 300s).
 
 ## Documentazione
