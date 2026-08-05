@@ -7,6 +7,14 @@ const STAFF_EMAIL = process.env.STAFF_EMAIL as string;
 const CLIENT_URL = process.env.CLIENT_URL as string;
 const ADMIN_URL = process.env.ADMIN_URL as string;
 
+/** Etichette del rapporto col paese: nell'email va la parola, non il codice. */
+const TIPI: Record<string, string> = {
+  residente: 'residente a Guardia Piemontese',
+  non_residente: 'non residente',
+  sostenitore: "sostenitore dell'associazione",
+  turista: 'turista',
+};
+
 /**
  * Trigger Post-Confirmation: scatta quando il cittadino ha inserito il codice
  * e la sua email è verificata. Manda due avvisi:
@@ -30,9 +38,19 @@ export const handler = async (
   const attrs = event.request.userAttributes ?? {};
   const email = attrs.email;
   const nickname = (attrs.nickname ?? '').trim();
+  // Nome vero e rapporto col paese servono a chi deve decidere l'approvazione:
+  // senza, l'avviso dice solo che "qualcuno" attende.
+  const nomeCompleto = [attrs.given_name, attrs.family_name]
+    .map((x) => (x ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+  const tipo = TIPI[attrs['custom:tipoUtente'] ?? ''] ?? '';
 
   try {
-    await Promise.all([avvisaStaff(email, nickname), confermaAlCittadino(email, nickname)]);
+    await Promise.all([
+      avvisaStaff(email, nickname, nomeCompleto, tipo),
+      confermaAlCittadino(email, nickname),
+    ]);
   } catch (err) {
     console.error('Invio avvisi di registrazione fallito:', err);
   }
@@ -41,14 +59,21 @@ export const handler = async (
 };
 
 /** Avvisa lo staff che c'è una nuova iscrizione da approvare. */
-async function avvisaStaff(emailCittadino?: string, nickname?: string): Promise<void> {
+async function avvisaStaff(
+  emailCittadino?: string,
+  nickname?: string,
+  nomeCompleto?: string,
+  tipo?: string,
+): Promise<void> {
   if (!FROM_EMAIL || !STAFF_EMAIL) return;
 
-  const chi = [nickname, emailCittadino].filter(Boolean).join(' — ') || 'un nuovo cittadino';
+  const chi = [nomeCompleto, emailCittadino].filter(Boolean).join(' — ') || 'un nuovo cittadino';
   const link = ADMIN_URL ? `${ADMIN_URL}/cittadini` : '';
   const text =
     `${chi} si è registrato a Guardia nel Cuore e attende l'approvazione.\n\n` +
-    'Finché non lo approvi non può accedere.' +
+    (nickname ? `Nome pubblico: ${nickname}\n` : '') +
+    (tipo ? `Si dichiara: ${tipo}\n` : '') +
+    '\nFinché non lo approvi non può accedere.' +
     (link ? `\n\nApprova qui: ${link}` : '') +
     '\n\nGuardia nel Cuore';
 

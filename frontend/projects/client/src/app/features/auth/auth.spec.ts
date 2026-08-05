@@ -101,8 +101,10 @@ describe('Auth', () => {
 
     it('non invia la registrazione se le password non coincidono', async () => {
       comp.registerForm.patchValue({
+        nome: 'Mario', cognome: 'Rossi', tipoUtente: 'residente',
         nickname: 'Mario P.',
         email: 'mario@example.com',
+        email2: 'mario@example.com',
         password: 'Password1',
         password2: 'Password2',
         consenso: true,
@@ -115,8 +117,12 @@ describe('Auth', () => {
 
     it('invia la registrazione con la sola password, non la ripetizione', async () => {
       comp.registerForm.patchValue({
+        nome: 'Mario',
+        cognome: 'Rossi',
         nickname: 'Mario P.',
+        tipoUtente: 'residente',
         email: 'mario@example.com',
+        email2: 'mario@example.com',
         password: 'Password1',
         password2: 'Password1',
         consenso: true,
@@ -124,7 +130,90 @@ describe('Auth', () => {
 
       await comp.doRegister();
 
-      expect(auth.register).toHaveBeenCalledWith('mario@example.com', 'Password1', 'Mario P.');
+      // Le ripetizioni (password2, email2) servono solo al form: non vanno a Cognito.
+      const args = auth.register.calls.mostRecent().args;
+      expect(args[0]).toBe('mario@example.com');
+      expect(args[1]).toBe('Password1');
+      expect(JSON.stringify(args)).not.toContain('password2');
+      expect(JSON.stringify(args)).not.toContain('email2');
+    });
+  });
+
+  describe('nuovi campi di iscrizione', () => {
+    beforeEach(async () => setup('register'));
+
+    /** Compila tutto il form con valori validi. */
+    function compilaTutto(over: Record<string, unknown> = {}) {
+      comp.registerForm.patchValue({
+        nome: 'Mario',
+        cognome: 'Rossi',
+        nickname: 'Marco P.',
+        tipoUtente: 'residente',
+        email: 'mario@example.com',
+        email2: 'mario@example.com',
+        password: 'Password1',
+        password2: 'Password1',
+        consenso: true,
+        ...over,
+      });
+    }
+
+    it('nome, cognome e rapporto col paese sono obbligatori', async () => {
+      compilaTutto({ nome: '', cognome: '', tipoUtente: '' });
+      expect(comp.registerForm.controls.nome.invalid).toBeTrue();
+      expect(comp.registerForm.controls.cognome.invalid).toBeTrue();
+      expect(comp.registerForm.controls.tipoUtente.invalid).toBeTrue();
+
+      await comp.doRegister();
+      expect(auth.register).not.toHaveBeenCalled();
+    });
+
+    it('segnala le due email diverse', async () => {
+      compilaTutto({ email2: 'mario@exapmle.com' });
+      expect(comp.registerForm.controls.email2.hasError('mismatch')).toBeTrue();
+
+      await comp.doRegister();
+      expect(auth.register).not.toHaveBeenCalled();
+    });
+
+    it('ignora le maiuscole nel confronto delle email', async () => {
+      // Un indirizzo non distingue le maiuscole: segnalare un errore per una M
+      // sarebbe solo un ostacolo.
+      compilaTutto({ email: 'Mario@Example.com', email2: 'mario@example.com ' });
+      expect(comp.registerForm.controls.email2.hasError('mismatch')).toBeFalse();
+    });
+
+    it('rivaluta la ripetizione se la prima email cambia DOPO', async () => {
+      compilaTutto();
+      expect(comp.registerForm.controls.email2.valid).toBeTrue();
+
+      comp.registerForm.controls.email.setValue('altro@example.com');
+
+      expect(comp.registerForm.controls.email2.hasError('mismatch')).toBeTrue();
+    });
+
+    it('invia a Cognito nome, cognome e tipo insieme al nome pubblico', async () => {
+      compilaTutto();
+
+      await comp.doRegister();
+
+      expect(auth.register).toHaveBeenCalledWith(
+        'mario@example.com',
+        'Password1',
+        'Marco P.',
+        { nome: 'Mario', cognome: 'Rossi', tipoUtente: 'residente' },
+      );
+    });
+
+    it('offre le quattro opzioni previste', () => {
+      expect(comp.tipiUtente.map((t) => t.valore))
+        .toEqual(['residente', 'non_residente', 'sostenitore', 'turista']);
+    });
+
+    it('dichiara che nome e cognome non finiscono in bacheca', () => {
+      // È la promessa dell'informativa: va detta nel punto in cui si chiedono.
+      const testo = fixture.nativeElement.textContent as string;
+      expect(testo).toContain('nome, cognome ed email restano all\'associazione');
     });
   });
 

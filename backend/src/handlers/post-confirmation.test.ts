@@ -63,6 +63,48 @@ describe('post-confirmation', () => {
     expect(testo).toContain('non serve che tu faccia altro');
   });
 
+  it('nell\'avviso allo staff mette nome vero e rapporto col paese', async () => {
+    // Servono a decidere l'approvazione: un residente e un turista non hanno lo
+    // stesso peso su una proposta che riguarda il paese.
+    await handler(evento({
+      request: {
+        userAttributes: {
+          email: 'mario@example.com',
+          nickname: 'Marco P.',
+          given_name: 'Mario',
+          family_name: 'Rossi',
+          'custom:tipoUtente': 'residente',
+        },
+      },
+    }));
+
+    const staffMail = ses
+      .commandCalls(SendEmailCommand)
+      .find((c) => (c.args[0].input.Destination?.ToAddresses ?? []).includes('staff@example.com'));
+    const testo = staffMail?.args[0].input.Content?.Simple?.Body?.Text?.Data ?? '';
+    expect(testo).toContain('Mario Rossi');
+    expect(testo).toContain('Nome pubblico: Marco P.');
+    // L'etichetta in parole, non il codice tecnico.
+    expect(testo).toContain('residente a Guardia Piemontese');
+    expect(testo).not.toContain('non_residente');
+  });
+
+  it('funziona per i primi iscritti, che non hanno quei campi', async () => {
+    // I 13 utenti registrati prima non hanno nome, cognome né tipo: l'avviso
+    // deve degradare senza righe vuote né "undefined".
+    await handler(evento({
+      request: { userAttributes: { email: 'vecchio@example.com', nickname: 'Tizio' } },
+    }));
+
+    const staffMail = ses
+      .commandCalls(SendEmailCommand)
+      .find((c) => (c.args[0].input.Destination?.ToAddresses ?? []).includes('staff@example.com'));
+    const testo = staffMail?.args[0].input.Content?.Simple?.Body?.Text?.Data ?? '';
+    expect(testo).toContain('vecchio@example.com');
+    expect(testo).not.toContain('undefined');
+    expect(testo).not.toContain('Si dichiara:');
+  });
+
   it('NON invia nulla dopo la conferma di un cambio password', async () => {
     // Lo stesso trigger scatta anche lì: annunciare un'iscrizione sarebbe falso.
     await handler(evento({ triggerSource: 'PostConfirmation_ConfirmForgotPassword' }));

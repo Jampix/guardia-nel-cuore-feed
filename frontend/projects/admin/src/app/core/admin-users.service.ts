@@ -7,9 +7,23 @@ import { environment } from '../../environments/environment';
 export interface PendingUser {
   username: string;
   email: string;
+  /** Nome pubblico mostrato in bacheca. */
   nickname: string;
+  /** Nome, cognome e rapporto col paese: vuoti per chi si è iscritto prima che
+   *  venissero richiesti, quindi l'interfaccia deve reggerne l'assenza. */
+  nome?: string;
+  cognome?: string;
+  tipoUtente?: string;
   createdAt?: string;
 }
+
+/** Etichette del rapporto col paese (i valori tecnici stanno in Cognito). */
+export const TIPO_UTENTE_LABEL: Record<string, string> = {
+  residente: 'Residente',
+  non_residente: 'Non residente',
+  sostenitore: 'Sostenitore',
+  turista: 'Turista',
+};
 
 /** Cittadino attivo (approvato). */
 export interface Citizen extends PendingUser {

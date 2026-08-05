@@ -4,6 +4,7 @@ import {
   CfnUserPoolGroup,
   UserPool,
   UserPoolClient,
+  StringAttribute,
   UserPoolEmail,
   VerificationEmailStyle,
 } from 'aws-cdk-lib/aws-cognito';
@@ -51,6 +52,29 @@ export class UserPoolConstruct extends Construct {
         email: { required: true, mutable: true },
         // Nome pubblico/nickname mostrato sui feedback pubblici (mai l'email).
         nickname: { required: false, mutable: true },
+        // Nome e cognome reali (li vede solo l'associazione, non compaiono in
+        // bacheca) NON si dichiarano qui: `given_name` e `family_name` fanno
+        // già parte dello schema standard di ogni pool Cognito.
+        //
+        // ⚠️ Dichiararli ha fatto FALLIRE un deploy con "Invalid
+        // AttributeDataType": CDK emette le voci di `standardAttributes` senza
+        // il tipo di dato, e su un pool ESISTENTE Cognito valida ogni voce dello
+        // Schema e le rifiuta. Alla creazione invece passa. Rollback pulito,
+        // nessun dato perso, ma la lezione resta: su questo pool non si
+        // aggiungono voci a `standardAttributes`.
+      },
+      /**
+       * Rapporto col paese, dichiarato dall'iscritto: serve all'associazione per
+       * pesare le proposte (un residente e un turista hanno voce diversa su una
+       * strada). Valori tecnici in snake_case, le etichette stanno nel frontend.
+       *
+       * ⚠️ In Cognito un attributo personalizzato non si può più RINOMINARE né
+       * ELIMINARE: nome e lunghezza sono definitivi. `maxLen` largo di proposito.
+       * Verificato con un change set reale che l'aggiunta è una modifica in
+       * place e NON una sostituzione del pool (ci sono utenti veri dentro).
+       */
+      customAttributes: {
+        tipoUtente: new StringAttribute({ mutable: true, maxLen: 32 }),
       },
       passwordPolicy: {
         minLength: 8,

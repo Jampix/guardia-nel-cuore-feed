@@ -44,6 +44,11 @@ export const handler = async (
         username: u.Username,
         email: attr(u.Attributes, 'email'),
         nickname: attr(u.Attributes, 'nickname'),
+        // Vuoti per i primi iscritti, che si sono registrati prima di questi
+        // campi: il frontend deve reggere l'assenza, non nasconderla.
+        nome: attr(u.Attributes, 'given_name'),
+        cognome: attr(u.Attributes, 'family_name'),
+        tipoUtente: attr(u.Attributes, 'custom:tipoUtente'),
         createdAt: u.UserCreateDate?.toISOString(),
         enabled: u.Enabled ?? true,
       }));
@@ -62,6 +67,11 @@ export const handler = async (
         username: u.Username,
         email: attr(u.Attributes, 'email'),
         nickname: attr(u.Attributes, 'nickname'),
+        nome: attr(u.Attributes, 'given_name'),
+        cognome: attr(u.Attributes, 'family_name'),
+        // Serve a decidere l'approvazione: un residente e un turista non hanno
+        // lo stesso peso su una proposta che riguarda il paese.
+        tipoUtente: attr(u.Attributes, 'custom:tipoUtente'),
         createdAt: u.UserCreateDate?.toISOString(),
       }));
     return resp(200, pending);

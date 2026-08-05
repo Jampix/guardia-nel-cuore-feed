@@ -157,3 +157,30 @@ mat-form-field {
     text-decoration: none;
   }
 }
+
+/* Registrazione: il form è lungo, quindi va scandito in sezioni. */
+.sez {
+  margin: 14px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+.sez:first-child { margin-top: 0; }
+
+/* Nome e cognome affiancati dove c'è spazio, in colonna sul telefono. */
+.due-col { display: flex; gap: 10px; }
+.due-col mat-form-field { flex: 1 1 0; min-width: 0; }
+@media (max-width: 420px) {
+  .due-col { flex-direction: column; gap: 0; }
+}
+
+.tipi { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+
+/* I radio non hanno un <mat-error> proprio: l'errore va reso a parte. */
+.err-inline {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--mat-sys-error);
+}

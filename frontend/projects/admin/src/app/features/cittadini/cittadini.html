@@ -17,8 +17,14 @@
           <div class="who">
             <span class="avatar">{{ (u.nickname || u.email).charAt(0).toUpperCase() }}</span>
             <div class="txt">
-              <span class="nick">{{ u.nickname || 'Senza nome' }}</span>
-              <span class="email">{{ u.email }}</span>
+              <span class="nick">
+                {{ u.nickname || 'Senza nome' }}
+                @if (u.tipoUtente) { <span class="tipo">{{ tipoLabel[u.tipoUtente] || u.tipoUtente }}</span> }
+              </span>
+              <span class="email">
+                @if (u.nome || u.cognome) { {{ u.nome }} {{ u.cognome }} · }
+                {{ u.email }}
+              </span>
             </div>
           </div>
           <div class="actions">
@@ -49,8 +55,14 @@
           <div class="who">
             <span class="avatar">{{ (c.nickname || c.email).charAt(0).toUpperCase() }}</span>
             <div class="txt">
-              <span class="nick">{{ c.nickname || 'Senza nome' }}</span>
-              <span class="email">{{ c.email }}</span>
+              <span class="nick">
+                {{ c.nickname || 'Senza nome' }}
+                @if (c.tipoUtente) { <span class="tipo">{{ tipoLabel[c.tipoUtente] || c.tipoUtente }}</span> }
+              </span>
+              <span class="email">
+                @if (c.nome || c.cognome) { {{ c.nome }} {{ c.cognome }} · }
+                {{ c.email }}
+              </span>
             </div>
           </div>
           <div class="meta">

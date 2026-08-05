@@ -26,20 +26,63 @@
 
     @switch (mode()) {
       @case ('register') {
+        <!-- Raggruppato in tre sezioni: nove campi in fila si leggono come un
+             muro e si abbandonano a metà. -->
         <form [formGroup]="registerForm" (ngSubmit)="doRegister()">
+          <p class="sez">Chi sei</p>
+          <div class="due-col">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome</mat-label>
+              <input matInput formControlName="nome" autocomplete="given-name" />
+              @if (registerForm.controls.nome.touched && registerForm.controls.nome.invalid) {
+                <mat-error>Inserisci il tuo nome.</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Cognome</mat-label>
+              <input matInput formControlName="cognome" autocomplete="family-name" />
+              @if (registerForm.controls.cognome.touched && registerForm.controls.cognome.invalid) {
+                <mat-error>Inserisci il tuo cognome.</mat-error>
+              }
+            </mat-form-field>
+          </div>
           <mat-form-field appearance="outline">
             <mat-label>Nome pubblico</mat-label>
             <input matInput formControlName="nickname" autocomplete="nickname" placeholder="Es. Marco P." />
-            <mat-hint>È il nome mostrato sulle tue proposte (mai l'email).</mat-hint>
+            <mat-hint>È l'unico nome mostrato sulle tue proposte: nome, cognome ed email restano all'associazione.</mat-hint>
             @if (registerForm.controls.nickname.touched && registerForm.controls.nickname.invalid) {
               <mat-error>Inserisci un nome (almeno 2 caratteri).</mat-error>
             }
           </mat-form-field>
+
+          <p class="sez">Il tuo rapporto con il paese</p>
+          <mat-radio-group class="tipi" formControlName="tipoUtente">
+            @for (t of tipiUtente; track t.valore) {
+              <mat-radio-button [value]="t.valore">{{ t.etichetta }}</mat-radio-button>
+            }
+          </mat-radio-group>
+          @if (registerForm.controls.tipoUtente.touched && registerForm.controls.tipoUtente.invalid) {
+            <p class="err-inline">Scegli una delle opzioni.</p>
+          }
+
+          <p class="sez">Come accedi</p>
           <mat-form-field appearance="outline">
             <mat-label>Email</mat-label>
             <input matInput type="email" formControlName="email" autocomplete="email" />
             @if (registerForm.controls.email.touched && registerForm.controls.email.invalid) {
               <mat-error>Inserisci un'email valida.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Ripeti l'email</mat-label>
+            <!-- autocomplete off: il riempimento automatico ricopierebbe la
+                 prima email e annullerebbe il senso del controllo. -->
+            <input matInput type="email" formControlName="email2" autocomplete="off" />
+            <mat-hint>Il codice di verifica arriva qui: un errore di battitura ti bloccherebbe.</mat-hint>
+            @if (registerForm.controls.email2.touched && registerForm.controls.email2.hasError('mismatch')) {
+              <mat-error>Le due email non coincidono.</mat-error>
+            } @else if (registerForm.controls.email2.touched && registerForm.controls.email2.invalid) {
+              <mat-error>Ripeti l'email.</mat-error>
             }
           </mat-form-field>
           <mat-form-field appearance="outline">

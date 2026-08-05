@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfermaDialog, Loading } from 'shared';
-import { AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
+import { TIPO_UTENTE_LABEL, AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
 
 type View = 'attesa' | 'attivi';
 
@@ -23,6 +23,7 @@ type View = 'attesa' | 'attivi';
 export class Cittadini {
   private readonly service = inject(AdminUsersService);
   private readonly dialog = inject(MatDialog);
+  readonly tipoLabel = TIPO_UTENTE_LABEL;
   private readonly snack = inject(MatSnackBar);
 
   readonly view = signal<View>('attesa');

@@ -45,9 +45,33 @@ export class AuthService {
     });
   }
 
-  /** Registrazione: crea l'account (UNCONFIRMED) e invia il codice via email. */
-  register(email: string, password: string, nickname: string) {
-    return signUp({ username: email, password, options: { userAttributes: { email, nickname } } });
+  /**
+   * Registrazione: crea l'account (UNCONFIRMED) e invia il codice via email.
+   *
+   * `nickname` è il nome pubblico mostrato in bacheca; nome, cognome e rapporto
+   * col paese li vede solo l'associazione. Sono opzionali nella firma perché i
+   * primi iscritti non li hanno: il pool non li pretende (l'obbligatorietà in
+   * Cognito sarebbe irreversibile) e a chiederli è il form.
+   */
+  register(
+    email: string,
+    password: string,
+    nickname: string,
+    extra?: { nome?: string; cognome?: string; tipoUtente?: string },
+  ) {
+    return signUp({
+      username: email,
+      password,
+      options: {
+        userAttributes: {
+          email,
+          nickname,
+          ...(extra?.nome ? { given_name: extra.nome } : {}),
+          ...(extra?.cognome ? { family_name: extra.cognome } : {}),
+          ...(extra?.tipoUtente ? { 'custom:tipoUtente': extra.tipoUtente } : {}),
+        },
+      },
+    });
   }
 
   /** Conferma l'account con il codice ricevuto via email. */

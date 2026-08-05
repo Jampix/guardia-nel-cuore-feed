@@ -14,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatRadioModule } from '@angular/material/radio';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'shared';
@@ -35,6 +36,23 @@ const matchPassword: ValidatorFn = (control: AbstractControl) => {
   return pwd && control.value && pwd !== control.value ? { mismatch: true } : null;
 };
 
+/** Come sopra, per la ripetizione dell'email. Confronto senza distinguere
+ *  maiuscole: gli indirizzi non ne fanno differenza e segnalare "non
+ *  coincidono" per una M maiuscola sarebbe solo un ostacolo. */
+const matchEmail: ValidatorFn = (control: AbstractControl) => {
+  const email = String(control.parent?.get('email')?.value ?? '').trim().toLowerCase();
+  const ripetuta = String(control.value ?? '').trim().toLowerCase();
+  return email && ripetuta && email !== ripetuta ? { mismatch: true } : null;
+};
+
+/** Rapporto col paese. I valori tecnici finiscono in Cognito, le etichette a schermo. */
+export const TIPI_UTENTE = [
+  { valore: 'residente', etichetta: 'Residente a Guardia Piemontese' },
+  { valore: 'non_residente', etichetta: 'Non residente' },
+  { valore: 'sostenitore', etichetta: 'Sostenitore dell\'associazione' },
+  { valore: 'turista', etichetta: 'Turista' },
+] as const;
+
 /** Accesso / registrazione / conferma codice (mode da rotta). */
 @Component({
   selector: 'app-auth',
@@ -47,6 +65,7 @@ const matchPassword: ValidatorFn = (control: AbstractControl) => {
     MatIconModule,
     MatProgressSpinnerModule,
     MatCheckboxModule,
+    MatRadioModule,
   ],
   templateUrl: './auth.html',
   styleUrl: './auth.scss',
@@ -87,8 +106,17 @@ export class Auth {
     password: ['', Validators.required],
   });
   readonly registerForm = this.fb.nonNullable.group({
+    // Nome e cognome reali: li vede solo l'associazione. In bacheca resta il
+    // nome pubblico, come dichiarato nell'informativa.
+    nome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
+    cognome: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
     nickname: ['', [Validators.required, Validators.minLength(2)]],
+    tipoUtente: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
+    // Ripetizione dell'email: serve a intercettare i typo, che altrimenti
+    // bloccano l'iscrizione senza spiegazioni (il codice di verifica finisce a
+    // un indirizzo sbagliato e la persona resta ferma).
+    email2: ['', [Validators.required, matchEmail]],
     password: ['', [Validators.required, Validators.pattern(PWD_PATTERN)]],
     password2: ['', [Validators.required, matchPassword]],
     consenso: [false, Validators.requiredTrue],
@@ -111,6 +139,7 @@ export class Auth {
 
   /** Password in chiaro: un signal per il campo principale, uno per la ripetizione
    *  (login e registrazione non sono mai a schermo insieme, quindi condividono il primo). */
+  readonly tipiUtente = TIPI_UTENTE;
   readonly showPwd = signal(false);
   readonly showPwd2 = signal(false);
 
@@ -126,6 +155,14 @@ export class Auth {
         if (p2.value) p2.updateValueAndValidity({ emitEvent: false });
       });
     }
+    // Stessa cosa per l'email: se si corregge la prima dopo aver riempito la
+    // ripetizione, l'errore deve comparire o sparire di conseguenza.
+    this.registerForm.controls.email.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        const e2 = this.registerForm.controls.email2;
+        if (e2.value) e2.updateValueAndValidity({ emitEvent: false });
+      });
 
     // Precompila l'email quando arriva dal query param (conferma e nuova password).
     effect(() => {
@@ -191,8 +228,13 @@ export class Auth {
   async doRegister(): Promise<void> {
     if (this.registerForm.invalid) { this.registerForm.markAllAsTouched(); return; }
     await this.run(async () => {
-      const { email, password, nickname } = this.registerForm.getRawValue();
-      await this.auth.register(email, password, nickname);
+      const { email, password, nickname, nome, cognome, tipoUtente } =
+        this.registerForm.getRawValue();
+      await this.auth.register(email, password, nickname, {
+        nome: nome.trim(),
+        cognome: cognome.trim(),
+        tipoUtente,
+      });
       this.snack.open('Ti abbiamo inviato un codice via email.', 'OK', { duration: 4000 });
       this.router.navigate(['/conferma'], { queryParams: { email } });
     });
