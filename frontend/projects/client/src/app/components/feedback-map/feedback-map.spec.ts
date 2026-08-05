@@ -15,15 +15,18 @@ describe('FeedbackMap — posizione attuale', () => {
   let comp: FeedbackMap;
   /** Chiamate ricevute da getCurrentPosition, con le opzioni usate. */
   let chiamate: { opts: PositionOptions; ok: PositionCallback; ko: PositionErrorCallback }[];
+  /** Chiamate a watchPosition: l'ultima strada quando getCurrentPosition scade. */
+  let osservazioni: { opts: PositionOptions; ok: PositionCallback; ko: PositionErrorCallback }[];
 
   const ERR = { PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 };
   const errore = (code: number) => ({ ...ERR, code, message: 'test' }) as GeolocationPositionError;
 
   beforeEach(async () => {
     chiamate = [];
+    osservazioni = [];
     spyOnProperty(navigator, 'geolocation', 'get').and.returnValue({
       getCurrentPosition: (ok: any, ko: any, opts: any) => chiamate.push({ opts, ok, ko }),
-      watchPosition: () => 0,
+      watchPosition: (ok: any, ko: any, opts: any) => { osservazioni.push({ opts, ok, ko }); return 1; },
       clearWatch: () => {},
     } as any);
 
@@ -84,6 +87,7 @@ describe('FeedbackMap — posizione attuale', () => {
     chiamate[0].ko(errore(ERR.PERMISSION_DENIED));
 
     expect(chiamate.length).toBe(1);
+    expect(osservazioni.length).toBe(0);
     expect(comp.locating()).toBeFalse();
     expect(comp.geoError()).toContain('accesso alla posizione');
   });
@@ -92,14 +96,14 @@ describe('FeedbackMap — posizione attuale', () => {
     const messaggi = new Map<number, string>();
     for (const code of [ERR.POSITION_UNAVAILABLE, ERR.TIMEOUT]) {
       comp.useMyLocation();
-      const n = chiamate.length;
-      chiamate[n - 1].ko(errore(code)); // primo tentativo
-      chiamate[chiamate.length - 1].ko(errore(code)); // ritento
+      chiamate[chiamate.length - 1].ko(errore(code)); // alta precisione
+      chiamate[chiamate.length - 1].ko(errore(code)); // senza alta precisione
+      osservazioni[osservazioni.length - 1].ko(errore(code)); // watchPosition
       messaggi.set(code, comp.geoError() ?? '');
     }
 
     expect(messaggi.get(ERR.POSITION_UNAVAILABLE)).toContain('servizi di localizzazione');
-    expect(messaggi.get(ERR.TIMEOUT)).toContain('troppo tempo');
+    expect(messaggi.get(ERR.TIMEOUT)).toContain('Wi-Fi');
     // Ogni messaggio offre l'alternativa: la mappa si può sempre toccare.
     for (const m of messaggi.values()) expect(m).toContain('mappa');
     // E i due motivi non danno lo stesso testo.
@@ -111,6 +115,32 @@ describe('FeedbackMap — posizione attuale', () => {
     // Safari è proprio il caso che fallisce.
     comp.useMyLocation();
     expect(chiamate[0].opts.maximumAge).toBeGreaterThan(0);
-    expect(chiamate[0].opts.timeout).toBeGreaterThanOrEqual(15000);
+  });
+
+  it('se anche il secondo tentativo scade, passa a watchPosition', () => {
+    // Su Safari `getCurrentPosition` va in timeout con una certa frequenza,
+    // mentre l'osservazione continua consegna il primo punto disponibile.
+    let scelto: any;
+    comp.pick.subscribe((p) => (scelto = p));
+
+    comp.useMyLocation();
+    chiamate[0].ko(errore(ERR.TIMEOUT));
+    chiamate[1].ko(errore(ERR.TIMEOUT));
+
+    expect(osservazioni.length).toBe(1);
+    expect(comp.locating()).toBeTrue();
+
+    osservazioni[0].ok({ coords: { latitude: 39.47, longitude: 15.97 } } as any);
+
+    expect(scelto).toEqual({ lat: 39.47, lng: 15.97 });
+    expect(comp.locating()).toBeFalse();
+    expect(comp.geoError()).toBeNull();
+  });
+
+  it('nessun tentativo supera gli 8 secondi: 35 di attesa erano inaccettabili', () => {
+    comp.useMyLocation();
+    chiamate[0].ko(errore(ERR.TIMEOUT));
+
+    for (const c of chiamate) expect(c.opts.timeout).toBeLessThanOrEqual(8000);
   });
 });

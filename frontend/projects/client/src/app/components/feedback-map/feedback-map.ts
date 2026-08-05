@@ -119,27 +119,71 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
 
   private chiediPosizione(altaPrecisione: boolean): void {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        this.map?.setView([latitude, longitude], 17);
-        this.select(latitude, longitude);
-        this.locating.set(false);
-      },
+      (pos) => this.accetta(pos),
       (err) => {
         // Permesso negato: riprovare non serve, l'esito sarebbe identico.
-        if (altaPrecisione && err.code !== err.PERMISSION_DENIED) {
+        if (err.code === err.PERMISSION_DENIED) {
+          this.fallisci(err);
+          return;
+        }
+        if (altaPrecisione) {
           console.warn('Posizione: ritento senza alta precisione', err.code, err.message);
           this.chiediPosizione(false);
           return;
         }
-        console.error('Posizione non ottenuta', err.code, err.message);
-        this.locating.set(false);
-        this.geoError.set(this.messaggioGeo(err));
+        // Ultima strada: `watchPosition`. Su Safari `getCurrentPosition` va in
+        // timeout con una certa frequenza, mentre l'osservazione continua tiene
+        // attivo il sottosistema di localizzazione e consegna il primo punto
+        // appena disponibile. Si chiude subito dopo: non serve seguire l'utente.
+        console.warn('Posizione: passo a watchPosition', err.code, err.message);
+        this.osservaPosizione(err);
       },
       altaPrecisione
-        ? { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-        : { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
+        ? { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        : { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
     );
+  }
+
+  /** Terzo tentativo, con tetto di attesa gestito a mano. */
+  private osservaPosizione(errorePrecedente: GeolocationPositionError): void {
+    let chiuso = false;
+    const stop = (id: number) => {
+      if (chiuso) return;
+      chiuso = true;
+      navigator.geolocation.clearWatch(id);
+    };
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        stop(id);
+        this.accetta(pos);
+      },
+      (err) => {
+        stop(id);
+        this.fallisci(err);
+      },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
+    );
+    // Alcuni browser non richiamano mai il callback d'errore su watchPosition:
+    // senza questo tetto la rotellina girerebbe all'infinito.
+    setTimeout(() => {
+      if (chiuso) return;
+      stop(id);
+      this.fallisci(errorePrecedente);
+    }, 12000);
+  }
+
+  private accetta(pos: GeolocationPosition): void {
+    const { latitude, longitude } = pos.coords;
+    this.map?.setView([latitude, longitude], 17);
+    this.select(latitude, longitude);
+    this.locating.set(false);
+    this.geoError.set(null);
+  }
+
+  private fallisci(err: GeolocationPositionError): void {
+    console.error('Posizione non ottenuta', err.code, err.message);
+    this.locating.set(false);
+    this.geoError.set(this.messaggioGeo(err));
   }
 
   /** Messaggio per ciascun motivo, con cosa può fare l'utente. */
@@ -153,8 +197,13 @@ export class FeedbackMap implements AfterViewInit, OnDestroy {
           'servizi di localizzazione siano attivi per il browser; intanto puoi ' +
           'toccare la mappa.';
       case err.TIMEOUT:
-        return 'Ci è voluto troppo tempo per rilevare la posizione. Riprova, ' +
-          'oppure tocca la mappa.';
+        // Su Safari il timeout ha quasi sempre una di queste tre cause, e senza
+        // dirle il messaggio non è utile: invitare a "riprovare" da solo porta
+        // solo ad aspettare altri venti secondi per lo stesso esito.
+        return 'Non è arrivata nessuna posizione. Su Mac serve il Wi-Fi acceso ' +
+          '(anche se navighi via cavo) e i servizi di localizzazione attivi per ' +
+          'il browser; su iPhone controlla che Safari possa usare la posizione. ' +
+          'Puoi comunque toccare la mappa per indicare il punto.';
       default:
         return 'Non è stato possibile rilevare la posizione: tocca la mappa per ' +
           'indicare il punto.';
