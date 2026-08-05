@@ -26,10 +26,9 @@
 
     @switch (mode()) {
       @case ('register') {
-        <!-- Raggruppato in tre sezioni: nove campi in fila si leggono come un
-             muro e si abbandonano a metà. -->
+        <!-- Nome e cognome affiancati e un solo stacco prima delle credenziali:
+             nove campi tutti in fila si leggono come un muro. -->
         <form [formGroup]="registerForm" (ngSubmit)="doRegister()">
-          <p class="sez">Chi sei</p>
           <div class="due-col">
             <mat-form-field appearance="outline">
               <mat-label>Nome</mat-label>
@@ -55,7 +54,7 @@
             }
           </mat-form-field>
 
-          <p class="sez">Il tuo rapporto con il paese</p>
+          <p class="domanda">Sei:</p>
           <mat-radio-group class="tipi" formControlName="tipoUtente">
             @for (t of tipiUtente; track t.valore) {
               <mat-radio-button [value]="t.valore">{{ t.etichetta }}</mat-radio-button>

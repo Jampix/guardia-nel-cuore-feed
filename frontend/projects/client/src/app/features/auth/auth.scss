@@ -158,6 +158,14 @@ mat-form-field {
   }
 }
 
+/* Domanda breve sopra le opzioni: senza, resterebbero quattro voci senza
+   sapere cosa si sta scegliendo. Tono normale, non un'intestazione. */
+.domanda {
+  margin: 10px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* Registrazione: il form è lungo, quindi va scandito in sezioni. */
 .sez {
   margin: 14px 0 2px;

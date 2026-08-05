@@ -11,7 +11,7 @@ const ADMIN_URL = process.env.ADMIN_URL as string;
 const TIPI: Record<string, string> = {
   residente: 'residente a Guardia Piemontese',
   non_residente: 'non residente',
-  sostenitore: "sostenitore dell'associazione",
+  sostenitore: 'sostenitore del paese',
   turista: 'turista',
 };
 

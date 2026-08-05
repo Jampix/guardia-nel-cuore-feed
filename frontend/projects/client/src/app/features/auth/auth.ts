@@ -49,7 +49,7 @@ const matchEmail: ValidatorFn = (control: AbstractControl) => {
 export const TIPI_UTENTE = [
   { valore: 'residente', etichetta: 'Residente a Guardia Piemontese' },
   { valore: 'non_residente', etichetta: 'Non residente' },
-  { valore: 'sostenitore', etichetta: 'Sostenitore dell\'associazione' },
+  { valore: 'sostenitore', etichetta: 'Sostenitore del paese' },
   { valore: 'turista', etichetta: 'Turista' },
 ] as const;
 
