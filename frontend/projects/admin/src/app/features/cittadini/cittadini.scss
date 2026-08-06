@@ -22,7 +22,12 @@
   border-radius: 16px;
   padding: 12px 15px;
 
-  .who { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+  /* `flex-basis: 240px` (non 0) è ciò che fa andare a capo i pulsanti quando lo
+     schermo è stretto: con `flex: 1` la riga restava una sola, il nome veniva
+     compresso e il testo tracimava SOPRA i pulsanti — su iPhone l'email di chi
+     si era iscritto finiva illeggibile sotto "Rifiuta". Niente breakpoint: la
+     riga si spezza quando serve, a qualunque larghezza. */
+  .who { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 240px; }
   .avatar {
     width: 42px;
     height: 42px;
@@ -37,8 +42,12 @@
     font-size: 16px;
   }
   .txt { display: flex; flex-direction: column; min-width: 0; }
-  .nick { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-  .email { font-size: 13px; color: var(--mat-sys-on-surface-variant); }
+  /* `anywhere`: un'email è un'unica parola lunga e senza questo esce dal suo
+     riquadro invece di andare a capo. Serve a prescindere dalla riga: nessuna
+     larghezza di schermo deve poter nascondere a chi sta approvando l'indirizzo
+     della persona che sta approvando. */
+  .nick { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .email { font-size: 13px; color: var(--mat-sys-on-surface-variant); overflow-wrap: anywhere; }
 
   .actions { display: flex; gap: 8px; margin-left: auto; }
   .approve { --mat-button-filled-container-color: var(--mat-sys-primary); font-weight: 600; }
