@@ -214,7 +214,9 @@ export class ApiStack extends Stack {
         ...(emailDomain && props.alertEmail
           ? {
               FROM_EMAIL: `noreply@${emailDomain}`,
+              // Indirizzo di ripiego: i destinatari veri sono i gruppi staff.
               STAFF_EMAIL: props.alertEmail,
+              USER_POOL_ID: userPool.userPoolId,
               ADMIN_URL: `https://admin.${emailDomain}`,
             }
           : {}),
@@ -232,6 +234,8 @@ export class ApiStack extends Stack {
           resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
         }),
       );
+      // Destinatari dell'avviso = i gruppi staff, letti all'invio.
+      userPool.grant(reportFeedbackFn.fn, 'cognito-idp:ListUsersInGroup');
     }
 
     // GET /admin/feedback/{id}/reports (staff) — motivi delle segnalazioni
@@ -255,7 +259,9 @@ export class ApiStack extends Stack {
         ...(emailDomain && props.alertEmail
           ? {
               FROM_EMAIL: `noreply@${emailDomain}`,
+              // Indirizzo di ripiego: i destinatari veri sono i gruppi staff.
               STAFF_EMAIL: props.alertEmail,
+              USER_POOL_ID: userPool.userPoolId,
               ADMIN_URL: `https://admin.${emailDomain}`,
             }
           : {}),
@@ -273,6 +279,8 @@ export class ApiStack extends Stack {
           resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
         }),
       );
+      // Destinatari dell'avviso = i gruppi staff, letti all'invio.
+      userPool.grant(feedbackOwnerFn.fn, 'cognito-idp:ListUsersInGroup');
     }
 
     // DELETE /account (autenticata) — cancellazione account (diritto all'oblio GDPR)

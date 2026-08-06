@@ -1,13 +1,33 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { mockClient } from 'aws-sdk-client-mock';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import {
+  CognitoIdentityProviderClient,
+  ListUsersInGroupCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { handler } from './post-confirmation';
 
 const ses = mockClient(SESv2Client);
+const cognito = mockClient(CognitoIdentityProviderClient);
+
+/** Staff registrato nei gruppi del pool. */
+function staff(...email: string[]) {
+  cognito.on(ListUsersInGroupCommand, { GroupName: 'admin' }).resolves({
+    Users: email.map((e) => ({
+      Attributes: [
+        { Name: 'email', Value: e },
+        { Name: 'email_verified', Value: 'true' },
+      ],
+    })),
+  });
+  cognito.on(ListUsersInGroupCommand, { GroupName: 'membro' }).resolves({ Users: [] });
+}
 
 function evento(over: Record<string, unknown> = {}) {
   return {
     triggerSource: 'PostConfirmation_ConfirmSignUp',
+    // Il pool arriva dall'evento del trigger, non da una variabile d'ambiente.
+    userPoolId: 'eu-west-1_test',
     request: { userAttributes: { email: 'mario@example.com', nickname: 'Mario' } },
     ...over,
   } as any;
@@ -28,7 +48,9 @@ function oggetti(): string[] {
 
 beforeEach(() => {
   ses.reset();
+  cognito.reset();
   ses.on(SendEmailCommand).resolves({});
+  staff('staff@example.com');
 });
 
 describe('post-confirmation', () => {
@@ -38,6 +60,37 @@ describe('post-confirmation', () => {
     expect(destinatari().sort()).toEqual(['mario@example.com', 'staff@example.com']);
     expect(oggetti()).toContain('Nuova iscrizione da approvare');
     expect(oggetti()).toContain('Registrazione ricevuta — Guardia nel Cuore');
+  });
+
+  it('avvisa TUTTI gli amministratori, non solo il primo', async () => {
+    // Quando è stato aggiunto un secondo amministratore per dare una mano, le
+    // richieste di registrazione continuavano ad arrivare solo al primo: chi
+    // poteva approvare non sapeva che c'era da approvare.
+    staff('primo@example.com', 'secondo@example.com');
+
+    await handler(evento());
+
+    const avviso = ses
+      .commandCalls(SendEmailCommand)
+      .map((c) => c.args[0].input)
+      .find((i) => i.Content?.Simple?.Subject?.Data === 'Nuova iscrizione da approvare');
+    expect(avviso?.Destination?.ToAddresses?.sort()).toEqual([
+      'primo@example.com',
+      'secondo@example.com',
+    ]);
+  });
+
+  it('la conferma al cittadino resta solo al cittadino', async () => {
+    // Lo staff non deve ricevere anche la copia destinata a chi si è iscritto.
+    staff('primo@example.com', 'secondo@example.com');
+
+    await handler(evento());
+
+    const conferma = ses
+      .commandCalls(SendEmailCommand)
+      .map((c) => c.args[0].input)
+      .find((i) => i.Content?.Simple?.Subject?.Data?.startsWith('Registrazione ricevuta'));
+    expect(conferma?.Destination?.ToAddresses).toEqual(['mario@example.com']);
   });
 
   it('nell\'avviso allo staff mette nome ed email di chi attende', async () => {

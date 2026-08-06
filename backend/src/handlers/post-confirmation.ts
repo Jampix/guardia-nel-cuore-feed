@@ -1,7 +1,10 @@
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import { emailDelloStaff } from '../lib/staff-emails';
 import type { PostConfirmationTriggerEvent } from 'aws-lambda';
 
 const ses = new SESv2Client({});
+const cognito = new CognitoIdentityProviderClient({});
 const FROM_EMAIL = process.env.FROM_EMAIL as string;
 const STAFF_EMAIL = process.env.STAFF_EMAIL as string;
 const CLIENT_URL = process.env.CLIENT_URL as string;
@@ -47,8 +50,10 @@ export const handler = async (
   const tipo = TIPI[attrs['custom:tipoUtente'] ?? ''] ?? '';
 
   try {
+    // Il pool arriva dall'evento del trigger: passarlo come variabile
+    // d'ambiente creerebbe una dipendenza circolare pool→trigger→policy→pool.
     await Promise.all([
-      avvisaStaff(email, nickname, nomeCompleto, tipo),
+      avvisaStaff(event.userPoolId, email, nickname, nomeCompleto, tipo),
       confermaAlCittadino(email, nickname),
     ]);
   } catch (err) {
@@ -60,12 +65,15 @@ export const handler = async (
 
 /** Avvisa lo staff che c'è una nuova iscrizione da approvare. */
 async function avvisaStaff(
+  userPoolId: string,
   emailCittadino?: string,
   nickname?: string,
   nomeCompleto?: string,
   tipo?: string,
 ): Promise<void> {
-  if (!FROM_EMAIL || !STAFF_EMAIL) return;
+  if (!FROM_EMAIL) return;
+  const destinatari = await emailDelloStaff(cognito, userPoolId, STAFF_EMAIL);
+  if (!destinatari.length) return;
 
   const chi = [nomeCompleto, emailCittadino].filter(Boolean).join(' — ') || 'un nuovo cittadino';
   const link = ADMIN_URL ? `${ADMIN_URL}/cittadini` : '';
@@ -80,7 +88,7 @@ async function avvisaStaff(
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
-      Destination: { ToAddresses: [STAFF_EMAIL] },
+      Destination: { ToAddresses: destinatari },
       Content: {
         Simple: {
           Subject: { Data: 'Nuova iscrizione da approvare' },

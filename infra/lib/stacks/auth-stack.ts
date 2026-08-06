@@ -77,6 +77,16 @@ export class AuthStack extends Stack {
           resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
         }),
       );
+      // L'avviso va a TUTTO lo staff, letto dai gruppi al momento dell'invio:
+      // aggiungere una persona al gruppo basta a farle ricevere gli avvisi.
+      // ARN wildcard e pool preso da `event.userPoolId` per la stessa ragione
+      // del pre-auth: il costrutto pool creerebbe la dipendenza circolare.
+      postConfirmFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['cognito-idp:ListUsersInGroup'],
+          resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`],
+        }),
+      );
     }
 
     this.userPoolId = auth.userPool.userPoolId;

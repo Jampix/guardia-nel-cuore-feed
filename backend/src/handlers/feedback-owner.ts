@@ -8,6 +8,8 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
+import { emailDelloStaff } from '../lib/staff-emails';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -16,12 +18,14 @@ import type {
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3 = new S3Client({});
 const ses = new SESv2Client({});
+const cognito = new CognitoIdentityProviderClient({});
 const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 const VOTES_TABLE = process.env.VOTES_TABLE as string;
 const COMMENTS_TABLE = process.env.COMMENTS_TABLE as string;
 const PHOTO_BUCKET = process.env.PHOTO_BUCKET as string;
 const FROM_EMAIL = process.env.FROM_EMAIL as string;
 const STAFF_EMAIL = process.env.STAFF_EMAIL as string;
+const USER_POOL_ID = process.env.USER_POOL_ID as string;
 const ADMIN_URL = process.env.ADMIN_URL as string;
 
 /**
@@ -129,8 +133,13 @@ async function avvisaStaffSeRilevante(item: Record<string, any>): Promise<void> 
   const pubblicata = item.visibilita === 'pubblico';
   const segnalazioni = Number(item.segnalazioni ?? 0);
   if (!pubblicata && segnalazioni === 0) return;
-  if (!FROM_EMAIL || !STAFF_EMAIL) {
-    console.warn('Avviso eliminazione non inviato: mittente o destinatario non configurati');
+  if (!FROM_EMAIL) {
+    console.warn('Avviso eliminazione non inviato: mittente non configurato');
+    return;
+  }
+  const destinatari = await emailDelloStaff(cognito, USER_POOL_ID, STAFF_EMAIL);
+  if (!destinatari.length) {
+    console.warn('Avviso eliminazione non inviato: nessun destinatario');
     return;
   }
 
@@ -152,7 +161,7 @@ async function avvisaStaffSeRilevante(item: Record<string, any>): Promise<void> 
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
-      Destination: { ToAddresses: [STAFF_EMAIL] },
+      Destination: { ToAddresses: destinatari },
       Content: {
         Simple: {
           Subject: { Data: `Proposta eliminata dall'autore — ${titolo}`.slice(0, 200) },
