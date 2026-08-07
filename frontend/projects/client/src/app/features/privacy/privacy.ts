@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 
-/** Informativa privacy (bozza) — rotta pubblica, leggibile prima di registrarsi. */
+/** Informativa privacy — rotta pubblica, leggibile prima di registrarsi. */
 @Component({
   selector: 'app-privacy',
   imports: [RouterLink, MatIconModule],
