@@ -5,6 +5,7 @@ import {
   CognitoIdentityProviderClient,
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { rispondiA } from '../lib/email';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -239,6 +240,7 @@ async function notifyAuthor(item: Record<string, any>, avviso: Avviso): Promise<
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
+      ReplyToAddresses: rispondiA(),
       Destination: { ToAddresses: [email] },
       Content: {
         Simple: {

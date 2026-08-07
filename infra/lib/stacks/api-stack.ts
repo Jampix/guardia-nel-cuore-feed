@@ -131,13 +131,20 @@ export class ApiStack extends Stack {
     // Al cambio stato invia email all'autore (SES) risolvendone l'indirizzo
     // da Cognito (AdminGetUser). Email best-effort nell'handler.
     const emailDomain = props.config.features.dns?.domain;
+    // Reply-To di tutte le email: il mittente `noreply@` non riceve posta, quindi
+    // senza questo chi risponde a un avviso scrive nel vuoto senza accorgersene.
+    const contactEmail = props.config.contactEmail;
     const patchFeedbackFn = new NodeFunctionConstruct(this, 'PatchFeedbackFn', {
       entry: path.join(handlersDir, 'patch-feedback.ts'),
       environment: {
         FEEDBACKS_TABLE: props.feedbacksTableName,
         USER_POOL_ID: props.userPoolId,
         ...(emailDomain
-          ? { FROM_EMAIL: `noreply@${emailDomain}`, CLIENT_URL: `https://${emailDomain}` }
+          ? {
+              FROM_EMAIL: `noreply@${emailDomain}`,
+              CLIENT_URL: `https://${emailDomain}`,
+              ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
+            }
           : {}),
       },
       description: 'Guardia nel Cuore - moderazione feedback',
@@ -170,7 +177,11 @@ export class ApiStack extends Stack {
       environment: {
         USER_POOL_ID: props.userPoolId,
         ...(emailDomain
-          ? { FROM_EMAIL: `noreply@${emailDomain}`, CLIENT_URL: `https://${emailDomain}` }
+          ? {
+              FROM_EMAIL: `noreply@${emailDomain}`,
+              CLIENT_URL: `https://${emailDomain}`,
+              ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
+            }
           : {}),
       },
       description: 'Guardia nel Cuore - iscrizioni cittadini (approvazione)',
@@ -214,6 +225,7 @@ export class ApiStack extends Stack {
         ...(emailDomain && props.alertEmail
           ? {
               FROM_EMAIL: `noreply@${emailDomain}`,
+              ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
               // Indirizzo di ripiego: i destinatari veri sono i gruppi staff.
               STAFF_EMAIL: props.alertEmail,
               USER_POOL_ID: userPool.userPoolId,
@@ -259,6 +271,7 @@ export class ApiStack extends Stack {
         ...(emailDomain && props.alertEmail
           ? {
               FROM_EMAIL: `noreply@${emailDomain}`,
+              ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
               // Indirizzo di ripiego: i destinatari veri sono i gruppi staff.
               STAFF_EMAIL: props.alertEmail,
               USER_POOL_ID: userPool.userPoolId,

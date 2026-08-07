@@ -10,6 +10,7 @@ import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { emailDelloStaff } from '../lib/staff-emails';
+import { rispondiA } from '../lib/email';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -161,6 +162,7 @@ async function avvisaStaffSeRilevante(item: Record<string, any>): Promise<void> 
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
+      ReplyToAddresses: rispondiA(),
       Destination: { ToAddresses: destinatari },
       Content: {
         Simple: {

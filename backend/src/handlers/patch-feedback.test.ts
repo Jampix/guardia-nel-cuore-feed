@@ -86,6 +86,20 @@ describe('patch-feedback', () => {
       expect(mail?.testo).toContain('Ciao Mario');
     });
 
+    it('l\'avviso si può rispondere: porta il Reply-To dell\'associazione', async () => {
+      // Il mittente è `noreply@`, che non è una casella. Chi legge «la tua
+      // proposta è in lavorazione» e vuole aggiungere un dettaglio premerà
+      // Rispondi: senza questo campo scriverebbe nel vuoto senza saperlo.
+      scenario(PRIMA, { stato: 'in_lavorazione' });
+      await handler(apiEvent({
+        method: 'PATCH', claims: staff, pathParameters: { id: 'f1' }, body: { stato: 'in_lavorazione' },
+      }));
+
+      const input = ses.commandCalls(SendEmailCommand)[0]?.args[0].input;
+      expect(input?.ReplyToAddresses).toEqual(['guardianelcuore@example.com']);
+      expect(input?.FromEmailAddress).not.toEqual(input?.ReplyToAddresses?.[0]);
+    });
+
     it('usa un testo garbato per l\'archiviazione, non l\'etichetta secca', async () => {
       scenario(PRIMA, { stato: 'archiviato' });
       await handler(apiEvent({

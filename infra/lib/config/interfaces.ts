@@ -53,6 +53,20 @@ export interface ProjectConfig {
     budgetUsd: number;
   };
 
+  /**
+   * Recapito PUBBLICO dell'associazione: Reply-To di tutte le email inviate
+   * (Cognito e nostre) e contatto del titolare nell'informativa privacy.
+   *
+   * Distinto da `alerts.email`, che è il recapito TECNICO di chi presidia
+   * l'infrastruttura: le due cose vanno tenute separate perché cambiano per
+   * ragioni diverse — le cariche dell'associazione si rinnovano, chi tiene
+   * l'infrastruttura no.
+   *
+   * Serve perché il mittente è `noreply@<dominio>`, che non è una casella: chi
+   * risponde a un avviso, senza questo, scrive nel vuoto.
+   */
+  contactEmail?: string;
+
   // Feature flag per stack opzionali (attivate in compose())
   features: {
     /**

@@ -21,6 +21,9 @@ export const prodConfig: ProjectConfig = {
     budgetUsd: 15,
   },
 
+  // Recapito dell'associazione, lo stesso pubblicato nell'informativa privacy.
+  contactEmail: 'guardianelcuore@gmail.com',
+
   features: {
     // Abilitato all'Incremento 4 (hosted zone + record client/admin).
     dns: {

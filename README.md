@@ -159,11 +159,15 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
   contro l'API di produzione è l'unico modo di provare una modifica prima di
   esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
-- ✅ **Test**: 114 backend (Vitest, ogni handler coperto) + 53 frontend (Karma su
+- ✅ **Test**: 137 backend (Vitest, ogni handler coperto) + 62 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
-- 🔜 test e2e, i18n IT/EN, UI gestione staff, casella email dell'associazione
-  (`Reply-To`), portabilità dei dati ("scarica i miei dati").
+- ✅ **Informativa privacy** completa con i dati del titolare (Associazione
+  «Guardia nel Cuore», C.F. 96055780785) e **`Reply-To`** verso il recapito
+  dell'associazione su tutte le email, Cognito compreso: il mittente resta
+  `noreply@`, ma una risposta ora arriva a qualcuno.
+- 🔜 test e2e, i18n IT/EN, UI gestione staff, portabilità dei dati ("scarica i
+  miei dati"), età minima di iscrizione (oggi non dichiarata).
 
 ## Lancio pubblico (checklist)
 
@@ -181,8 +185,6 @@ con i membri queste voci sono scelte consapevoli, non dimenticanze.
       di configurare prima il **proxy del dev server** Angular (richiede di
       introdurre `fileReplacements` in `angular.json`: oggi c'è un solo
       `environment.ts` per app, con l'URL dell'API in assoluto).
-- [ ] **`Reply-To`** sulle email transazionali verso una casella letta da una
-      persona: oggi le risposte dei cittadini arriverebbero a `noreply@`.
 - [ ] **Report DMARC (`rua=`)** verso una casella che li riceva, poi valutare
       `p=reject`. Oggi la policy è `quarantine` senza report: senza visibilità
       non si passa a `reject`, perché si scarterebbe posta legittima senza

@@ -6,6 +6,7 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { rispondiA } from '../lib/email';
 import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import type {
@@ -169,6 +170,7 @@ async function notifyApproved(username: string): Promise<void> {
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
+      ReplyToAddresses: rispondiA(),
       Destination: { ToAddresses: [email] },
       Content: {
         Simple: {

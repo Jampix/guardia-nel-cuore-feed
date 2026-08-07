@@ -1,6 +1,7 @@
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
 import { emailDelloStaff } from '../lib/staff-emails';
+import { rispondiA } from '../lib/email';
 import type { PostConfirmationTriggerEvent } from 'aws-lambda';
 
 const ses = new SESv2Client({});
@@ -88,6 +89,7 @@ async function avvisaStaff(
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
+      ReplyToAddresses: rispondiA(),
       Destination: { ToAddresses: destinatari },
       Content: {
         Simple: {
@@ -116,6 +118,7 @@ async function confermaAlCittadino(email?: string, nickname?: string): Promise<v
   await ses.send(
     new SendEmailCommand({
       FromEmailAddress: FROM_EMAIL,
+      ReplyToAddresses: rispondiA(),
       Destination: { ToAddresses: [email] },
       Content: {
         Simple: {

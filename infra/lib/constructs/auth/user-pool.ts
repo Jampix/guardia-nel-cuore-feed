@@ -22,6 +22,16 @@ export interface UserPoolConstructProps {
    * nuovi cittadini e nessuno potrebbe registrarsi.
    */
   emailDomain?: string;
+  /**
+   * Recapito dell'associazione, usato come Reply-To delle email di Cognito
+   * (codice di verifica e recupero password).
+   *
+   * Il mittente è `noreply@<emailDomain>`, che non è una casella: chi rispondeva
+   * al codice di verifica — e succede, quando qualcosa non va — scriveva nel
+   * vuoto senza saperlo. Non richiede verifica in SES: solo il mittente la
+   * richiede, non il destinatario di una risposta.
+   */
+  replyToEmail?: string;
 }
 
 /**
@@ -98,6 +108,7 @@ export class UserPoolConstruct extends Construct {
               fromEmail: `noreply@${props.emailDomain}`,
               fromName: 'Guardia nel Cuore',
               sesVerifiedDomain: props.emailDomain,
+              ...(props.replyToEmail ? { replyTo: props.replyToEmail } : {}),
             }),
           }
         : {}),

@@ -35,7 +35,16 @@ export class AuthStack extends Stack {
     const dns = props.config.features.dns;
     const emailDomain = dns?.enabled ? dns.domain : undefined;
 
-    const auth = new UserPoolConstruct(this, 'Auth', { removalPolicy, emailDomain });
+    // Reply-To: il recapito dell'associazione. Il mittente è `noreply@`, che non
+    // riceve posta, quindi senza questo una risposta al codice di verifica o a un
+    // avviso si perde senza che chi ha scritto lo sappia.
+    const contactEmail = props.config.contactEmail;
+
+    const auth = new UserPoolConstruct(this, 'Auth', {
+      removalPolicy,
+      emailDomain,
+      replyToEmail: contactEmail,
+    });
 
     // Trigger Pre-Authentication: blocca il login dei cittadini non approvati
     // (chi non è in alcun gruppo). L'approvazione avviene dal backoffice
@@ -68,6 +77,7 @@ export class AuthStack extends Stack {
           STAFF_EMAIL: staffEmail,
           CLIENT_URL: `https://${emailDomain}`,
           ADMIN_URL: `https://admin.${emailDomain}`,
+          ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
         },
       });
       auth.userPool.addTrigger(UserPoolOperation.POST_CONFIRMATION, postConfirmFn.fn);

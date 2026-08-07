@@ -16,6 +16,7 @@ export default defineConfig({
       ADMIN_URL: 'https://admin.feed.guardianelcuore.it',
       STAFF_EMAIL: 'staff@example.com',
       COMMENTS_TABLE: 'Comments-test',
+      REPLY_TO_EMAIL: 'guardianelcuore@example.com',
     },
   },
 });
