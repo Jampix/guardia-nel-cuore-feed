@@ -159,7 +159,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
   contro l'API di produzione è l'unico modo di provare una modifica prima di
   esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
-- ✅ **Test**: 137 backend (Vitest, ogni handler coperto) + 62 frontend (Karma su
+- ✅ **Test**: 145 backend (Vitest, ogni handler coperto) + 98 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
 - ✅ **Informativa privacy** completa con i dati del titolare (Associazione
@@ -168,6 +168,15 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   `noreply@`, ma una risposta ora arriva a qualcuno.
 - 🔜 test e2e, i18n IT/EN, UI gestione staff, portabilità dei dati ("scarica i
   miei dati"), età minima di iscrizione (oggi non dichiarata).
+
+- ✅ **Header di sicurezza** su entrambe le distribuzioni CloudFront (HSTS,
+  CSP con host esatti, `nosniff`, `Referrer-Policy`, `X-Frame-Options`), **tetto
+  di 5 MB firmato** sull'upload delle foto (prima era solo lato client) e **log
+  CloudWatch a 90 giorni** (prima non scadevano mai, e contengono indirizzi email).
+  ⚠️ La CSP non ammette script inline: `optimization.styles.inlineCritical` deve
+  restare **false** in `angular.json`, altrimenti Angular emette un `onload` che
+  viene bloccato e il foglio di stile globale non si applica. Un controllo nel
+  workflow di deploy ferma la pubblicazione se ricompare.
 
 ## Lancio pubblico (checklist)
 
