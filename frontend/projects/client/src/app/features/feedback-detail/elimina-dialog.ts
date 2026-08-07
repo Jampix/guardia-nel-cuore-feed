@@ -51,7 +51,9 @@ export interface EliminaDialogData {
         L'operazione è <strong>irreversibile</strong>: la proposta e la sua foto non si
         possono recuperare.
         @if (data.pubblicata) {
-          Se ti serve solo una correzione, scrivi allo staff invece di eliminare.
+          Se ti serve solo una correzione, scrivi a
+          <a href="mailto:guardianelcuore&#64;gmail.com">guardianelcuore&#64;gmail.com</a>
+          invece di eliminare.
         }
       </p>
     </mat-dialog-content>

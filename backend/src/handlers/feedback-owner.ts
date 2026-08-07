@@ -73,10 +73,16 @@ export const handler = async (
       // Non si suggerisce l'eliminazione: era un invito all'azione distruttiva
       // proprio nel momento in cui la proposta ha già voti e magari una
       // risposta. Si indirizza allo staff, che può correggere o ritirarla.
+      // L'indirizzo viene dalla configurazione (lo stesso del Reply-To): dire
+      // "scrivi allo staff" senza dire DOVE è un consiglio che non si può
+      // seguire, e lascia l'eliminazione come unica strada praticabile —
+      // esattamente ciò che questo messaggio vuole evitare.
+      const contatto = rispondiA()?.[0];
       return resp(409, {
         message:
           'La proposta è già pubblicata e non è più modificabile: altri cittadini ' +
-          'l\'hanno letta e votata così. Per una correzione scrivi allo staff.',
+          'l\'hanno letta e votata così. Per una correzione scrivi ' +
+          (contatto ? `a ${contatto}.` : 'allo staff.'),
       });
     }
     let body: Record<string, unknown>;

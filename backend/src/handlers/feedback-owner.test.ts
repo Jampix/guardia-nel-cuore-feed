@@ -72,8 +72,29 @@ describe('feedback-owner', () => {
 
       expect(status).toBe(409);
       expect(body.message).not.toContain('eliminarla');
-      expect(body.message).toContain('staff');
+      // Non basta rimandare allo staff: il messaggio deve dire DOVE scrivere.
+      // Un rimando senza indirizzo lascia l'eliminazione come unica strada
+      // praticabile, che è proprio ciò che questo messaggio vuole evitare.
+      expect(body.message).toContain('guardianelcuore@example.com');
       expect(ddb.commandCalls(UpdateCommand).length).toBe(0);
+    });
+
+    it('senza recapito configurato rimanda comunque allo staff', async () => {
+      // Il messaggio non deve degradare in "scrivi a undefined": il ripiego è
+      // meno utile, non rotto.
+      const originale = process.env.REPLY_TO_EMAIL;
+      delete process.env.REPLY_TO_EMAIL;
+      try {
+        ddb.on(GetCommand).resolves({ Item: { ...PRIVATA, visibilita: 'pubblico' } });
+        const { body } = parseResult(await handler(apiEvent({
+          method: 'PATCH', claims: autore, pathParameters: { id: 'f1' }, body: { titolo: 'Cambio' },
+        })));
+
+        expect(body.message).toContain('allo staff');
+        expect(body.message).not.toContain('undefined');
+      } finally {
+        process.env.REPLY_TO_EMAIL = originale;
+      }
     });
   });
 
