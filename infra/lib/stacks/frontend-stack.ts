@@ -17,6 +17,13 @@ export interface FrontendStackProps extends StackProps {
   hostedZoneId: string;
   /** ARN del certificato ACM (us-east-1) creato dal CertStack. */
   certificateArn: string;
+  /**
+   * Endpoint dell'HTTP API (`https://<id>.execute-api.<region>.amazonaws.com`).
+   * Serve alla CSP: le SPA devono poter chiamare l'API e **nient'altro**.
+   */
+  apiEndpoint: string;
+  /** Nome del bucket foto: da qui si ricava l'host dei GET/PUT prefirmati. */
+  photoBucketName: string;
 }
 
 /**
@@ -51,18 +58,42 @@ export class FrontendStack extends Stack {
       zoneName: props.zoneName,
     });
 
+    // Origini della CSP, DERIVATE dagli altri stack e non scritte a mano: se un
+    // giorno l'API o il bucket venissero ricreati, la policy segue. Host esatti
+    // e non `*.execute-api…`/`*.s3…`: con un carattere jolly basterebbe creare
+    // un'API o un bucket propri nella stessa regione per aggirare la CSP, e
+    // l'unica cosa che protegge (il token in localStorage) tornerebbe esposta.
+    const photoOrigin = `https://${props.photoBucketName}.s3.${this.region}.amazonaws.com`;
+    const connectSrc = [
+      props.apiEndpoint,
+      `https://cognito-idp.${this.region}.amazonaws.com`, // Amplify: registrazione, accesso, recupero password
+      photoOrigin, // PUT prefirmato della foto
+      'https://nominatim.openstreetmap.org', // indirizzo ↔ punto sulla mappa
+    ];
+    const imgSrc = [
+      photoOrigin, // foto servite con GET prefirmato
+      'https://*.tile.openstreetmap.org', // tessere della mappa (host a rotazione a/b/c)
+    ];
+
     const client = new StaticSite(this, 'Client', {
       domainName: props.clientDomain,
       certificate,
       hostedZone,
       removalPolicy,
+      connectSrc,
+      imgSrc,
     });
 
+    // Il backoffice non carica foto ma le MOSTRA, e non usa la mappa. Riceve le
+    // stesse origini: distinguere aggiungerebbe una seconda lista da tenere
+    // allineata in cambio di nulla, perché sono gli stessi host.
     const admin = new StaticSite(this, 'Admin', {
       domainName: props.adminDomain,
       certificate,
       hostedZone,
       removalPolicy,
+      connectSrc,
+      imgSrc,
     });
 
     this.clientBucketName = client.bucket.bucketName;

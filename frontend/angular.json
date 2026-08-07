@@ -54,7 +54,15 @@
                   "maximumError": "12kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              }
             },
             "development": {
               "optimization": false,
@@ -145,7 +153,15 @@
                   "maximumError": "12kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                }
+              }
             },
             "development": {
               "optimization": false,

@@ -190,8 +190,16 @@ export class InfrastructureApp {
             zoneName: dns.domain,
             hostedZoneId: dns.hostedZoneId,
             certificateArn: dns.certificateArn,
+            // Origini della CSP: l'API e il bucket foto sono le sole
+            // destinazioni esterne che le SPA devono poter contattare.
+            apiEndpoint: api.apiUrl,
+            photoBucketName: storage.photoBucketName,
             env: this.env,
           });
+          // Nuove dipendenze: la CSP cita API e bucket, quindi il frontend va
+          // sintetizzato dopo di loro.
+          frontend.addDependency(api);
+          frontend.addDependency(storage);
 
           // CI/CD: ruolo OIDC per il deploy del frontend da GitHub Actions.
           const ci = new CiStack(this.app, this.stackName('CiStack'), {

@@ -151,7 +151,7 @@ export class NuovaProposta {
 
     // Se c'è una foto: presign → upload su S3 → uso la chiave; altrimenti nessuna.
     const key$: Observable<string | undefined> = file
-      ? this.service.presignUpload(file.type).pipe(
+      ? this.service.presignUpload(file.type, file.size).pipe(
           switchMap(({ uploadUrl, key }) =>
             this.service.uploadToS3(uploadUrl, file).pipe(map(() => key)),
           ),

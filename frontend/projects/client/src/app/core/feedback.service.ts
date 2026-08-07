@@ -38,10 +38,15 @@ export class FeedbackService {
   }
 
   /** Ottiene un URL prefirmato per caricare una foto (richiede JWT). */
-  presignUpload(contentType: string): Observable<{ uploadUrl: string; key: string }> {
+  /**
+   * La dimensione va dichiarata: il server la valida e la include nella firma,
+   * così S3 rifiuta un PUT che non la rispetta. Deve essere la dimensione REALE
+   * del file che si sta per caricare, non una stima.
+   */
+  presignUpload(contentType: string, size: number): Observable<{ uploadUrl: string; key: string }> {
     return this.http.post<{ uploadUrl: string; key: string }>(
       `${this.api}/uploads/presign`,
-      { contentType },
+      { contentType, size },
     );
   }
 

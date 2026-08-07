@@ -69,6 +69,22 @@ jobs:
         run: |
           npm ci
           npx ng build client
+      - name: Controllo CSP su index.html (client)
+        working-directory: frontend
+        run: |
+          # La CSP delle distribuzioni non ammette script inline. Angular, con
+          # l'inlining del CSS critico attivo, emette
+          #   <link ... media="print" onload="this.media='all'">
+          # e quel gestore viene BLOCCATO: il foglio di stile globale resta su
+          # media=print e non si applica mai. Il sito continua a caricarsi con il
+          # solo CSS critico inlinato, quindi il difetto non da' errori: si vede
+          # solo nelle schermate che perdono gli stili. E' gia' successo.
+          if grep -qE '<[^>]+ on[a-z]+=' dist/client/browser/index.html; then
+            echo "::error::index.html di client contiene un gestore di evento inline: la CSP lo blocca. Verificare optimization.styles.inlineCritical in angular.json."
+            grep -oE '<[^>]+ on[a-z]+=[^>]*>' dist/client/browser/index.html
+            exit 1
+          fi
+          echo "Nessun gestore inline in index.html di client."
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -113,6 +129,22 @@ jobs:
         run: |
           npm ci
           npx ng build admin
+      - name: Controllo CSP su index.html (admin)
+        working-directory: frontend
+        run: |
+          # La CSP delle distribuzioni non ammette script inline. Angular, con
+          # l'inlining del CSS critico attivo, emette
+          #   <link ... media="print" onload="this.media='all'">
+          # e quel gestore viene BLOCCATO: il foglio di stile globale resta su
+          # media=print e non si applica mai. Il sito continua a caricarsi con il
+          # solo CSS critico inlinato, quindi il difetto non da' errori: si vede
+          # solo nelle schermate che perdono gli stili. E' gia' successo.
+          if grep -qE '<[^>]+ on[a-z]+=' dist/admin/browser/index.html; then
+            echo "::error::index.html di admin contiene un gestore di evento inline: la CSP lo blocca. Verificare optimization.styles.inlineCritical in angular.json."
+            grep -oE '<[^>]+ on[a-z]+=[^>]*>' dist/admin/browser/index.html
+            exit 1
+          fi
+          echo "Nessun gestore inline in index.html di admin."
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:

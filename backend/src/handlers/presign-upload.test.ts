@@ -20,7 +20,11 @@ const auth = { sub: 'user-1' };
  * cosa esattamente viene firmato: tipo di file, nome della chiave e durata.
  */
 function presign(body: unknown, claims: Record<string, unknown> = auth) {
-  return handler(apiEvent({ method: 'POST', claims, body }));
+  // `size` e' obbligatoria: la si aggiunge di default perche' la maggior parte
+  // dei casi verifica altro, e i suoi test la passano esplicitamente.
+  const completo =
+    body && typeof body === 'object' && !('size' in body) ? { ...body, size: 1024 } : body;
+  return handler(apiEvent({ method: 'POST', claims, body: completo }));
 }
 
 /** Argomenti dell'ultima firma richiesta. */
@@ -59,9 +63,51 @@ describe('presign-upload', () => {
     }
   });
 
-  it('vincola la firma al Content-Type dichiarato', async () => {
+  it('passa a S3 il Content-Type dichiarato (che pero\' NON e\' un vincolo)', async () => {
+    // ⚠️ Verificato con l'SDK: il presigner NON include `content-type` fra gli
+    // header firmati ne' fra i parametri della query, quindi chi ha l'URL puo'
+    // caricare byte di qualunque tipo. Il tipo dichiarato serve a due cose:
+    // scegliere l'estensione della chiave (lato server) e finire nei metadati.
+    // Non si deve ragionare come se fosse un controllo: quello che vincola
+    // davvero e' `content-length` (vedi presign-upload.firma.test.ts).
     await presign({ contentType: 'image/png' });
     expect(firmato().input.ContentType).toBe('image/png');
+  });
+
+  describe('tetto alla dimensione', () => {
+    it('firma la dimensione dichiarata, cosi\' S3 la fa rispettare', async () => {
+      await presign({ contentType: 'image/jpeg', size: 4096 });
+      expect(firmato().input.ContentLength).toBe(4096);
+    });
+
+    it('rifiuta una foto oltre i 5 MB senza firmare nulla', async () => {
+      const { status, body } = parseResult(await presign({
+        contentType: 'image/jpeg', size: 5 * 1024 * 1024 + 1,
+      }));
+      expect(status).toBe(400);
+      expect(body.message).toContain('5 MB');
+      expect(getSignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('accetta esattamente 5 MB', async () => {
+      // Il confine va deciso, non lasciato al caso: il messaggio dice "supera".
+      const { status } = parseResult(await presign({
+        contentType: 'image/jpeg', size: 5 * 1024 * 1024,
+      }));
+      expect(status).toBe(200);
+    });
+
+    it('rifiuta dimensioni assenti o assurde', async () => {
+      // Senza questi controlli un `size` mancante diventerebbe ContentLength
+      // NaN e la firma sarebbe inutilizzabile, oppure un valore negativo
+      // passerebbe il confronto col tetto.
+      for (const size of [undefined, 0, -1, 1.5, 'molti', null]) {
+        getSignedUrl.mockClear();
+        const { status } = parseResult(await presign({ contentType: 'image/jpeg', size }));
+        expect(status, `size=${size}`).toBe(400);
+        expect(getSignedUrl).not.toHaveBeenCalled();
+      }
+    });
   });
 
   it('genera la chiave lato server, con estensione coerente', async () => {
