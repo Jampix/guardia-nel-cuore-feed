@@ -71,9 +71,11 @@ function csp(props: StaticSiteProps): string {
   return [
     "default-src 'self'",
     "script-src 'self'",
-    // Material Icons arriva ancora dal CDN Google (self-host = TODO noto).
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    // Nessun host di Google: Material Icons è servito dal nostro dominio
+    // (`shared/styles/_material-icons.scss`), così il CDN non riceve più l'IP di
+    // chi apre l'app e non c'è un terzo in più da dichiarare nell'informativa.
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     `img-src 'self' data: blob: ${esterni(props.imgSrc)}`,
     `connect-src 'self' ${esterni(props.connectSrc)}`,
     "manifest-src 'self'",

@@ -85,6 +85,17 @@ jobs:
             exit 1
           fi
           echo "Nessun gestore inline in index.html di client."
+          # Material Icons e' servito dal nostro dominio: se un riferimento a
+          # Google ricompare, il CDN torna a ricevere l'IP di ogni cittadino e
+          # l'informativa — che dichiara solo OpenStreetMap e AWS fra i
+          # destinatari — diventa falsa. Si controllano i file che generano
+          # richieste a runtime, non il LICENSE del font (che cita l'origine).
+          if grep -rlE 'gstatic|googleapis' \
+               dist/client/browser/index.html dist/client/browser/*.css dist/client/browser/*.js 2>/dev/null | grep .; then
+            echo "::error::il build di client referenzia un host Google: il font deve restare locale (shared/styles/_material-icons.scss)."
+            exit 1
+          fi
+          echo "Nessun host Google nel build di client."
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -145,6 +156,17 @@ jobs:
             exit 1
           fi
           echo "Nessun gestore inline in index.html di admin."
+          # Material Icons e' servito dal nostro dominio: se un riferimento a
+          # Google ricompare, il CDN torna a ricevere l'IP di ogni cittadino e
+          # l'informativa — che dichiara solo OpenStreetMap e AWS fra i
+          # destinatari — diventa falsa. Si controllano i file che generano
+          # richieste a runtime, non il LICENSE del font (che cita l'origine).
+          if grep -rlE 'gstatic|googleapis' \
+               dist/admin/browser/index.html dist/admin/browser/*.css dist/admin/browser/*.js 2>/dev/null | grep .; then
+            echo "::error::il build di admin referenzia un host Google: il font deve restare locale (shared/styles/_material-icons.scss)."
+            exit 1
+          fi
+          echo "Nessun host Google nel build di admin."
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:

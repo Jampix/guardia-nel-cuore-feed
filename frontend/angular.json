@@ -30,6 +30,11 @@
               {
                 "glob": "**/*",
                 "input": "projects/client/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/shared/assets/fonts",
+                "output": "fonts"
               }
             ],
             "styles": [
@@ -140,6 +145,11 @@
               {
                 "glob": "**/*",
                 "input": "projects/admin/public"
+              },
+              {
+                "glob": "**/*",
+                "input": "projects/shared/assets/fonts",
+                "output": "fonts"
               }
             ],
             "styles": [

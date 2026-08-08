@@ -1,0 +1,49 @@
+// Material Icons servito da NOI, non dal CDN di Google.
+//
+// Prima il font arrivava da `fonts.gstatic.com` a ogni visita, quindi Google
+// riceveva l'indirizzo IP di ogni cittadino. Nell'informativa avevamo dichiarato
+// OpenStreetMap e Amazon proprio per questo, e Google no: invece di aggiungere
+// un terzo da dichiarare, il terzo è stato rimosso. Così la frase
+// dell'informativa — «oltre a OpenStreetMap e ad AWS non comunichiamo i tuoi
+// dati ad altri soggetti» — diventa vera, e la CSP non ha più host di Google.
+//
+// In più: una richiesta esterna in meno prima che le icone compaiano.
+//
+// Il file sta in `projects/shared/assets/fonts/` (una sola copia, mappata su
+// `/fonts` da entrambe le app via `assets` in angular.json). Regole ricopiate da
+// quelle che serviva Google, così il rendering non cambia.
+//
+// Material Icons è di Google, licenza Apache 2.0: vedi il file LICENSE accanto
+// al font.
+
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  // `local()` prima di `url()`: chi ha il font installato non scarica nulla.
+  src:
+    local('Material Icons'),
+    local('MaterialIcons-Regular'),
+    url('/fonts/material-icons.woff2') format('woff2');
+  // Le icone sono elementi di interfaccia, non testo: `block` evita che
+  // compaiano prima come parole ("favorite", "arrow_back_ios_new") e poi come
+  // simboli — un lampeggio che, su una connessione lenta, si legge come un
+  // errore di impaginazione.
+  font-display: block;
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
