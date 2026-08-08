@@ -4,6 +4,7 @@ import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import {
   CognitoIdentityProviderClient,
   ListUsersInGroupCommand,
+  AdminAddUserToGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { handler } from './post-confirmation';
 
@@ -28,9 +29,18 @@ function evento(over: Record<string, unknown> = {}) {
     triggerSource: 'PostConfirmation_ConfirmSignUp',
     // Il pool arriva dall'evento del trigger, non da una variabile d'ambiente.
     userPoolId: 'eu-west-1_test',
+    userName: 'sub-di-mario',
     request: { userAttributes: { email: 'mario@example.com', nickname: 'Mario' } },
     ...over,
   } as any;
+}
+
+/** Testo dell'email arrivata a un certo destinatario. */
+function testoPer(dest: string): string {
+  const call = ses
+    .commandCalls(SendEmailCommand)
+    .find((c) => (c.args[0].input.Destination?.ToAddresses ?? []).includes(dest));
+  return call?.args[0].input.Content?.Simple?.Body?.Text?.Data ?? '';
 }
 
 /** Destinatari delle email inviate, nell'ordine in cui sono partite. */
@@ -50,6 +60,7 @@ beforeEach(() => {
   ses.reset();
   cognito.reset();
   ses.on(SendEmailCommand).resolves({});
+  cognito.on(AdminAddUserToGroupCommand).resolves({});
   staff('staff@example.com');
 });
 
@@ -58,8 +69,8 @@ describe('post-confirmation', () => {
     await handler(evento());
 
     expect(destinatari().sort()).toEqual(['mario@example.com', 'staff@example.com']);
-    expect(oggetti()).toContain('Nuova iscrizione da approvare');
-    expect(oggetti()).toContain('Registrazione ricevuta — Guardia nel Cuore');
+    expect(oggetti()).toContain('Nuova iscrizione');
+    expect(oggetti()).toContain('Benvenuto in Guardia nel Cuore');
   });
 
   it('avvisa TUTTI gli amministratori, non solo il primo', async () => {
@@ -73,7 +84,7 @@ describe('post-confirmation', () => {
     const avviso = ses
       .commandCalls(SendEmailCommand)
       .map((c) => c.args[0].input)
-      .find((i) => i.Content?.Simple?.Subject?.Data === 'Nuova iscrizione da approvare');
+      .find((i) => i.Content?.Simple?.Subject?.Data === 'Nuova iscrizione');
     expect(avviso?.Destination?.ToAddresses?.sort()).toEqual([
       'primo@example.com',
       'secondo@example.com',
@@ -89,31 +100,71 @@ describe('post-confirmation', () => {
     const conferma = ses
       .commandCalls(SendEmailCommand)
       .map((c) => c.args[0].input)
-      .find((i) => i.Content?.Simple?.Subject?.Data?.startsWith('Registrazione ricevuta'));
+      .find((i) => i.Content?.Simple?.Subject?.Data?.startsWith('Benvenuto'));
     expect(conferma?.Destination?.ToAddresses).toEqual(['mario@example.com']);
   });
 
-  it('nell\'avviso allo staff mette nome ed email di chi attende', async () => {
+  it('nell\'avviso allo staff mette nome ed email di chi si è iscritto', async () => {
     await handler(evento());
 
-    const staffMail = ses
-      .commandCalls(SendEmailCommand)
-      .find((c) => (c.args[0].input.Destination?.ToAddresses ?? []).includes('staff@example.com'));
-    const testo = staffMail?.args[0].input.Content?.Simple?.Body?.Text?.Data ?? '';
+    const testo = testoPer('staff@example.com');
     expect(testo).toContain('Mario');
     expect(testo).toContain('mario@example.com');
-    expect(testo).toContain('attende');
+    // Nessuna azione richiesta: è un avviso, non una coda da smaltire.
+    expect(testo).toContain('Non serve fare nulla');
   });
 
-  it('dice al cittadino di attendere, senza chiedergli altro', async () => {
+  it('dice al cittadino che può accedere subito', async () => {
     await handler(evento());
 
-    const suo = ses
-      .commandCalls(SendEmailCommand)
-      .find((c) => (c.args[0].input.Destination?.ToAddresses ?? []).includes('mario@example.com'));
-    const testo = suo?.args[0].input.Content?.Simple?.Body?.Text?.Data ?? '';
-    expect(testo).toContain('approvare');
-    expect(testo).toContain('non serve che tu faccia altro');
+    const testo = testoPer('mario@example.com');
+    expect(testo).toContain('puoi accedere subito');
+    // L'attesa non esiste più: prometterla sarebbe falso.
+    expect(testo).not.toMatch(/approv|attend/i);
+  });
+
+  describe('attivazione automatica', () => {
+    it('aggiunge il nuovo iscritto al gruppo cittadino', async () => {
+      // È l'intera modifica: senza questa chiamata la persona resta fuori, e il
+      // gate del pre-auth la blocca al primo accesso.
+      await handler(evento());
+
+      const call = cognito.commandCalls(AdminAddUserToGroupCommand)[0];
+      expect(call, 'nessuna attivazione richiesta').toBeDefined();
+      expect(call.args[0].input).toMatchObject({
+        UserPoolId: 'eu-west-1_test',
+        Username: 'sub-di-mario',
+        GroupName: 'cittadino',
+      });
+    });
+
+    it('se l\'attivazione FALLISCE lo dice allo staff e non promette l\'accesso', async () => {
+      // Il guasto peggiore possibile qui è quello silenzioso: confermato ma
+      // incapace di entrare, e nessuno lo sa. È già accaduto a luglio.
+      cognito.on(AdminAddUserToGroupCommand).rejects(new Error('Cognito giù'));
+
+      await handler(evento());
+
+      const perStaff = testoPer('staff@example.com');
+      expect(perStaff).toContain('NON È RIUSCITA');
+      expect(perStaff).toContain('Cittadini');
+      expect(oggetti().some((o) => /NON attivata/.test(o))).toBe(true);
+
+      const perCittadino = testoPer('mario@example.com');
+      expect(perCittadino).not.toContain('puoi accedere subito');
+      expect(perCittadino).toContain('ti scriviamo appena è fatto');
+    });
+
+    it('restituisce l\'evento anche se l\'attivazione fallisce', async () => {
+      cognito.on(AdminAddUserToGroupCommand).rejects(new Error('Cognito giù'));
+      const ev = evento();
+      await expect(handler(ev)).resolves.toBe(ev);
+    });
+
+    it('NON attiva nessuno dopo la conferma di un cambio password', async () => {
+      await handler(evento({ triggerSource: 'PostConfirmation_ConfirmForgotPassword' }));
+      expect(cognito.commandCalls(AdminAddUserToGroupCommand).length).toBe(0);
+    });
   });
 
   it('nell\'avviso allo staff mette nome vero e rapporto col paese', async () => {

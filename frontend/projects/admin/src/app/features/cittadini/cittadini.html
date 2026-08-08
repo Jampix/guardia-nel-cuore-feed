@@ -3,7 +3,7 @@
 </header>
 
 <mat-button-toggle-group class="seg" [value]="view()" (change)="setView($event.value)" hideSingleSelectionIndicator>
-  <mat-button-toggle value="attesa">In attesa ({{ pending().length }})</mat-button-toggle>
+  <mat-button-toggle value="attesa">Non attivi ({{ pending().length }})</mat-button-toggle>
   <mat-button-toggle value="attivi">Attivi ({{ citizens().length }})</mat-button-toggle>
 </mat-button-toggle-group>
 
@@ -11,6 +11,9 @@
   @if (loadingPending()) {
     <lib-loading label="Caricamento…" />
   } @else if (pending().length) {
+    <p class="nota-anomalia">Queste persone hanno verificato l'email ma <b>non possono
+      accedere</b>: o sono state rimosse dal gruppo, o l'attivazione automatica non è
+      riuscita. «Approva» le riabilita.</p>
     <div class="list">
       @for (u of pending(); track u.username) {
         <div class="card">
@@ -37,7 +40,13 @@
       }
     </div>
   } @else {
-    <div class="empty"><mat-icon>how_to_reg</mat-icon><p>Nessuna iscrizione in attesa.</p></div>
+    <div class="empty">
+      <mat-icon>how_to_reg</mat-icon>
+      <p>Nessuno da attivare: è la situazione normale.</p>
+      <p class="hint">L'attivazione è automatica alla verifica dell'email. Qui compare
+        solo chi è stato rimosso dal gruppo «cittadino» o per cui l'attivazione non è
+        riuscita — in quel caso ricevi un'email che te lo segnala.</p>
+    </div>
   }
 } @else {
   <mat-form-field appearance="outline" class="search">

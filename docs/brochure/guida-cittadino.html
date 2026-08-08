@@ -131,9 +131,10 @@
   }
   .step-body h3 { font-size: 17px; letter-spacing: -0.015em; margin: 6px 0 4px; }
   .step-body p { font-size: 14.5px; color: var(--ink-2); margin: 0; }
-  .badge-attesa {
+  /* Verde, non ambra: l'attivazione è immediata, non un'attesa. */
+  .badge-attivo {
     display: inline-flex; align-items: center; gap: 6px;
-    background: var(--st-eval-bg); color: var(--st-eval);
+    background: var(--st-done-bg); color: var(--st-done);
     font-size: 12.5px; font-weight: 650; padding: 4px 10px; border-radius: 999px; margin-top: 8px;
   }
 
@@ -274,8 +275,8 @@
 <section class="page">
   <div class="pad">
     <p class="sec-eyebrow">Primi passi</p>
-    <h2 class="sec-title">Come iniziare, in 4 passi</h2>
-    <p class="sec-sub">Per partecipare serve un account. La registrazione è gratuita e aperta a chi vive Guardia Piemontese e a chi le vuole bene; l'associazione conferma ogni iscrizione.</p>
+    <h2 class="sec-title">Come iniziare, in 3 passi</h2>
+    <p class="sec-sub">Per partecipare serve un account. La registrazione è gratuita e aperta a chi vive Guardia Piemontese e a chi le vuole bene: verifichi l'email e sei dentro.</p>
 
     <div style="display:flex; gap:28px; align-items:flex-start;">
       <div style="flex:1;">
@@ -296,19 +297,12 @@
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-body">
-            <h3>Attendi l'approvazione</h3>
-            <p>L'associazione verifica l'iscrizione e attiva il tuo account. Ti avvisiamo via email appena è pronto.</p>
-            <span class="badge-attesa">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              In attesa di approvazione
-            </span>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-body">
             <h3>Accedi e partecipa</h3>
-            <p>Con l'account attivo entri con email e password e puoi vedere le proposte pubbliche e crearne di tue.</p>
+            <p>Il tuo account è attivo subito: entri con email e password, vedi le proposte pubbliche del paese e puoi crearne di tue.</p>
+            <span class="badge-attivo">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12.5 9 17.5 20 6.5"/></svg>
+              Attivo subito
+            </span>
           </div>
         </div>
       </div>
@@ -332,8 +326,8 @@
     </div>
 
     <div class="callout">
-      <h4>Perché serve l'approvazione?</h4>
-      <p>Guardia nel Cuore è uno spazio della comunità, non un social aperto a chiunque. L'approvazione dell'associazione evita iscrizioni indesiderate e tiene le proposte riconoscibili. È un passaggio veloce e una volta sola: non serve rifarlo agli accessi successivi.</p>
+      <h4>Perché serve la registrazione?</h4>
+      <p>Guardia nel Cuore è uno spazio della comunità, non un social aperto a chiunque: l'email verificata tiene le proposte riconoscibili e riconducibili a una persona. Una proposta, inoltre, <b>nasce sempre privata</b> — in bacheca ci arriva solo dopo che un membro dell'associazione l'ha letta e pubblicata.</p>
     </div>
   </div>
 </section>

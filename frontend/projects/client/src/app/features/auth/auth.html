@@ -19,8 +19,8 @@
     }
     @if (showRegistered()) {
       <div class="notice" role="status">
-        <mat-icon>schedule</mat-icon>
-        <span>Registrazione completata! Il tuo account dev'essere approvato dallo staff prima del primo accesso: riceverai conferma appena sarà attivo.</span>
+        <mat-icon>check_circle</mat-icon>
+        <span>Registrazione completata! Il tuo account è attivo: accedi con l'email e la password che hai scelto.</span>
       </div>
     }
 
@@ -119,7 +119,7 @@
             Ho letto e accetto il <a routerLink="/regolamento" target="_blank">regolamento</a>
             e l'<a routerLink="/privacy" target="_blank">informativa sulla privacy</a>.
           </mat-checkbox>
-          <p class="approval-note">Dopo la registrazione, l'accesso sarà possibile solo dopo l'approvazione dello staff.</p>
+          <p class="approval-note">Dopo la registrazione ti arriva un codice per verificare l'email: da quel momento puoi accedere.</p>
           <button mat-flat-button type="submit" class="primary" [disabled]="loading() || registerForm.controls.consenso.invalid">
             @if (loading()) { <mat-spinner diameter="20"></mat-spinner> } @else { Registrati }
           </button>

@@ -12,9 +12,15 @@ beforeEach(() => cognito.reset());
 const event = { userPoolId: 'eu-west-1_TEST', userName: 'user-1' } as any;
 
 describe('pre-auth (gate login)', () => {
-  it('BLOCCA il login di chi non è in alcun gruppo (non approvato)', async () => {
+  it('BLOCCA il login di chi non è in alcun gruppo', async () => {
+    // Dall'8 agosto 2026 non è più un'attesa di approvazione: l'attivazione è
+    // automatica, quindi chi finisce qui è qualcuno a cui l'accesso è stato
+    // tolto (o un'attivazione non riuscita). Il messaggio deve dire a chi
+    // scrivere e NON parlare di approvazione, che sarebbe una bugia.
     cognito.on(AdminListGroupsForUserCommand).resolves({ Groups: [] });
-    await expect(handler(event)).rejects.toThrow(/approvazione/i);
+    await expect(handler(event)).rejects.toThrow(/non è abilitato ad accedere/i);
+    await expect(handler(event)).rejects.toThrow(/guardianelcuore@gmail\.com/);
+    await expect(handler(event)).rejects.not.toThrow(/approvazione/i);
   });
 
   it('CONSENTE il login del cittadino approvato', async () => {

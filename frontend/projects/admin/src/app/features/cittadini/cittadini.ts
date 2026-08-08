@@ -12,7 +12,14 @@ import { TIPO_UTENTE_LABEL, AdminUsersService, Citizen, PendingUser } from '../.
 
 type View = 'attesa' | 'attivi';
 
-/** Gestione persone: iscrizioni in attesa (approva/rifiuta) + cittadini attivi. */
+/**
+ * Gestione persone: cittadini attivi + chi NON è attivo.
+ *
+ * Dall'8 agosto 2026 l'attivazione è automatica (la fa il trigger alla verifica
+ * dell'email), quindi la prima scheda non è più una coda da smaltire: normalmente
+ * è vuota, e chi ci compare è un'anomalia — qualcuno rimosso dal gruppo o
+ * un'attivazione non riuscita. Il pulsante «Approva» resta come rimedio.
+ */
 @Component({
   selector: 'app-cittadini',
   imports: [DatePipe, MatButtonToggleModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, Loading],
@@ -90,7 +97,7 @@ export class Cittadini {
           titolo: 'Rifiutare questa iscrizione?',
           messaggio:
             `L'account di ${u.nickname || u.email} viene eliminato. Se in futuro volesse ` +
-            'partecipare dovrebbe registrarsi di nuovo e attendere una nuova approvazione.',
+            'partecipare dovrebbe registrarsi di nuovo.',
           azione: 'Rifiuta ed elimina',
         },
       })

@@ -64,6 +64,18 @@
   }
 }
 
+/* Spiega PERCHE' qualcuno e' in questo elenco: senza, "non attivo" sembra un
+   errore dell'app invece di una scelta o un guasto da riparare. */
+.nota-anomalia {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .empty {
   display: flex;
   flex-direction: column;
@@ -74,6 +86,8 @@
   color: var(--mat-sys-on-surface-variant);
   mat-icon { font-size: 44px; width: 44px; height: 44px; opacity: 0.5; }
   p { margin: 0; }
+  /* Il vuoto qui e' la normalita': la spiegazione va detta piu' piano del titolo. */
+  .hint { font-size: 12.5px; max-width: 44ch; opacity: 0.85; }
 }
 
 /* Rapporto col paese: pillola discreta accanto al nome pubblico. Assente per

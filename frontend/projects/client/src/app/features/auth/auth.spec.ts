@@ -11,9 +11,9 @@ import { Auth } from './auth';
  * Test della schermata di accesso/registrazione.
  *
  * Coprono i difetti realmente emersi su questa pagina: la corrispondenza fra
- * le due password, il messaggio "in attesa di approvazione" mostrato per
- * errori che non c'entravano, e l'impaginazione dei campi quando un hint va a
- * capo (Material riserva una sola riga e il testo sbordava sul campo sotto).
+ * le due password, il messaggio del gate di accesso mostrato per errori che non
+ * c'entravano, e l'impaginazione dei campi quando un hint va a capo (Material
+ * riserva una sola riga e il testo sbordava sul campo sotto).
  */
 
 /** Doppio dell'AuthService: quello vero parla con Cognito via Amplify. */
@@ -246,16 +246,22 @@ describe('Auth', () => {
   });
 
   describe('messaggi di errore del login', () => {
-    it('mostra l\'attesa di approvazione solo se lo dice il trigger', async () => {
+    it('mostra il messaggio del gate di accesso solo se lo dice il trigger', async () => {
+      // L'attivazione ora è automatica: chi viene bloccato è qualcuno a cui
+      // l'accesso è stato tolto, e il messaggio del trigger — che contiene anche
+      // l'indirizzo a cui scrivere — va mostrato tale e quale.
       await setup('login');
-      const err: any = new Error('PreAuthentication failed with error Account in attesa di approvazione.');
+      const err: any = new Error(
+        'PreAuthentication failed with error Questo account non è abilitato ad accedere. Scrivi a guardianelcuore@gmail.com.',
+      );
       err.name = 'UserLambdaValidationException';
       auth.login.and.rejectWith(err);
       comp.loginForm.setValue({ email: 'a@b.it', password: 'x' });
 
       await comp.doLogin();
 
-      expect(comp.error()).toContain('attesa di approvazione');
+      expect(comp.error()).toContain('non è abilitato ad accedere');
+      expect(comp.error()).toContain('guardianelcuore@gmail.com');
     });
 
     it('NON parla di approvazione per un errore generico della Lambda', async () => {

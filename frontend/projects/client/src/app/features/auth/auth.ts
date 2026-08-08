@@ -84,7 +84,7 @@ export class Auth {
   readonly email = input<string>('');
   /** URL a cui tornare dopo il login (query param). */
   readonly returnUrl = input<string>('');
-  /** '1' subito dopo una registrazione completata (avviso approvazione). */
+  /** '1' subito dopo una registrazione completata (avviso di benvenuto). */
   readonly registrato = input<string>('');
 
   readonly loading = signal(false);
@@ -315,13 +315,16 @@ export class Auth {
   }
 
   private humanError(e: any): string {
-    // Blocco dal trigger Pre-Authentication (cittadino non ancora approvato).
-    // Riconosciuto dal MESSAGGIO del trigger, non dal solo tipo: altri errori
+    // Blocco dal trigger Pre-Authentication: l'account non è in un gruppo
+    // attivo. Da quando l'attivazione è automatica non è più un'attesa — chi
+    // finisce qui è qualcuno a cui l'accesso è stato tolto, o un'attivazione
+    // non riuscita. Il messaggio del trigger è già scritto per essere mostrato
+    // così com'è, e lo si riconosce dal TESTO e non dal solo tipo: altri errori
     // della Lambda arrivano come UserLambdaValidationException e non c'entrano
-    // con l'approvazione (mostrarli così confonde chi ha sbagliato email).
+    // (mostrarli così confonde chi ha semplicemente sbagliato email).
     const msg = String(e?.message ?? '');
-    if (/approvazione/i.test(msg)) {
-      return 'Il tuo account è in attesa di approvazione da parte dello staff.';
+    if (/non è abilitato ad accedere/i.test(msg)) {
+      return msg;
     }
     if (e?.name === 'UserLambdaValidationException') {
       return 'Accesso momentaneamente non disponibile. Riprova tra poco.';

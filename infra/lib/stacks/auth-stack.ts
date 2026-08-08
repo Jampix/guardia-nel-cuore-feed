@@ -63,10 +63,12 @@ export class AuthStack extends Stack {
       }),
     );
 
-    // Trigger Post-Confirmation: appena il cittadino verifica l'email avvisa lo
-    // STAFF che c'è qualcuno in attesa di approvazione (prima l'unico modo di
-    // accorgersene era aprire il backoffice, e alcuni iscritti hanno aspettato
-    // giorni) e conferma al CITTADINO che la registrazione è arrivata.
+    // Trigger Post-Confirmation: appena il cittadino verifica l'email lo ATTIVA
+    // (lo aggiunge al gruppo `cittadino`), avvisa lo STAFF della nuova iscrizione
+    // e conferma al CITTADINO che può accedere.
+    //
+    // L'approvazione manuale è stata rimossa l'8 agosto 2026: il gate del pre-auth
+    // resta come interruttore per togliere l'accesso a qualcuno, non come attesa.
     const staffEmail = props.config.alerts?.email;
     if (emailDomain && staffEmail) {
       const postConfirmFn = new NodeFunctionConstruct(this, 'PostConfirmFn', {
@@ -91,9 +93,12 @@ export class AuthStack extends Stack {
       // aggiungere una persona al gruppo basta a farle ricevere gli avvisi.
       // ARN wildcard e pool preso da `event.userPoolId` per la stessa ragione
       // del pre-auth: il costrutto pool creerebbe la dipendenza circolare.
+      // `AdminAddUserToGroup` attiva il nuovo iscritto; `ListUsersInGroup` serve a
+      // trovare i destinatari dell'avviso. Stesso ARN wildcard: il costrutto pool
+      // qui creerebbe la dipendenza circolare pool→trigger→policy→pool.
       postConfirmFn.fn.addToRolePolicy(
         new PolicyStatement({
-          actions: ['cognito-idp:ListUsersInGroup'],
+          actions: ['cognito-idp:ListUsersInGroup', 'cognito-idp:AdminAddUserToGroup'],
           resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`],
         }),
       );

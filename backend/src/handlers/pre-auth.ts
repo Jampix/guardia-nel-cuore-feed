@@ -10,9 +10,19 @@ const cognito = new CognitoIdentityProviderClient({});
 const ACTIVE_GROUPS = ['admin', 'membro', 'cittadino'];
 
 /**
- * Trigger Pre-Authentication: blocca il login dei cittadini non ancora
- * approvati dallo staff. L'approvazione = appartenenza al gruppo `cittadino`
- * (aggiunta dall'admin). Chi non è in alcun gruppo attivo non può accedere.
+ * Trigger Pre-Authentication: consente il login solo a chi appartiene a un gruppo
+ * attivo.
+ *
+ * Non è più un'attesa di approvazione: dall'8 agosto 2026 il trigger
+ * Post-Confirmation aggiunge da sé il nuovo iscritto al gruppo `cittadino`, quindi
+ * chi verifica l'email entra subito. Questo gate resta come **interruttore**: chi
+ * non deve più accedere si rimuove dal gruppo (console Cognito, oppure «rifiuta»
+ * dal backoffice) e da quel momento è bloccato qui.
+ *
+ * Per questo il messaggio NON parla di approvazione: chi lo legge, ormai, è
+ * qualcuno a cui l'accesso è stato tolto — o un caso in cui l'attivazione
+ * automatica non è riuscita. In entrambi i casi la cosa utile da dire è a chi
+ * scrivere.
  */
 export const handler = async (
   event: PreAuthenticationTriggerEvent,
@@ -43,8 +53,11 @@ export const handler = async (
   const active = groups.some((g) => ACTIVE_GROUPS.includes(g));
 
   if (!active) {
-    // Il messaggio viene mostrato al cittadino sulla schermata di login.
-    throw new Error('Account in attesa di approvazione da parte dello staff.');
+    // Mostrato tale e quale sulla schermata di login: dice cosa succede e cosa
+    // fare, senza far credere a un'attesa che non esiste più.
+    throw new Error(
+      'Questo account non è abilitato ad accedere. Scrivi a guardianelcuore@gmail.com.',
+    );
   }
 
   return event;
