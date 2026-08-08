@@ -85,10 +85,9 @@ npx ng serve client --port 4200   # → http://localhost:4200
 npx ng serve admin  --port 4300   # → http://localhost:4300
 ```
 
-Le due app puntano all'API di produzione (`environment.apiUrl`); non serve un
-backend locale. Il CORS dell'API include **entrambe** le porte (`4200` e `4300`),
-quello del bucket foto solo la `4200` (l'admin non carica foto). Le porte non
-sono arbitrarie: usarne altre fa fallire le chiamate con un errore CORS.
+Non serve un backend locale: le chiamate passano dal **proxy del dev server**
+verso l'API di produzione. Come funziona e cosa NON è provabile in locale:
+vedi [§ Sviluppo locale — come parla con l'API](#sviluppo-locale--come-parla-con-lapi).
 
 ## Deploy
 
@@ -207,7 +206,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   viene bloccato e il foglio di stile globale non si applica. Un controllo nel
   workflow di deploy ferma la pubblicazione se ricompare.
 
-## Sviluppo locale
+## Sviluppo locale — come parla con l'API
 
 Il CORS dell'API e del bucket foto ammette **solo** i domini di produzione: non
 c'è nessuna origine `localhost`. Lo sviluppo locale funziona comunque perché il
