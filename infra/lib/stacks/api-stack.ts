@@ -316,24 +316,16 @@ export class ApiStack extends Stack {
     photoBucket.grantDelete(deleteAccountFn.fn);
     userPool.grant(deleteAccountFn.fn, 'cognito-idp:AdminDeleteUser');
 
-    // CORS ristretto ai domini reali (+ i dev server locali). Deriva dal dominio
-    // configurato: client su `feed.<dominio>`, admin su `admin.feed.<dominio>`.
+    // CORS ristretto ai SOLI domini reali. Deriva dal dominio configurato:
+    // client su `feed.<dominio>`, admin su `admin.feed.<dominio>`.
     //
-    // Le due origini `localhost` sono una SCELTA, non un residuo: non esiste un
-    // ambiente di dev separato, quindi `ng serve` contro questa API è l'unico
-    // modo di provare una modifica prima di metterla davanti ai cittadini.
-    // Il rischio è nullo finché l'autenticazione usa token Bearer in
-    // localStorage (vincolato all'origine) e non cookie: il CORS non è un
-    // controllo d'accesso — chiunque può chiamare l'API con curl ignorandolo —
-    // e a proteggere gli endpoint è il JWT.
-    // ⚠️ Da rimuovere al lancio pubblico, o subito se si passa ai cookie:
-    // vedi la checklist in README.md § Lancio pubblico.
+    // Le origini `localhost` sono state rimosse al lancio pubblico. Lo sviluppo
+    // locale continua a funzionare **senza** che siano elencate qui: il dev
+    // server Angular fa da proxy (`frontend/proxy.conf.json`, `apiUrl: '/api'`
+    // in `environment.development.ts`), quindi le chiamate partono dalla stessa
+    // origine della pagina e non sono cross-origin.
     const domain = props.config.features.dns?.domain;
-    const allowOrigins = [
-      ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
-      'http://localhost:4200', // dev server frontend cittadini
-      'http://localhost:4300', // dev server backoffice
-    ];
+    const allowOrigins = domain ? [`https://${domain}`, `https://admin.${domain}`] : [];
     const api = new ApiConstruct(this, 'Api', {
       userPool,
       userPoolClients: [clientApp, adminApp],

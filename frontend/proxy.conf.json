@@ -1,0 +1,11 @@
+{
+  "/api": {
+    "target": "https://dex1zyd5pe.execute-api.eu-west-1.amazonaws.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "warn",
+    "pathRewrite": {
+      "^/api": ""
+    }
+  }
+}

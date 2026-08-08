@@ -159,7 +159,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
   contro l'API di produzione è l'unico modo di provare una modifica prima di
   esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
-- ✅ **Test**: 145 backend (Vitest, ogni handler coperto) + 98 frontend (Karma su
+- ✅ **Test**: 150 backend (Vitest, ogni handler coperto) + 102 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
 - ✅ **Informativa privacy** completa con i dati del titolare (Associazione
@@ -169,6 +169,13 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - 🔜 test e2e, i18n IT/EN, UI gestione staff, portabilità dei dati ("scarica i
   miei dati"), età minima di iscrizione (oggi non dichiarata).
 
+- ✅ **Tipo delle foto imposto in lettura** (`lib/foto-url.ts`): il tipo dichiarato
+  al caricamento non è un vincolo (il presigner non firma `content-type`), quindi
+  i GET prefirmati impongono `response-content-type` ricavato dall'estensione
+  della chiave — parametro **firmato**, manometterlo dà 403. Estensione inattesa
+  → `application/octet-stream` + `attachment`.
+- ✅ **Origini `localhost` rimosse dal CORS** di API e bucket foto (vedi
+  § Sviluppo locale) e **TTL del record NS** `feed` alzato a 172800.
 - ✅ **Header di sicurezza** su entrambe le distribuzioni CloudFront (HSTS,
   CSP con host esatti, `nosniff`, `Referrer-Policy`, `X-Frame-Options`), **tetto
   di 5 MB firmato** sull'upload delle foto (prima era solo lato client) e **log
@@ -178,28 +185,41 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   viene bloccato e il foglio di stile globale non si applica. Un controllo nel
   workflow di deploy ferma la pubblicazione se ricompare.
 
+## Sviluppo locale
+
+Il CORS dell'API e del bucket foto ammette **solo** i domini di produzione: non
+c'è nessuna origine `localhost`. Lo sviluppo locale funziona comunque perché il
+dev server Angular fa da **proxy**:
+
+- `environment.development.ts` (uno per app) usa `apiUrl: '/api'` — percorso
+  **relativo**, quindi stessa origine della pagina e nessuna richiesta
+  cross-origin;
+- `proxy.conf.json` inoltra `/api/*` all'HTTP API di produzione;
+- `fileReplacements` (configurazione `development` in `angular.json`) sostituisce
+  `environment.ts` con la variante di sviluppo. Il build di produzione continua a
+  usare l'URL assoluto.
+
+⚠️ **Non mettere `apiUrl: ''`**: l'interceptor allega il JWT alle richieste che
+iniziano con `apiUrl`, e con la stringa vuota **ogni** URL corrisponderebbe — il
+token finirebbe anche su S3 e sul geocodificatore di OpenStreetMap. C'è un test
+che lo impedisce (`core/auth.interceptor.spec.ts`).
+
+⚠️ **L'upload delle foto NON è provabile in locale**: il PUT va dal browser
+direttamente a S3 con un URL assoluto prefirmato, quindi il proxy non lo copre e
+il bucket non ammette `localhost`. Per provarlo si riaggiunge
+`http://localhost:4200` in `infra/lib/app.ts` e si ridistribuisce lo
+StorageStack, ricordandosi di rimuoverlo.
+
 ## Lancio pubblico (checklist)
 
 Da fare **prima di annunciare l'app ai cittadini**, non prima: durante il test
 con i membri queste voci sono scelte consapevoli, non dimenticanze.
 
-- [ ] **Rimuovere le origini `localhost` dal CORS** — `http://localhost:4200` e
-      `:4300` in `infra/lib/stacks/api-stack.ts`, `http://localhost:4200` nel
-      bucket foto in `infra/lib/app.ts`.
-      *Perché non è urgente:* il CORS non è un controllo d'accesso (chiunque può
-      chiamare l'API con `curl` ignorandolo) e l'autenticazione usa token Bearer
-      in `localStorage`, vincolato all'origine, non cookie. Diventa **urgente**
-      se si passa all'autenticazione con cookie.
-      *Costo della rimozione:* si perde lo sviluppo locale contro l'API, a meno
-      di configurare prima il **proxy del dev server** Angular (richiede di
-      introdurre `fileReplacements` in `angular.json`: oggi c'è un solo
-      `environment.ts` per app, con l'URL dell'API in assoluto).
 - [ ] **Report DMARC (`rua=`)** verso una casella che li riceva, poi valutare
       `p=reject`. Oggi la policy è `quarantine` senza report: senza visibilità
       non si passa a `reject`, perché si scarterebbe posta legittima senza
       accorgersene. Serve prima una destinazione sul dominio (SES inbound) o un
       servizio esterno.
-- [ ] Alzare il **TTL del record NS** `feed` nella zona apex (ora 300s).
 
 ## Documentazione
 

@@ -116,14 +116,13 @@ export class InfrastructureApp {
     // e l'admin su `admin.feed.<dominio>` (cioè `admin.<domain>` dato che
     // `domain` è già `feed.guardianelcuore.it`).
     const domain = this.config.features.dns?.domain;
-    const allowedOrigins = [
-      ...(domain ? [`https://${domain}`, `https://admin.${domain}`] : []),
-      // Consente l'upload presigned dal dev server locale dei cittadini. Solo
-      // la 4200: l'admin non carica foto, e per mostrarle usa <img>, che non
-      // passa dal CORS. Scelta consapevole in assenza di un ambiente di dev —
-      // da rimuovere al lancio pubblico, vedi README.md § Lancio pubblico.
-      'http://localhost:4200',
-    ];
+    // Solo i domini reali: l'origine `localhost` è stata rimossa al lancio
+    // pubblico. ⚠️ Conseguenza da conoscere: il PUT della foto va dal browser
+    // DIRETTAMENTE a S3 con un URL assoluto prefirmato, quindi il proxy del dev
+    // server non lo copre e **l'upload delle foto non è provabile in locale**.
+    // Tutto il resto sì. Per provarlo si riaggiunge `http://localhost:4200`
+    // temporaneamente e si ridistribuisce lo StorageStack.
+    const allowedOrigins = domain ? [`https://${domain}`, `https://admin.${domain}`] : [];
     const storage = new StorageStack(this.app, this.stackName('StorageStack'), {
       config: this.config,
       allowedOrigins,

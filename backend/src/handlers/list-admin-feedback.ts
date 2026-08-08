@@ -1,8 +1,8 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { scanAll } from '../lib/ddb-paginate';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Client } from '@aws-sdk/client-s3';
+import { urlFoto } from '../lib/foto-url';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -39,11 +39,7 @@ export const handler = async (
   const items = await Promise.all(
     sorted.map(async (item) => {
       if (!item.fotoKey) return item;
-      const fotoUrl = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(item.fotoKey) }),
-        { expiresIn: 3600 },
-      );
+      const fotoUrl = await urlFoto(s3, PHOTO_BUCKET, String(item.fotoKey));
       return { ...item, fotoUrl };
     }),
   );

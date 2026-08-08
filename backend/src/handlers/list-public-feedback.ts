@@ -1,7 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Client } from '@aws-sdk/client-s3';
+import { urlFoto } from '../lib/foto-url';
 import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -44,11 +44,7 @@ export const handler = async (): Promise<APIGatewayProxyResultV2> => {
       // La nota interna dello staff non deve MAI finire nella risposta pubblica.
       const { notaInterna, ...pub } = item;
       if (!pub.fotoKey) return pub;
-      const fotoUrl = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(pub.fotoKey) }),
-        { expiresIn: 3600 },
-      );
+      const fotoUrl = await urlFoto(s3, PHOTO_BUCKET, String(pub.fotoKey));
       return { ...pub, fotoUrl };
     }),
   );
