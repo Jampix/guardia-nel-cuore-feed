@@ -169,6 +169,14 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - 🔜 test e2e, i18n IT/EN, UI gestione staff, portabilità dei dati ("scarica i
   miei dati"), età minima di iscrizione (oggi non dichiarata).
 
+- ✅ **Material Icons servito dal nostro dominio** (`shared/styles/_material-icons.scss`,
+  font in `shared/assets/fonts/`): prima arrivava da `fonts.gstatic.com`, quindi
+  Google riceveva l'IP di ogni visitatore mentre l'informativa dichiarava solo
+  OpenStreetMap e AWS fra i destinatari. Rimosso il terzo invece di dichiararlo;
+  la CSP non ha più host di Google. ⚠️ La **versione sta nel nome del file**
+  (`-v145`) perché gli asset sono serviti `immutable`: con un nome fisso un font
+  sostituito resterebbe nei browser fino a un anno. Un controllo nel workflow di
+  deploy ferma la pubblicazione se un riferimento a Google ricompare.
 - ✅ **Tipo delle foto imposto in lettura** (`lib/foto-url.ts`): il tipo dichiarato
   al caricamento non è un vincolo (il presigner non firma `content-type`), quindi
   i GET prefirmati impongono `response-content-type` ricavato dall'estensione
