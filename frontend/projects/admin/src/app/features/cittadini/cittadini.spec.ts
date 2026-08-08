@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
-import { AdminUsersService, PendingUser } from '../../core/admin-users.service';
+import { MatDialog } from '@angular/material/dialog';
+import { AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
 import { Cittadini } from './cittadini';
 
 /** Larghezza logica di un iPhone 14: è lo schermo su cui il difetto si vedeva. */
@@ -139,5 +140,98 @@ describe('Cittadini — impaginazione su schermo stretto', () => {
     expect(siSovrappongono(testo, azioni)).toBeFalse();
     expect(azioni.top).toBeLessThan(testo.bottom);
     expect(azioni.left).toBeGreaterThanOrEqual(testo.right);
+  });
+});
+
+/**
+ * Le due operazioni sulle persone hanno conseguenze molto diverse — una blocca
+ * l'accesso, l'altra cancella tutto ciò che una persona ha scritto — e prima
+ * esisteva solo la seconda. Confonderle è il difetto che conta impedire.
+ */
+describe('Cittadini — togliere l\'accesso o eliminare', () => {
+  const ATTIVO = {
+    username: 'a1', email: 'attivo@esempio.it', nickname: 'Attivo',
+    enabled: true, tipoUtente: 'residente',
+  } as Citizen;
+
+  let comp: Cittadini;
+  let service: jasmine.SpyObj<AdminUsersService>;
+  let dialogData: any;
+  let rispondiSi: boolean;
+
+  beforeEach(async () => {
+    rispondiSi = true;
+    dialogData = null;
+    service = jasmine.createSpyObj<AdminUsersService>('AdminUsersService', [
+      'getPending', 'getCitizens', 'approve', 'reject', 'revoke',
+    ]);
+    service.getPending.and.returnValue(of([]));
+    service.getCitizens.and.returnValue(of([ATTIVO]));
+    service.revoke.and.returnValue(of({ revoked: true }));
+    service.reject.and.returnValue(of(undefined as unknown as void));
+
+    await TestBed.configureTestingModule({
+      imports: [Cittadini],
+      providers: [
+        provideNoopAnimations(),
+        { provide: AdminUsersService, useValue: service },
+        {
+          // Doppio del dialogo: cattura i dati con cui viene aperto, così si può
+          // verificare COSA viene dichiarato all'utente prima di agire.
+          provide: MatDialog,
+          useValue: {
+            open: (_c: unknown, cfg: any) => {
+              dialogData = cfg?.data;
+              return { afterClosed: () => of(rispondiSi) };
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Cittadini);
+    comp = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('«Rimuovi accesso» chiama revoke e NON la cancellazione', async () => {
+    comp.revoke(ATTIVO);
+
+    expect(service.revoke).toHaveBeenCalledWith('a1');
+    expect(service.reject).not.toHaveBeenCalled();
+  });
+
+  it('dichiara che i contenuti restano, e che è reversibile', async () => {
+    comp.revoke(ATTIVO);
+
+    expect(dialogData.messaggio).toContain('RESTANO');
+    expect(dialogData.messaggio).toMatch(/riabilitarla/i);
+    // Nessuna parola da digitare: è un'azione reversibile, chiederla sarebbe
+    // attrito senza motivo (e insegnerebbe a digitarla senza leggere).
+    expect(dialogData.parolaChiave).toBeUndefined();
+  });
+
+  it('l\'eliminazione dichiara i dati che spariscono e pretende ELIMINA', async () => {
+    // Da oggi «rifiuta» non cancella solo l'account: fa la pulizia vera. Con un
+    // effetto più grande, la conferma digitata non è un vezzo.
+    comp.reject(ATTIVO);
+
+    expect(dialogData.parolaChiave).toBe('ELIMINA');
+    for (const parola of ['proposte', 'foto', 'sostegni', 'segnalazioni']) {
+      expect(dialogData.messaggio).withContext(parola).toContain(parola);
+    }
+    // E indirizza all'alternativa non distruttiva.
+    expect(dialogData.messaggio).toContain('Rimuovi accesso');
+    expect(service.reject).toHaveBeenCalledWith('a1');
+  });
+
+  it('se si annulla, non chiama niente', async () => {
+    rispondiSi = false;
+
+    comp.revoke(ATTIVO);
+    comp.reject(ATTIVO);
+
+    expect(service.revoke).not.toHaveBeenCalled();
+    expect(service.reject).not.toHaveBeenCalled();
   });
 });

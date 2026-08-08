@@ -9,12 +9,17 @@ import {
   ListUsersInGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
+import { AdminRemoveUserFromGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import { DynamoDBDocumentClient, DeleteCommand, QueryCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { handler } from './admin-users';
 import { apiEvent, parseResult } from './_test-helpers';
 
 const cognito = mockClient(CognitoIdentityProviderClient);
 const ses = mockClient(SESv2Client);
+const ddb = mockClient(DynamoDBDocumentClient);
+const s3 = mockClient(S3Client);
 
 const staff = { sub: 'admin-1', 'cognito:groups': 'admin' };
 const membro = { sub: 'membro-1', 'cognito:groups': 'membro' };
@@ -43,12 +48,22 @@ function get(rawPath: string, claims: Record<string, unknown> = staff) {
 }
 
 beforeEach(() => {
-  cognito.reset(); ses.reset();
+  cognito.reset(); ses.reset(); ddb.reset(); s3.reset();
   ses.on(SendEmailCommand).resolves({});
+  ddb.on(QueryCommand).resolves({ Items: [] });
+  ddb.on(ScanCommand).resolves({ Items: [] });
+  ddb.on(DeleteCommand).resolves({});
+  // La pulizia scala i contatori delle proposte altrui.
+  ddb.on(UpdateCommand).resolves({});
+  s3.on(DeleteObjectCommand).resolves({});
+  cognito.on(AdminRemoveUserFromGroupCommand).resolves({});
   cognito.on(AdminAddUserToGroupCommand).resolves({});
   cognito.on(AdminDeleteUserCommand).resolves({});
   cognito.on(AdminGetUserCommand).resolves({
     UserAttributes: [
+      // Ogni utente Cognito ha un `sub`: ometterlo qui rendeva il doppio meno
+      // fedele del vero e faceva sembrare rotta la guardia che lo pretende.
+      { Name: 'sub', Value: 'sub-di-u1' },
       { Name: 'email', Value: 'mario@example.com' },
       { Name: 'nickname', Value: 'Mario' },
     ],
@@ -223,5 +238,125 @@ describe('admin-users', () => {
   it('400 se manca lo username sulle azioni', async () => {
     const { status } = parseResult(await handler(apiEvent({ method: 'POST', claims: staff })));
     expect(status).toBe(400);
+  });
+
+  describe('togliere l\'accesso (revoke)', () => {
+    function revoke(claims: Record<string, unknown> = staff, username = 'u1') {
+      return handler({
+        ...apiEvent({ method: 'POST', claims, pathParameters: { username } }),
+        rawPath: `/admin/users/${username}/revoke`,
+      } as any);
+    }
+
+    it('rimuove dal gruppo cittadino SENZA cancellare nulla', async () => {
+      // È l'operazione giusta nella gran parte dei casi: se una sua proposta è in
+      // bacheca e altri l'hanno sostenuta, farla sparire punirebbe anche loro.
+      const { status, body } = parseResult(await revoke());
+
+      expect(status).toBe(200);
+      expect(body.revoked).toBe(true);
+      const call = cognito.commandCalls(AdminRemoveUserFromGroupCommand)[0];
+      expect(call.args[0].input).toMatchObject({ Username: 'u1', GroupName: 'cittadino' });
+      expect(cognito.commandCalls(AdminDeleteUserCommand).length, 'non deve cancellare').toBe(0);
+      expect(ddb.commandCalls(DeleteCommand).length, 'non deve toccare i dati').toBe(0);
+    });
+
+    it('403 per un cittadino', async () => {
+      const { status } = parseResult(await revoke(cittadino));
+      expect(status).toBe(403);
+      expect(cognito.commandCalls(AdminRemoveUserFromGroupCommand).length).toBe(0);
+    });
+
+    it('non viene confuso con l\'approvazione, che usa lo stesso metodo', async () => {
+      // Entrambe sono POST sullo stesso parametro: si distinguono dal path, e
+      // sbagliare qui significherebbe riabilitare qualcuno credendo di escluderlo.
+      await revoke();
+      expect(cognito.commandCalls(AdminAddUserToGroupCommand).length).toBe(0);
+
+      cognito.resetHistory();
+      await handler(apiEvent({ method: 'POST', claims: staff, pathParameters: { username: 'u1' } }));
+      expect(cognito.commandCalls(AdminRemoveUserFromGroupCommand).length).toBe(0);
+      expect(cognito.commandCalls(AdminAddUserToGroupCommand).length).toBe(1);
+    });
+  });
+
+  describe('rimozione completa (con pulizia dei dati)', () => {
+    function rimuovi(username = 'u1') {
+      return handler(apiEvent({ method: 'DELETE', claims: staff, pathParameters: { username } }));
+    }
+
+    it('usa il sub LETTO da Cognito, non lo username della richiesta', async () => {
+      // Fino all'8 agosto 2026 questa rotta cancellava solo l'utente Cognito e
+      // lasciava i dati orfani. Ora pulisce — ma i dati sono salvati per `sub`, e
+      // presumerlo uguale allo username significherebbe che il giorno in cui non
+      // coincidono la pulizia non trova nulla e l'utente viene cancellato comunque,
+      // senza un solo errore.
+      cognito.reset();
+      cognito.on(AdminDeleteUserCommand).resolves({});
+      cognito.on(AdminGetUserCommand).resolves({
+        UserAttributes: [
+          { Name: 'sub', Value: 'sub-diverso-dallo-username' },
+          { Name: 'email', Value: 'mario@example.com' },
+        ],
+      });
+      ddb.on(QueryCommand).resolves({
+        Items: [{ id: 'f1', autoreId: 'sub-diverso-dallo-username', fotoKey: 'feedback/x.jpg' }],
+      });
+
+      const { status } = parseResult(await rimuovi());
+
+      expect(status).toBe(204);
+      const query = ddb.commandCalls(QueryCommand)[0].args[0].input as any;
+      expect(query.ExpressionAttributeValues[':a']).toBe('sub-diverso-dallo-username');
+      // La proposta trovata viene rimossa, foto compresa.
+      expect(s3.commandCalls(DeleteObjectCommand).length).toBe(1);
+      expect(ddb.commandCalls(DeleteCommand).length).toBeGreaterThan(0);
+    });
+
+    it('pulisce PRIMA di cancellare l\'utente', async () => {
+      // Ordine invertito: se la pulizia fallisse, non resterebbe più modo di
+      // sapere di chi erano i dati rimasti.
+      cognito.reset();
+      cognito.on(AdminGetUserCommand).resolves({ UserAttributes: [{ Name: 'sub', Value: 's1' }] });
+      ddb.on(ScanCommand).resolves({ Items: [{ feedbackId: 'f9', userId: 's1' }] });
+
+      // Non basta che entrambe le cose avvengano: conta la SEQUENZA. Si registra
+      // quante cancellazioni di dati erano già state fatte nell'istante in cui
+      // l'utente viene eliminato — se fosse zero, l'ordine sarebbe invertito e il
+      // test passerebbe comunque asserendo solo i due conteggi finali.
+      let datiRimossiQuandoCancellato = -1;
+      cognito.on(AdminDeleteUserCommand).callsFake(() => {
+        datiRimossiQuandoCancellato = ddb.commandCalls(DeleteCommand).length;
+        return {};
+      });
+
+      await rimuovi();
+
+      expect(ddb.commandCalls(DeleteCommand).length).toBeGreaterThan(0);
+      expect(cognito.commandCalls(AdminDeleteUserCommand).length).toBe(1);
+      expect(datiRimossiQuandoCancellato, 'utente cancellato prima della pulizia').toBeGreaterThan(0);
+    });
+
+    it('senza sub non cancella NIENTE', async () => {
+      // Meglio un errore che una cancellazione a metà: l'utente resterebbe senza
+      // i suoi dati, o i dati senza il loro proprietario.
+      cognito.reset();
+      cognito.on(AdminDeleteUserCommand).resolves({});
+      cognito.on(AdminGetUserCommand).resolves({ UserAttributes: [{ Name: 'email', Value: 'x@y.it' }] });
+
+      const { status } = parseResult(await rimuovi());
+
+      expect(status).toBe(500);
+      expect(cognito.commandCalls(AdminDeleteUserCommand).length).toBe(0);
+      expect(ddb.commandCalls(DeleteCommand).length).toBe(0);
+    });
+
+    it('403 per un cittadino', async () => {
+      const { status } = parseResult(await handler(apiEvent({
+        method: 'DELETE', claims: cittadino, pathParameters: { username: 'u1' },
+      })));
+      expect(status).toBe(403);
+      expect(cognito.commandCalls(AdminDeleteUserCommand).length).toBe(0);
+    });
   });
 });

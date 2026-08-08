@@ -5,7 +5,12 @@ import {
   AdminAddUserToGroupCommand,
   AdminDeleteUserCommand,
   AdminGetUserCommand,
+  AdminRemoveUserFromGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
+import { cancellaDatiUtente } from '../lib/cancella-dati-utente';
 import { rispondiA } from '../lib/email';
 import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
@@ -16,16 +21,34 @@ import type {
 
 const cognito = new CognitoIdentityProviderClient({});
 const ses = new SESv2Client({});
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const s3 = new S3Client({});
 const USER_POOL_ID = process.env.USER_POOL_ID as string;
 const FROM_EMAIL = process.env.FROM_EMAIL as string;
 const CLIENT_URL = process.env.CLIENT_URL as string;
+const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
+const VOTES_TABLE = process.env.VOTES_TABLE as string;
+const COMMENTS_TABLE = process.env.COMMENTS_TABLE as string;
+const PHOTO_BUCKET = process.env.PHOTO_BUCKET as string;
 const GROUPS = ['admin', 'membro', 'cittadino'];
 
 /**
- * /admin/users — gestione iscrizioni (staff). GET /admin/users/pending lista i
- * cittadini registrati e confermati ma non ancora approvati (in nessun gruppo);
- * POST /admin/users/{username}/approve li aggiunge al gruppo `cittadino`;
- * DELETE /admin/users/{username} rifiuta (elimina l'account).
+ * /admin/users — gestione delle persone (staff). Quattro operazioni:
+ *
+ * - `GET /admin/users` → cittadini attivi; `GET /admin/users/pending` → confermati
+ *   ma in nessun gruppo, cioè **non attivi** (l'attivazione ormai è automatica:
+ *   chi compare lì è stato rimosso, o la sua attivazione non è riuscita);
+ * - `POST /admin/users/{username}/approve` → lo (ri)abilita, aggiungendolo al
+ *   gruppo `cittadino`;
+ * - `POST /admin/users/{username}/revoke` → **toglie l'accesso** rimuovendolo dal
+ *   gruppo, senza cancellare nulla. È l'operazione giusta nella gran parte dei
+ *   casi: se una sua proposta è già in bacheca e altri l'hanno sostenuta, farla
+ *   sparire punirebbe anche loro;
+ * - `DELETE /admin/users/{username}` → **rimozione completa**, con la pulizia dei
+ *   dati. ⚠️ Fino all'8 agosto 2026 questa rotta eseguiva solo `AdminDeleteUser`,
+ *   quindi lasciava orfani proposte, foto, voti e segnalazioni — lo stesso difetto
+ *   di cancellare l'utente dalla console Cognito. Ora usa la stessa pulizia del
+ *   diritto all'oblio (`lib/cancella-dati-utente.ts`).
  */
 export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
@@ -78,6 +101,19 @@ export const handler = async (
     return resp(200, pending);
   }
 
+  // Due rotte POST sullo stesso parametro: si distinguono dal path, come le GET.
+  if (method === 'POST' && username && (event.rawPath ?? '').endsWith('/revoke')) {
+    await cognito.send(
+      new AdminRemoveUserFromGroupCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: username,
+        GroupName: 'cittadino',
+      }),
+    );
+    console.log('Accesso rimosso a un cittadino (dati conservati)');
+    return resp(200, { revoked: true });
+  }
+
   if (method === 'POST' && username) {
     await cognito.send(
       new AdminAddUserToGroupCommand({
@@ -92,9 +128,32 @@ export const handler = async (
   }
 
   if (method === 'DELETE' && username) {
+    // L'identificativo con cui i dati sono salvati è il `sub`, che si LEGGE da
+    // Cognito e non si presume uguale allo username: in questo pool coincidono,
+    // ma dedurlo qui significherebbe che il giorno in cui non coincidessero la
+    // pulizia non troverebbe nulla — e poi l'utente verrebbe cancellato comunque,
+    // lasciando i dati orfani senza un solo errore.
+    const utente = await cognito.send(
+      new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: username }),
+    );
+    const sub = utente.UserAttributes?.find((a) => a.Name === 'sub')?.Value;
+    if (!sub) {
+      return resp(500, { message: 'Impossibile identificare l\'utente: rimozione annullata.' });
+    }
+
+    const rimosso = await cancellaDatiUtente(ddb, s3, sub, {
+      feedbacks: FEEDBACKS_TABLE,
+      votes: VOTES_TABLE,
+      comments: COMMENTS_TABLE,
+      photoBucket: PHOTO_BUCKET,
+    });
+
+    // Cognito per ultimo: se la pulizia fallisse, l'utente resta e si sa di chi
+    // erano i dati.
     await cognito.send(
       new AdminDeleteUserCommand({ UserPoolId: USER_POOL_ID, Username: username }),
     );
+    console.log('Persona rimossa dallo staff, con pulizia dei dati', rimosso);
     return resp(204, null);
   }
 

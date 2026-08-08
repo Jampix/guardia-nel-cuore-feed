@@ -87,22 +87,65 @@ export class Cittadini {
   }
 
   reject(u: PendingUser): void {
-    // Rifiutare CANCELLA l'account: la persona dovrebbe rifare tutto da capo,
-    // quindi l'effetto va dichiarato invece di chiedere un generico "sei sicuro".
+    // Rifiutare cancella l'account E TUTTI I SUOI DATI. Prima l'operazione
+    // eliminava solo l'utente Cognito e lasciava proposte, foto, voti e
+    // segnalazioni orfani: ora la pulizia è vera, quindi l'effetto è più grande
+    // e va dichiarato per intero. Per il solo blocco dell'accesso c'è
+    // «Rimuovi accesso», che non cancella niente.
     this.dialog
       .open(ConfermaDialog, {
         maxWidth: '92vw',
         autoFocus: false,
         data: {
-          titolo: 'Rifiutare questa iscrizione?',
+          titolo: 'Eliminare questa persona e i suoi dati?',
           messaggio:
-            `L'account di ${u.nickname || u.email} viene eliminato. Se in futuro volesse ` +
-            'partecipare dovrebbe registrarsi di nuovo.',
-          azione: 'Rifiuta ed elimina',
+            `Vengono eliminati l'account di ${u.nickname || u.email} e tutto ciò che ha ` +
+            'scritto: proposte, foto, sostegni dati e segnalazioni inviate. ' +
+            'L\'operazione è irreversibile. Se vuoi solo impedirle di accedere, ' +
+            'usa «Rimuovi accesso» dalla scheda Attivi: i contenuti restano.',
+          parolaChiave: 'ELIMINA',
+          azione: 'Elimina tutto',
         },
       })
       .afterClosed()
       .subscribe((ok: boolean) => { if (ok) this.doReject(u); });
+  }
+
+  /**
+   * Toglie l'accesso a un cittadino attivo, senza cancellare nulla.
+   *
+   * È l'operazione che serviva e che non esisteva: prima si poteva solo passare
+   * dalla console Cognito, oppure eliminare tutto — e in mezzo non c'era niente.
+   */
+  revoke(c: Citizen): void {
+    this.dialog
+      .open(ConfermaDialog, {
+        maxWidth: '92vw',
+        autoFocus: false,
+        data: {
+          titolo: 'Togliere l\'accesso?',
+          messaggio:
+            `${c.nickname || c.email} non potrà più accedere. Le sue proposte, i suoi ` +
+            'sostegni e le risposte già pubblicate RESTANO dove sono. ' +
+            'Puoi riabilitarla in qualsiasi momento dalla scheda «Non attivi».',
+          azione: 'Rimuovi accesso',
+        },
+      })
+      .afterClosed()
+      .subscribe((ok: boolean) => { if (ok) this.doRevoke(c); });
+  }
+
+  private doRevoke(c: Citizen): void {
+    this.acting.set(c.username);
+    this.service.revoke(c.username).subscribe({
+      next: () => {
+        this.snack.open(`Accesso rimosso a ${c.nickname || c.email}.`, 'OK', { duration: 3000 });
+        this.citizens.update((l) => l.filter((x) => x.username !== c.username));
+        this.acting.set(null);
+        this.loadPending();
+      },
+      error: () => this.done('Rimozione dell\'accesso non riuscita.'),
+    });
   }
 
   private doReject(u: PendingUser): void {

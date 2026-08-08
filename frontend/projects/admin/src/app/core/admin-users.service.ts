@@ -54,7 +54,23 @@ export class AdminUsersService {
     );
   }
 
-  /** Rifiuta: elimina l'account non approvato. */
+  /**
+   * Toglie l'accesso senza cancellare nulla: rimuove dal gruppo `cittadino`.
+   * È l'operazione giusta quando una proposta è già in bacheca e altri l'hanno
+   * sostenuta — farla sparire punirebbe anche loro.
+   */
+  revoke(username: string): Observable<{ revoked: boolean }> {
+    return this.http.post<{ revoked: boolean }>(
+      `${this.api}/admin/users/${encodeURIComponent(username)}/revoke`,
+      {},
+    );
+  }
+
+  /**
+   * Rimozione COMPLETA: elimina l'account **e tutti i suoi dati** (proposte,
+   * foto, sostegni e segnalazioni), con la stessa pulizia del diritto all'oblio.
+   * Irreversibile: per il solo blocco dell'accesso usare `revoke`.
+   */
   reject(username: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/admin/users/${encodeURIComponent(username)}`);
   }

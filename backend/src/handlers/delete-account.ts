@@ -1,15 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  DeleteCommand,
-  UpdateCommand,
-} from '@aws-sdk/lib-dynamodb';
-import { queryAll, scanAll } from '../lib/ddb-paginate';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
 import {
   CognitoIdentityProviderClient,
   AdminDeleteUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import { cancellaDatiUtente } from '../lib/cancella-dati-utente';
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
@@ -27,12 +23,14 @@ const USER_POOL_ID = process.env.USER_POOL_ID as string;
 /**
  * DELETE /account — cancellazione account del cittadino (diritto all'oblio GDPR).
  *
- * Elimina, per l'utente autenticato (claim `sub`):
- *  1. le sue proposte (GSI `byAutore`): foto su S3 + voti ricevuti + la proposta;
- *  2. i voti che ha espresso su proposte altrui (con decremento del contatore);
- *  3. le segnalazioni che ha fatto (con decremento del contatore): senza questo
- *     resterebbe un riferimento a chi ha chiesto di essere cancellato;
- *  4. l'account Cognito (per ultimo).
+ * Elimina, per l'utente autenticato (claim `sub`), le sue proposte con foto e
+ * voti ricevuti, i voti che ha espresso altrove e le segnalazioni che ha fatto —
+ * la pulizia sta in `lib/cancella-dati-utente.ts`, condivisa con la rimozione
+ * dal backoffice — e per ultimo l'account Cognito.
+ *
+ * L'ordine non è un dettaglio: se si cancellasse prima l'utente e poi la pulizia
+ * fallisse, non resterebbe modo di sapere di chi erano i dati rimasti.
+ *
  * Operazione irreversibile.
  */
 export const handler = async (
@@ -43,87 +41,17 @@ export const handler = async (
   const username = String(claims['cognito:username'] ?? claims.sub ?? '');
   if (!userId) return resp(401, { message: 'Non autenticato' });
 
-  // 1. Proposte dell'utente.
-  // Tutte le pagine: qui una pagina mancante significa dati NON cancellati in
-  // una richiesta di oblio, cioè il difetto peggiore possibile su questo flusso.
-  const mine = await queryAll(ddb, {
-    TableName: FEEDBACKS_TABLE,
-    IndexName: 'byAutore',
-    KeyConditionExpression: 'autoreId = :a',
-    ExpressionAttributeValues: { ':a': userId },
+  const rimosso = await cancellaDatiUtente(ddb, s3, userId, {
+    feedbacks: FEEDBACKS_TABLE,
+    votes: VOTES_TABLE,
+    comments: COMMENTS_TABLE,
+    photoBucket: PHOTO_BUCKET,
   });
-  for (const f of mine) {
-    const feedbackId = String(f.id);
-    if (f.fotoKey) {
-      await s3.send(new DeleteObjectCommand({ Bucket: PHOTO_BUCKET, Key: String(f.fotoKey) }))
-        .catch((e) => console.error('Foto non eliminata:', e));
-    }
-    // Voti ricevuti da questa proposta (di chiunque): PK = feedbackId.
-    const votes = await queryAll(ddb, {
-      TableName: VOTES_TABLE,
-      KeyConditionExpression: 'feedbackId = :f',
-      ExpressionAttributeValues: { ':f': feedbackId },
-    });
-    for (const v of votes) {
-      await ddb.send(new DeleteCommand({ TableName: VOTES_TABLE, Key: { feedbackId, userId: v.userId } }));
-    }
-    // Segnalazioni RICEVUTE da questa proposta: senza questo restavano orfane,
-    // puntando a una proposta che non esiste più.
-    const ricevute = await queryAll(ddb, {
-      TableName: COMMENTS_TABLE,
-      KeyConditionExpression: 'feedbackId = :f',
-      ExpressionAttributeValues: { ':f': feedbackId },
-    });
-    for (const c of ricevute) {
-      await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
-    }
-    await ddb.send(new DeleteCommand({ TableName: FEEDBACKS_TABLE, Key: { id: feedbackId } }));
-  }
 
-  // 2. Voti espressi dall'utente su proposte altrui (rimaste).
-  const cast = await scanAll(ddb, {
-    TableName: VOTES_TABLE,
-    FilterExpression: 'userId = :u',
-    ExpressionAttributeValues: { ':u': userId },
-  });
-  for (const v of cast) {
-    const feedbackId = String(v.feedbackId);
-    await ddb.send(new DeleteCommand({ TableName: VOTES_TABLE, Key: { feedbackId, userId } }));
-    await ddb.send(new UpdateCommand({
-      TableName: FEEDBACKS_TABLE,
-      Key: { id: feedbackId },
-      UpdateExpression: 'ADD numeroVoti :d',
-      ExpressionAttributeValues: { ':d': -1 },
-      ConditionExpression: 'attribute_exists(id)',
-    })).catch(() => { /* proposta già rimossa: ignora */ });
-  }
-
-  // 3. Segnalazioni FATTE dall'utente su proposte altrui. Senza questo passo
-  //    restavano con il suo identificativo dentro — un riferimento a una
-  //    persona che ha chiesto di essere cancellata — e il contatore continuava
-  //    a pesare su quelle proposte con un'accusa il cui autore non esiste più.
-  const fatte = await scanAll(ddb, {
-    TableName: COMMENTS_TABLE,
-    FilterExpression: 'autoreId = :u',
-    ExpressionAttributeValues: { ':u': userId },
-  });
-  for (const c of fatte) {
-    const feedbackId = String(c.feedbackId);
-    await ddb.send(new DeleteCommand({ TableName: COMMENTS_TABLE, Key: { feedbackId, sk: c.sk } }));
-    if (String(c.tipo) === 'REPORT') {
-      await ddb.send(new UpdateCommand({
-        TableName: FEEDBACKS_TABLE,
-        Key: { id: feedbackId },
-        UpdateExpression: 'ADD segnalazioni :d',
-        ExpressionAttributeValues: { ':d': -1 },
-        ConditionExpression: 'attribute_exists(id)',
-      })).catch(() => { /* proposta già rimossa: ignora */ });
-    }
-  }
-
-  // 4. Account Cognito (per ultimo).
+  // Account Cognito per ultimo.
   await cognito.send(new AdminDeleteUserCommand({ UserPoolId: USER_POOL_ID, Username: username }));
 
+  console.log('Account cancellato su richiesta dell\'interessato', rimosso);
   return resp(200, { deleted: true });
 };
 

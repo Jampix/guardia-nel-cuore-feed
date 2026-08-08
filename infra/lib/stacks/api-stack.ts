@@ -176,6 +176,12 @@ export class ApiStack extends Stack {
       entry: path.join(handlersDir, 'admin-users.ts'),
       environment: {
         USER_POOL_ID: props.userPoolId,
+        // La rimozione completa di una persona esegue la stessa pulizia del
+        // diritto all'oblio: servono le tabelle e il bucket delle foto.
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        VOTES_TABLE: props.votesTableName,
+        COMMENTS_TABLE: props.commentsTableName,
+        PHOTO_BUCKET: props.photoBucketName,
         ...(emailDomain
           ? {
               FROM_EMAIL: `noreply@${emailDomain}`,
@@ -191,9 +197,17 @@ export class ApiStack extends Stack {
       'cognito-idp:ListUsers',
       'cognito-idp:ListUsersInGroup',
       'cognito-idp:AdminAddUserToGroup',
+      // Togliere l'accesso senza cancellare nulla: l'operazione giusta quando una
+      // proposta è già in bacheca e altri l'hanno sostenuta.
+      'cognito-idp:AdminRemoveUserFromGroup',
       'cognito-idp:AdminDeleteUser',
       'cognito-idp:AdminGetUser',
     );
+    // Rimozione completa: stessa pulizia del diritto all'oblio.
+    feedbacks.grantReadWriteData(adminUsersFn.fn);
+    votes.grantReadWriteData(adminUsersFn.fn);
+    comments.grantReadWriteData(adminUsersFn.fn);
+    photoBucket.grantDelete(adminUsersFn.fn);
     if (emailDomain) {
       adminUsersFn.fn.addToRolePolicy(
         new PolicyStatement({
@@ -347,6 +361,7 @@ export class ApiStack extends Stack {
     api.addRoute(HttpMethod.GET, '/admin/users', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/admin/users/pending', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/admin/users/{username}/approve', adminUsersFn.fn, { authenticated: true });
+    api.addRoute(HttpMethod.POST, '/admin/users/{username}/revoke', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.DELETE, '/admin/users/{username}', adminUsersFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.GET, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });
     api.addRoute(HttpMethod.POST, '/feedback/{id}/vote', voteFn.fn, { authenticated: true });

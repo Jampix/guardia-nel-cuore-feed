@@ -78,6 +78,11 @@
             @if (!c.enabled) { <span class="disabled">disattivato</span> }
             @if (c.createdAt) { <span class="since">dal {{ c.createdAt | date: 'dd/MM/yyyy' }}</span> }
           </div>
+          <div class="actions">
+            <button mat-stroked-button [disabled]="acting() === c.username" (click)="revoke(c)">
+              <mat-icon>block</mat-icon> Rimuovi accesso
+            </button>
+          </div>
         </div>
       }
     </div>
