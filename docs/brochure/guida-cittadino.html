@@ -41,7 +41,10 @@
     box-shadow: 0 6px 30px rgba(0,0,0,.22);
   }
   .pad { padding: 20mm 18mm; }
-  .pad.tight { padding: 13mm 18mm; }
+  /* Pagina "Cosa puoi fare": la più densa (quattro mockup + didascalie). Il
+     margine verticale è ridotto di proposito — vedi README.md § Vincolo di
+     impaginazione: superare i 1123px di un A4 aggiunge un foglio quasi bianco. */
+  .pad.tight { padding: 11mm 18mm; }
 
   @media print {
     html, body { background: #fff; }
@@ -135,7 +138,7 @@
   }
 
   /* ---------- Griglia funzioni ---------- */
-  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 26px; }
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 26px; }
   .feature { display: flex; flex-direction: column; align-items: center; text-align: center; }
   .feature h3 {
     font-size: 16px; letter-spacing: -0.015em; margin: 11px 0 4px;
@@ -218,6 +221,29 @@
     display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--ink-3);
   }
   .foot-strip .b { color: var(--primary); font-weight: 700; }
+
+  /* ---------- Riquadri di testo (pagina 4) ----------
+     Stesso linguaggio visivo delle .card della bacheca — superficie chiara su
+     fondo crema, bordo sottile — ma senza mockup: qui il contenuto è testo, e
+     un telefono finto accanto a ogni paragrafo sarebbe decorazione. */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .tile h3 {
+    font-size: 16px; letter-spacing: -0.015em; margin: 0 0 6px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .tile h3 svg { color: var(--primary); flex: 0 0 auto; }
+  .tile p { font-size: 13.5px; color: var(--ink-2); margin: 0; }
+  .tile p + p { margin-top: 8px; }
+
+  /* Domande frequenti: la domanda porta il colore, la risposta resta quieta. */
+  .qa { display: flex; flex-direction: column; gap: 10px; margin: 10px 0 0; }
+  .qa div { font-size: 13.5px; color: var(--ink-2); }
+  .qa b { color: var(--ink); }
+  .mailto { color: var(--primary); font-weight: 700; }
 </style>
 
 <!-- ============ PAGINA 1 — COVER ============ -->
@@ -231,7 +257,7 @@
     <p class="lead">La tua voce per Guardia Piemontese: proponi, segnala e sostieni le idee per il nostro paese.</p>
   </div>
   <div class="cover-bottom">
-    <p class="cover-intro">Un'iniziativa dell'associazione <b>Guardia nel Cuore</b> per raccogliere proposte, segnalazioni e idee dei cittadini. Bastano pochi minuti dal telefono: ogni contributo aiuta l'associazione a farsi portavoce delle esigenze del territorio.</p>
+    <p class="cover-intro">Un'iniziativa dell'associazione <b>Guardia nel Cuore</b> per raccogliere proposte, segnalazioni e idee di chi ha Guardia Piemontese nel cuore. Bastano pochi minuti dal telefono: ogni contributo aiuta l'associazione a farsi portavoce delle esigenze del territorio.</p>
     <span class="url-pill">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       feed.guardianelcuore.it
@@ -240,7 +266,7 @@
   </div>
   <div class="cover-foot">
     <span>Associazione Guardia nel Cuore</span>
-    <span>Guida rapida · edizione 2026</span>
+    <span>Guida rapida · agosto 2026</span>
   </div>
 </section>
 
@@ -249,7 +275,7 @@
   <div class="pad">
     <p class="sec-eyebrow">Primi passi</p>
     <h2 class="sec-title">Come iniziare, in 4 passi</h2>
-    <p class="sec-sub">Per partecipare serve un account. La registrazione è gratuita; l'accesso è riservato ai cittadini, quindi l'associazione conferma ogni iscrizione.</p>
+    <p class="sec-sub">Per partecipare serve un account. La registrazione è gratuita e aperta a chi vive Guardia Piemontese e a chi le vuole bene; l'associazione conferma ogni iscrizione.</p>
 
     <div style="display:flex; gap:28px; align-items:flex-start;">
       <div style="flex:1;">
@@ -257,14 +283,14 @@
           <div class="step-num">1</div>
           <div class="step-body">
             <h3>Apri l'app e registrati</h3>
-            <p>Vai su <b>feed.guardianelcuore.it</b> e tocca “Registrati”. Inserisci un nome pubblico, la tua email e una password.</p>
+            <p>Vai su <b>feed.guardianelcuore.it</b> e tocca “Registrati”. Ti chiediamo nome e cognome, il <b>nome pubblico</b> con cui apparirai in bacheca, il tuo rapporto col paese (ci vivi, ci torni, la sostieni, sei di passaggio), email e password.</p>
           </div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-body">
             <h3>Conferma la tua email</h3>
-            <p>Ricevi un codice via email: inseriscilo per confermare l'indirizzo.</p>
+            <p>Ricevi un codice da <b>Guardia nel Cuore</b> (noreply@feed.guardianelcuore.it): inseriscilo per confermare l'indirizzo. Se non lo trovi, guarda nella posta indesiderata.</p>
           </div>
         </div>
         <div class="step">
@@ -307,7 +333,7 @@
 
     <div class="callout">
       <h4>Perché serve l'approvazione?</h4>
-      <p>Guardia nel Cuore è uno spazio riservato ai cittadini del paese. L'approvazione dell'associazione evita iscrizioni indesiderate e tiene la comunità autentica. È un passaggio veloce e una tantum.</p>
+      <p>Guardia nel Cuore è uno spazio della comunità, non un social aperto a chiunque. L'approvazione dell'associazione evita iscrizioni indesiderate e tiene le proposte riconoscibili. È un passaggio veloce e una volta sola: non serve rifarlo agli accessi successivi.</p>
     </div>
   </div>
 </section>
@@ -354,7 +380,7 @@
           <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
           Sfoglia la bacheca
         </h3>
-        <p>Vedi le proposte pubbliche dei cittadini, con foto, luogo e stato di avanzamento.</p>
+        <p>Foto, luogo, stato e nome pubblico di chi ha scritto. Cerca per parola, ordina per più sostenute o più recenti, o passa alla vista mappa.</p>
       </div>
 
       <!-- Nuova proposta -->
@@ -380,7 +406,7 @@
           <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Crea una proposta
         </h3>
-        <p>Aggiungi titolo, descrizione, una foto e la posizione sulla mappa. Resta privata finché l'associazione non la pubblica.</p>
+        <p>Titolo, descrizione, una foto e il luogo: cercalo per indirizzo, toccalo sulla mappa o usa la tua posizione. Resta privata finché l'associazione non la pubblica.</p>
       </div>
 
       <!-- Sostieni -->
@@ -392,7 +418,7 @@
               <div class="thumb" style="height:56px;border-radius:10px;background:linear-gradient(135deg,#9c6b4f,#5c3a2c)"></div>
               <div class="cf"><span class="chip st-work">In lavorazione</span></div>
               <p class="ct" style="font-size:13px">Buche lungo via Roma</p>
-              <p class="sc-sub">di Marco P. · Via Roma</p>
+              <p class="sc-sub">di Marco · Via Roma</p>
               <div class="vote-box">
                 <span class="vote-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.3 8.4 2 5 5.3 5c1.9 0 3.4 1 4.7 2.6C11.3 6 12.8 5 14.7 5 18 5 19.7 8.4 22 11.8 19.5 16.4 12 21 12 21z"/></svg> Sostieni</span>
                 <div style="line-height:1.05"><div style="font-size:14px;font-weight:800">24</div><div style="font-size:8px;color:var(--ink-3)">cittadini</div></div>
@@ -432,6 +458,68 @@
 
     <div class="foot-strip">
       <span>Partecipa su <span class="b">feed.guardianelcuore.it</span></span>
+      <span>Associazione Guardia nel Cuore ❤️</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAGINA 4 — DOPO LA PROPOSTA ============ -->
+<section class="page">
+  <div class="pad">
+    <p class="sec-eyebrow">Dopo la proposta</p>
+    <h2 class="sec-title">Cosa succede, e cosa puoi fare</h2>
+    <p class="sec-sub">Una proposta inviata non finisce in un cassetto: la legge una persona dell'associazione, e tu vieni avvisato a ogni passaggio.</p>
+
+    <div class="tiles">
+      <div class="tile">
+        <h3>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>
+          Ti scriviamo noi
+        </h3>
+        <p>Ricevi un'email quando la tua proposta viene <b>pubblicata in bacheca</b>, quando <b>cambia stato</b>, quando l'associazione <b>risponde</b> e se lo staff corregge un errore nel testo.</p>
+        <p>Non serve controllare l'app ogni giorno.</p>
+      </div>
+
+      <div class="tile">
+        <h3>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L20 8a2.8 2.8 0 0 0-4-4L4 16z"/></svg>
+          Correggere o ritirare
+        </h3>
+        <p>Finché la proposta è <b>privata</b> puoi modificarla dalla sua pagina. Dopo la pubblicazione il testo non si cambia più: altri l'hanno letta e sostenuta così. Per una correzione scrivi all'associazione.</p>
+        <p><b>Eliminarla si può sempre.</b></p>
+      </div>
+
+      <div class="tile">
+        <h3>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h9l-.8 3H19l-1 5h-5l.8-3H5"/></svg>
+          Segnalare un contenuto
+        </h3>
+        <p>Se una proposta pubblicata è offensiva, falsa o fuori tema, tocca <b>“Segnala”</b> e scegli il motivo. La esamina una persona dello staff, non un automatismo.</p>
+        <p>Chi ha scritto la proposta <b>non sa chi l'ha segnalata</b>.</p>
+      </div>
+
+      <div class="tile">
+        <h3>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          I tuoi dati
+        </h3>
+        <p>In bacheca compare <b>solo il nome pubblico</b> che hai scelto: nome, cognome ed email li vede unicamente l'associazione.</p>
+        <p>Dal tuo profilo puoi <b>eliminare l'account</b>: spariscono profilo, proposte, foto, sostegni e segnalazioni.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h4>Se qualcosa non va</h4>
+      <div class="qa">
+        <div><b>Hai dimenticato la password?</b> Sulla pagina di accesso tocca “Password dimenticata?”: ricevi un codice via email e ne imposti una nuova.</div>
+        <div><b>Il codice non arriva?</b> Cercalo nella posta indesiderata: il mittente è <i>Guardia nel Cuore &lt;noreply@feed.guardianelcuore.it&gt;</i>. Dal riquadro “Non hai ricevuto il codice?” puoi farlo rinviare.</div>
+        <div><b>Per tutto il resto</b>, scrivi a <span class="mailto">guardianelcuore@gmail.com</span>: risponde una persona dell'associazione.</div>
+        <div>Il <b>regolamento</b> e l'<b>informativa privacy</b> si aprono dai link in fondo alla pagina di accesso.</div>
+      </div>
+    </div>
+
+    <div class="foot-strip">
+      <span>Scrivi a <span class="b">guardianelcuore@gmail.com</span></span>
       <span>Associazione Guardia nel Cuore ❤️</span>
     </div>
   </div>
