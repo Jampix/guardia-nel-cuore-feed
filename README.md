@@ -188,7 +188,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   rimandato: costerebbe pochi centesimi, ma richiederebbe un secondo pool Cognito con
   utenti di prova da ricreare, dominio e certificato propri e un doppio deploy — da
   fare quando servirà provare modifiche **distruttive** (schema dati, flusso auth).
-- ✅ **Test**: 164 backend (Vitest, ogni handler coperto) + 110 frontend (Karma su
+- ✅ **Test**: 169 backend (Vitest, ogni handler coperto) + 110 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
 - ✅ **Informativa privacy** completa con i dati del titolare (Associazione

@@ -170,7 +170,9 @@ destinatario è risolto da Cognito al momento (non è salvato sui feedback):
   sulla propria proposta al **cambio stato**, alla **pubblicazione in bacheca**, a una
   **risposta pubblica** nuova o alla **correzione del testo** (`patch-feedback`);
   benvenuto anche alla ri-abilitazione manuale (`admin-users`);
-- **allo staff**: nuova iscrizione (`post-confirmation`), contenuto **segnalato**
+- **allo staff**: **nuova proposta da moderare** (`create-feedback`, senza alcun
+  contenuto della proposta: è privata, e il link porta alle non pubblicate), nuova
+  iscrizione (`post-confirmation`), contenuto **segnalato**
   (`report-feedback`), proposta pubblicata o segnalata **eliminata dall'autore**
   (`feedback-owner`). I destinatari si leggono dai gruppi `admin` **e** `membro` al
   momento dell'invio, così aggiungere una persona allo staff basta a farle ricevere
@@ -294,7 +296,7 @@ Avvisi via email a un indirizzo configurato in `config.alerts` (email + soglia b
   (Google non riceve più l'IP dei visitatori) (§11);
 - **CI/CD** del frontend (GitHub Actions + OIDC) e **monitoraggio** costi, errori,
   reputazione email (§11bis);
-- **164 test backend + 110 frontend** in CI, guardie validate per mutazione.
+- **169 test backend + 110 frontend** in CI, guardie validate per mutazione.
 
 **Da fare:**
 - **Report DMARC (`rua=`)** verso una casella che li riceva, poi valutare `p=reject`:

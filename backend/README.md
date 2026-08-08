@@ -31,7 +31,7 @@ del token. È per questo che la rimozione dell'accesso chiude anche le sessioni
 | `GET /categories` | `categories.ts` | autenticata | categorie attive (chi non ha il campo `attiva` è considerato attivo: i seed) |
 | `GET /feedback/public` | `list-public-feedback.ts` | autenticata | bacheca (GSI `byVisibilita`, solo `pubblico`), paginata; `notaInterna` **rimossa**, `fotoUrl` prefirmato |
 | `GET /feedback/mine` | `list-my-feedback.ts` | autenticata | le proprie proposte (GSI `byAutore`); la chiave viene dal **token**, non dalla richiesta |
-| `POST /feedback` | `create-feedback.ts` | autenticata | crea proposta (stato `proposta`, **sempre `privato`** — la visibilità è forzata lato server) |
+| `POST /feedback` | `create-feedback.ts` | autenticata | crea proposta (stato `proposta`, **sempre `privato`** — la visibilità è forzata lato server); **avvisa lo staff** |
 | `PATCH /feedback/{id}` | `feedback-owner.ts` | autore | modifica testo/categoria/luogo **solo se ancora privata** → `409` dopo la pubblicazione (chi ha votato l'ha fatto per quel testo) |
 | `DELETE /feedback/{id}` | `feedback-owner.ts` | autore | elimina proposta + foto + voti + segnalazioni. Se era pubblicata o segnalata, **avvisa lo staff prima** di cancellare |
 | `GET·POST·DELETE /feedback/{id}/vote` | `feedback-vote.ts` | autenticata | stato voto / vota / ritira; 1 voto per utente (tabella `Votes`), contatore in `TransactWriteItems` |
@@ -128,9 +128,14 @@ feedback. Chi riceve cosa:
   **risposta pubblica** nuova o alla correzione del testo (`patch-feedback`, con una
   frase per stato). Mai per la sola nota interna, mai quando una proposta viene
   ri-nascosta;
-- **allo staff** — nuova iscrizione (`post-confirmation`), contenuto segnalato
-  (`report-feedback`), proposta pubblicata o segnalata **eliminata dall'autore**
-  (`feedback-owner`).
+- **allo staff** — **nuova proposta da moderare** (`create-feedback`), nuova
+  iscrizione (`post-confirmation`), contenuto segnalato (`report-feedback`), proposta
+  pubblicata o segnalata **eliminata dall'autore** (`feedback-owner`).
+  ⚠️ L'avviso di nuova proposta **non contiene nulla della proposta** — né titolo, né
+  testo, né il nome di chi l'ha scritta: è privata in quel momento, e il contenuto non
+  deve viaggiare verso le caselle personali dello staff quando basta un clic per
+  leggerlo nel backoffice. Il link punta alle **non pubblicate**, così l'avviso resta
+  utile pur non dicendo nulla. Un test lo pretende.
 
 ⚠️ La schermata di moderazione invia **tutti i campi a ogni salvataggio**: «campo
 presente nel body» non dice se è cambiato. Per questo `patch-feedback` confronta col
@@ -143,7 +148,7 @@ valore precedente prima di decidere se avvisare.
 
 ## Test
 
-**164 test** con **Vitest** + **aws-sdk-client-mock** (SDK AWS simulato, nessuna
+**169 test** con **Vitest** + **aws-sdk-client-mock** (SDK AWS simulato, nessuna
 chiamata reale). File `*.test.ts` accanto al codice — non entrano nei bundle Lambda.
 
 ```bash

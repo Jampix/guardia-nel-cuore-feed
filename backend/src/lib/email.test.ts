@@ -70,8 +70,8 @@ describe('tutti gli invii impostano il Reply-To', () => {
   it('trova gli handler che inviano email', () => {
     // Se questo numero cala senza una ragione, la guardia sotto sta verificando
     // meno di quanto crede: il test peggiore è quello che passa a vuoto.
-    expect(conInvii.length, `handler con invii: ${conInvii.map((s) => s.file)}`).toBe(5);
-    expect(conInvii.flatMap((s) => invii(s.testo)).length).toBe(6);
+    expect(conInvii.length, `handler con invii: ${conInvii.map((s) => s.file)}`).toBe(6);
+    expect(conInvii.flatMap((s) => invii(s.testo)).length).toBe(7);
   });
 
   for (const { file, testo } of sorgenti) {

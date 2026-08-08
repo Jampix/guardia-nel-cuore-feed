@@ -51,6 +51,13 @@ export class ApiStack extends Stack {
 
     const handlersDir = path.join(__dirname, '..', '..', '..', 'backend', 'src', 'handlers');
 
+    // Dominio delle email e recapito dell'associazione: usati da piu' Lambda, quindi
+    // dichiarati qui e non accanto alla prima che li adopera.
+    const emailDomain = props.config.features.dns?.domain;
+    // Reply-To di tutte le email: il mittente `noreply@` non riceve posta, quindi
+    // senza questo chi risponde a un avviso scrive nel vuoto senza accorgersene.
+    const contactEmail = props.config.contactEmail;
+
     // Import da altri stack (per ID/ARN)
     const userPool = UserPool.fromUserPoolId(this, 'UserPool', props.userPoolId);
     const clientApp = UserPoolClient.fromUserPoolClientId(this, 'ClientApp', props.clientAppClientId);
@@ -74,13 +81,36 @@ export class ApiStack extends Stack {
     });
     categories.grantReadData(categoriesFn.fn);
 
-    // POST /feedback (autenticata)
+    // POST /feedback (autenticata). Avvisa lo staff: una proposta nasce privata,
+    // quindi senza avviso resta invisibile finché qualcuno non apre il backoffice.
     const createFeedbackFn = new NodeFunctionConstruct(this, 'CreateFeedbackFn', {
       entry: path.join(handlersDir, 'create-feedback.ts'),
-      environment: { FEEDBACKS_TABLE: props.feedbacksTableName },
+      environment: {
+        FEEDBACKS_TABLE: props.feedbacksTableName,
+        ...(emailDomain && props.alertEmail
+          ? {
+              FROM_EMAIL: `noreply@${emailDomain}`,
+              // Indirizzo di ripiego: i destinatari veri sono i gruppi staff.
+              STAFF_EMAIL: props.alertEmail,
+              USER_POOL_ID: userPool.userPoolId,
+              ADMIN_URL: `https://admin.${emailDomain}`,
+              ...(contactEmail ? { REPLY_TO_EMAIL: contactEmail } : {}),
+            }
+          : {}),
+      },
       description: 'Guardia nel Cuore - crea feedback',
     });
     feedbacks.grantWriteData(createFeedbackFn.fn);
+    if (emailDomain && props.alertEmail) {
+      createFeedbackFn.fn.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail'],
+          resources: [`arn:aws:ses:${this.region}:${this.account}:identity/${emailDomain}`],
+        }),
+      );
+      // Destinatari dell'avviso = i gruppi staff, letti all'invio.
+      userPool.grant(createFeedbackFn.fn, 'cognito-idp:ListUsersInGroup');
+    }
 
     // GET /feedback/public (pubblica) — bacheca. Legge il bucket foto per
     // generare gli URL GET prefirmati (grantRead → s3:GetObject).
@@ -130,10 +160,6 @@ export class ApiStack extends Stack {
     // PATCH /admin/feedback/{id} (autenticata + gruppo) — moderazione.
     // Al cambio stato invia email all'autore (SES) risolvendone l'indirizzo
     // da Cognito (AdminGetUser). Email best-effort nell'handler.
-    const emailDomain = props.config.features.dns?.domain;
-    // Reply-To di tutte le email: il mittente `noreply@` non riceve posta, quindi
-    // senza questo chi risponde a un avviso scrive nel vuoto senza accorgersene.
-    const contactEmail = props.config.contactEmail;
     const patchFeedbackFn = new NodeFunctionConstruct(this, 'PatchFeedbackFn', {
       entry: path.join(handlersDir, 'patch-feedback.ts'),
       environment: {
