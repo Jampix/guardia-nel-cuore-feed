@@ -13,6 +13,13 @@
 // `/fonts` da entrambe le app via `assets` in angular.json). Regole ricopiate da
 // quelle che serviva Google, così il rendering non cambia.
 //
+// ⚠️ La **versione è nel nome del file** (`-v145`) e non è un vezzo: il deploy
+// serve gli asset con `cache-control: immutable`, che è corretto solo se il nome
+// cambia quando cambia il contenuto. Con un nome fisso, un font sostituito
+// resterebbe quello vecchio nei browser fino a un anno — l'invalidazione di
+// CloudFront pulisce la CDN, non le cache dei visitatori. È già successo con la
+// favicon. Sostituendo il font, cambiare anche il numero qui e nel nome.
+//
 // Material Icons è di Google, licenza Apache 2.0: vedi il file LICENSE accanto
 // al font.
 
@@ -24,7 +31,7 @@
   src:
     local('Material Icons'),
     local('MaterialIcons-Regular'),
-    url('/fonts/material-icons.woff2') format('woff2');
+    url('/fonts/material-icons-v145.woff2') format('woff2');
   // Le icone sono elementi di interfaccia, non testo: `block` evita che
   // compaiano prima come parole ("favorite", "arrow_back_ios_new") e poi come
   // simboli — un lampeggio che, su una connessione lenta, si legge come un
