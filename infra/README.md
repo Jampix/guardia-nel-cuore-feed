@@ -17,12 +17,12 @@ CloudFront · SES · Route53/ACM. Contesto completo in
 | Stack | Ruolo | Note |
 |---|---|---|
 | `GNCProdDataStack` | 4 tabelle DynamoDB (Feedbacks, Votes, Categories, FeedbackComments) | RETAIN |
-| `GNCProdAuthStack` | Cognito User Pool + gruppi + 2 app client + trigger **pre-auth** | RETAIN |
-| `GNCProdStorageStack` | Bucket S3 privato foto (OAC, CORS) | RETAIN |
+| `GNCProdAuthStack` | Cognito User Pool + gruppi + 2 app client + trigger **pre-auth** (interruttore d'accesso) e **post-confirmation** (attiva il nuovo iscritto, avvisa lo staff) | RETAIN · email via SES con `Reply-To` |
+| `GNCProdStorageStack` | Bucket S3 privato foto (CORS solo domini di produzione, versionato) | RETAIN |
 | `GNCProdApiStack` | HTTP API + JWT authorizer + tutte le Lambda + allarmi operativi (SNS+CloudWatch) | vedi `../backend/README.md` |
 | `GNCProdDnsStack` | Hosted zone `feed.` + record + identità SES (DKIM) | zona delegata dall'apex (account main) |
 | `GNCProdCertStack` | Certificato ACM in **us-east-1** (per CloudFront) | env override `us-east-1` |
-| `GNCProdFrontendStack` | 2 bucket S3 + 2 CloudFront (client/admin) + alias Route53 | consuma il cert per ARN (stringa) |
+| `GNCProdFrontendStack` | 2 bucket S3 + 2 CloudFront (client/admin) + alias Route53 + **header di sicurezza** (HSTS, CSP con host esatti, nosniff, referrer, frame-options) | consuma il cert per ARN (stringa); le origini della CSP sono derivate da Api/Storage |
 | `GNCProdCiStack` | OIDC GitHub + ruolo IAM per il deploy frontend da GitHub Actions | trust su repo@main |
 | `GNCProdCostOptimizationStack` | Budget mensile con avvisi email (50/80/100% + previsione) | limite da `config.alerts` |
 

@@ -79,16 +79,26 @@
         Cognito User Pool ─── gruppi: cittadino | membro | admin
 ```
 
-## 4. Autenticazione, ruoli e approvazione (Cognito)
+## 4. Autenticazione, ruoli e accesso (Cognito)
 - **User Pool** unico con verifica email (codice), reset password. Frontend via **@aws-amplify/auth**.
-- **Gruppi**: `admin` / `membro` (staff backoffice) / `cittadino` (cittadino **approvato**).
+- **Gruppi**: `admin` / `membro` (staff backoffice) / `cittadino` (abilitato ad accedere).
 - Il ruolo viaggia nel **JWT** → l'API Gateway usa un **Cognito Authorizer**; per le
   operazioni di backoffice ogni Lambda ricontrolla il gruppo (claim `cognito:groups`),
   perché l'authorizer valida solo la validità del token, non il ruolo.
-- **Approvazione iscrizioni**: la registrazione è self-service (email + verifica), ma
-  un trigger **Pre-Authentication** su Cognito **blocca il login** di chi non è in un
-  gruppo attivo. Un cittadino resta quindi "in attesa" finché lo staff non lo **approva**
-  dal backoffice (= aggiunta al gruppo `cittadino`); all'approvazione parte un'email SES.
+- **Attivazione automatica** (dal 2026-08-08, prima era un'approvazione manuale): il
+  trigger **Post-Confirmation** aggiunge il nuovo iscritto al gruppo `cittadino` appena
+  verifica l'email e gli manda il benvenuto (SES). Lo staff riceve l'avviso della nuova
+  iscrizione ma non deve fare nulla. *L'approvazione manuale era un collo di bottiglia
+  su due o tre persone.*
+- Il trigger **Pre-Authentication** resta come **interruttore**: chi non è in un gruppo
+  attivo non accede. Serve a **togliere** l'accesso, non a farlo attendere.
+- ⚠️ **Rimuovere dal gruppo non basta.** Il pre-auth scatta **solo al login con
+  password**, non sul rinnovo del token: ID/access durano 60 minuti ma il **refresh 30
+  giorni**, e Amplify lo rinnova in silenzio. Perciò `POST /admin/users/{u}/revoke`
+  chiama anche **`AdminUserGlobalSignOut`**, che invalida subito i token di rinnovo.
+  Resta solo la coda del token già in mano (≤ 1 ora): azzerarla richiederebbe un
+  controllo dei gruppi a **ogni** chiamata dell'API, che oggi non c'è — l'authorizer
+  verifica solo la validità del token.
 - Due app client (SPA, senza secret): uno per il frontend cittadini, uno per il backoffice.
 
 ## 5. Modello dati DynamoDB (multi-table)
@@ -116,45 +126,69 @@ Scelta: **poche tabelle separate e leggibili** (billing on-demand). Prefisso nom
 - Attributi: `nome`, `attiva` (bool), `creatoDa`, `createdAt`.
 
 ### Tabella `FeedbackComments`
-- Prevista per una futura **cronologia** di note interne + risposte pubbliche
-  (PK `feedbackId`, SK `<tipo>#<timestamp>`). In v1 **non ancora usata**: l'ultima
-  nota interna e l'ultima risposta pubblica sono denormalizzate su `Feedbacks`
-  (`notaInterna` / `rispostaPubblica`), sufficienti per la moderazione attuale.
+- PK `feedbackId`, SK `sk`. **In uso per le segnalazioni**: `sk = REPORT#<userId>`,
+  `tipo = REPORT`, più motivo e data. La chiave composta rende la segnalazione
+  **idempotente** (un utente non può segnalare due volte lo stesso contenuto) e
+  permette di leggere i motivi senza rivelare chi ha segnalato.
+- Nota interna e risposta pubblica restano **denormalizzate** su `Feedbacks`
+  (`notaInterna` / `rispostaPubblica`): per la moderazione attuale basta l'ultima, e
+  una cronologia completa non serve a nessuno oggi.
 
 ## 6. Endpoint API
 
 Rotte effettive dell'HTTP API. Mappa endpoint → handler in
 [`../backend/README.md`](../backend/README.md). **Contenuti privati**: non ci sono
-endpoint pubblici — anche bacheca e categorie richiedono il token (accesso ai soli
-cittadini approvati).
+endpoint pubblici — anche bacheca e categorie richiedono il token.
 
 **Cittadino** (JWT):
 - `GET /categories` — categorie attive
-- `GET /feedback/public` — bacheca (solo proposte `pubblico`)
+- `GET /feedback/public` — bacheca (solo proposte `pubblico`), paginata
 - `POST /feedback` — crea proposta (nasce **sempre privata**)
 - `GET /feedback/mine` — le mie proposte (anche private)
+- `PATCH·DELETE /feedback/{id}` — modifica (**solo finché privata** → `409` dopo la pubblicazione) / elimina
 - `GET·POST·DELETE /feedback/{id}/vote` — stato voto / vota / ritira
-- `POST /uploads/presign` — URL prefirmato per caricare una foto
+- `POST /feedback/{id}/report` — segnala un contenuto (1 per utente, idempotente)
+- `POST /uploads/presign` — URL prefirmato per la foto (tipo **e dimensione** firmati)
+- `DELETE /account` — diritto all'oblio: dati + account
 
 **Backoffice** (JWT + gruppo `admin`/`membro`):
 - `GET /admin/feedback` — tutti i feedback (anche privati)
-- `PATCH /admin/feedback/{id}` — moderazione: `stato` / `visibilita` (pubblica/nasconde) / `rispostaPubblica` / `notaInterna` (cambio stato → email)
+- `PATCH /admin/feedback/{id}` — moderazione: `stato` / `visibilita` / `rispostaPubblica` / `notaInterna` / correzione di `titolo` e `descrizione` (l'autore viene avvisato)
+- `GET /admin/feedback/{id}/reports` — motivi delle segnalazioni (senza l'identità di chi ha segnalato)
 - `GET·POST·PATCH·DELETE /admin/categories[/{id}]` — CRUD categorie
-- `GET /admin/users` — cittadini attivi · `GET /admin/users/pending` — iscrizioni in attesa
-- `POST /admin/users/{username}/approve` — approva (→ email) · `DELETE /admin/users/{username}` — rifiuta
+- `GET /admin/users` — cittadini attivi · `GET /admin/users/pending` — **non attivi** (normalmente vuoto)
+- `POST /admin/users/{username}/approve` — (ri)abilita (→ email)
+- `POST /admin/users/{username}/revoke` — **toglie l'accesso** e chiude le sessioni, senza cancellare nulla
+- `DELETE /admin/users/{username}` — **rimozione completa**: pulizia dei dati + account
 
 ## 7. Notifiche email (SES)
 Email transazionali da `noreply@feed.guardianelcuore.it` (identità **dominio**
 verificata con **DKIM**, record nella zona `feed`). Invio sincrono **best-effort**
 dentro la Lambda (un errore non fa fallire l'operazione), l'indirizzo del
 destinatario è risolto da Cognito al momento (non è salvato sui feedback):
-- **cambio stato** di un feedback → email all'autore (`patch-feedback`);
-- **approvazione iscrizione** → email di benvenuto (`admin-users`).
+- **al cittadino**: benvenuto all'attivazione (`post-confirmation`); aggiornamento
+  sulla propria proposta al **cambio stato**, alla **pubblicazione in bacheca**, a una
+  **risposta pubblica** nuova o alla **correzione del testo** (`patch-feedback`);
+  benvenuto anche alla ri-abilitazione manuale (`admin-users`);
+- **allo staff**: nuova iscrizione (`post-confirmation`), contenuto **segnalato**
+  (`report-feedback`), proposta pubblicata o segnalata **eliminata dall'autore**
+  (`feedback-owner`). I destinatari si leggono dai gruppi `admin` **e** `membro` al
+  momento dell'invio, così aggiungere una persona allo staff basta a farle ricevere
+  gli avvisi.
 
-⚠️ **Sandbox**: SES è in sandbox → recapita solo a destinatari verificati finché
-non viene concessa la *production access* (richiesta inviata ad AWS). La verifica
-email in **registrazione** usa invece il mittente di default di Cognito e funziona
-già per tutti. Nessuna coda in v1; per robustezza futura → DynamoDB Streams + SQS.
+**`Reply-To` verso il recapito dell'associazione**: il mittente `noreply@` non è una
+casella, e senza questo chi risponde a un avviso scrive nel vuoto senza accorgersene.
+
+✅ **Production access concessa** (2026-07-29, 50.000/giorno): recapita a tutti. Anche
+le email di **Cognito** (codice di verifica e recupero password) passano da SES con lo
+stesso mittente — prima usavano il mittente condiviso di AWS e finivano in spam.
+
+**Deliverability**: DKIM + **SPF** + **DMARC `p=quarantine`** sulla zona `feed`.
+L'allineamento DMARC passa dal DKIM: SES usa un MAIL FROM su `amazonses.com`, quindi
+l'SPF non è allineato. ⚠️ Non passare a `p=reject` finché non arrivano i report
+(manca `rua=`): senza visibilità si scarterebbe posta legittima senza accorgersene.
+
+Nessuna coda in v1; per robustezza futura → DynamoDB Streams + SQS.
 
 ## 7bis. Approccio IaC (CDK)
 
@@ -199,11 +233,31 @@ Con poche centinaia di utenti/mese, gran parte rientra nel **free tier**:
 - **Costo mensile realistico v1: < 5 €/mese** (escluso dominio ~10–15 €/anno).
 
 ## 11. Sicurezza & GDPR
-- HTTPS ovunque (CloudFront + API Gateway).
-- Least privilege IAM per ogni Lambda (accesso solo alla tabella/bucket necessari).
-- Bucket foto **privato** (accesso solo via URL prefirmati); validare tipo/size upload.
-- Informativa privacy + cancellazione account/dati (US futura da aggiungere).
-- Rate limiting su API Gateway + verifica email come anti-spam base.
+- HTTPS ovunque (CloudFront + API Gateway); least privilege IAM per ogni Lambda.
+- **Header di sicurezza** sulle due distribuzioni CloudFront: HSTS (1 anno,
+  sottodomini inclusi, **senza preload**), `X-Content-Type-Options`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` e una
+  **CSP** con **host esatti** — mai `*.execute-api…`/`*.s3…`, perché con un carattere
+  jolly basterebbe creare un'API o un bucket propri nella stessa regione per
+  esfiltrare il token in `localStorage`.
+  ⚠️ La CSP non ammette script inline: `optimization.styles.inlineCritical` deve
+  restare **false**, altrimenti Angular emette un `onload` che viene bloccato e il
+  foglio di stile globale non si applica (un controllo nel workflow di deploy lo ferma).
+- **CORS** ristretto ai soli domini di produzione: nessuna origine `localhost`. Lo
+  sviluppo locale passa dal **proxy del dev server** (vedi README).
+- Bucket foto **privato**: upload con tipo *e dimensione* firmati (max 5 MB), lettura
+  con **tipo imposto** dal server. Bucket **versionato** (recupero da cancellazioni).
+- **Rate limiting** sull'HTTP API (25 req/s, burst 50) + verifica email come anti-spam.
+- **Log CloudWatch a 90 giorni**: nei log finiscono indirizzi email, e il default di
+  Lambda è «mai». Conservarli per sempre contraddirebbe la minimizzazione dichiarata.
+- **PITR** attivo su tutte le tabelle; RETAIN su dati, utenti e foto.
+- **GDPR**: informativa e regolamento pubblicati (con i dati del titolare), consenso
+  obbligatorio all'iscrizione, **cancellazione account self-service** (art. 17) che
+  rimuove proposte, foto, voti e segnalazioni. Nessun cookie di profilazione → nessun
+  banner. Dati in UE (`eu-west-1`); OpenStreetMap è dichiarato fra i destinatari.
+  ⬜ **Portabilità** (art. 20): nessuna interfaccia, per scelta — la legge non impone un
+  pulsante, impone di saper consegnare i dati se richiesti. ⬜ **Età minima** non
+  dichiarata.
 
 ## 11bis. Monitoraggio e avvisi
 Avvisi via email a un indirizzo configurato in `config.alerts` (email + soglia budget).
@@ -221,15 +275,32 @@ Avvisi via email a un indirizzo configurato in `config.alerts` (email + soglia b
   all'account di progetto. Certificato **ACM in `us-east-1`** per CloudFront.
 - **DynamoDB multi-table** (§5) per leggibilità/manutenibilità.
 - **Frontend Angular Material (M3)**, mobile-first, tema chiaro/scuro; mappa **Leaflet+OSM** (no costi).
-- **Approvazione iscrizioni** via trigger Cognito Pre-Authentication (§4).
+- **Attivazione automatica** dell'iscrizione (trigger Post-Confirmation) con il
+  pre-auth come interruttore per togliere l'accesso (§4). L'approvazione manuale è
+  stata rimossa l'8 agosto 2026.
 
 ## 13. Fatto di recente / prossimi passi
-Fatto: contenuti privati (login obbligatorio), proposte private di default con
-pubblicazione decisa dallo staff, **CI/CD** del frontend (GitHub Actions + OIDC),
-**monitoraggio** costi + allarmi operativi (§11bis).
 
-Da fare:
-- **SES production access** (uscita dalla sandbox) per recapitare le email a tutti.
-- **i18n IT/EN** (@ngx-translate), informativa **privacy/GDPR** + cancellazione account.
-- Restringere il **CORS** del bucket foto rimuovendo `localhost` a regime.
-- (Opzionale) schermata gestione **staff** nel backoffice; distinzione poteri admin/membro.
+**Fatto** (aggiornato 2026-08-09):
+- contenuti privati (login obbligatorio) e proposte private di default, con la
+  pubblicazione decisa dallo staff — è ciò che protegge la bacheca;
+- **attivazione automatica** dell'iscrizione, con revoca dell'accesso e rimozione
+  completa dal backoffice (§4);
+- **SES production access** + Cognito su SES + `Reply-To` + SPF/DMARC (§7);
+- **informativa privacy e regolamento** con i dati del titolare; cancellazione
+  account self-service; log a 90 giorni (§11);
+- **header di sicurezza** e CSP sulle distribuzioni, CORS ristretto ai domini reali,
+  tetto firmato e tipo imposto sulle foto, Material Icons servito dal nostro dominio
+  (Google non riceve più l'IP dei visitatori) (§11);
+- **CI/CD** del frontend (GitHub Actions + OIDC) e **monitoraggio** costi, errori,
+  reputazione email (§11bis);
+- **164 test backend + 110 frontend** in CI, guardie validate per mutazione.
+
+**Da fare:**
+- **Report DMARC (`rua=`)** verso una casella che li riceva, poi valutare `p=reject`:
+  serve prima una destinazione sul dominio. È l'unica voce rimasta in checklist.
+- **i18n IT/EN** (@ngx-translate); test **e2e**; valutazione di **accessibilità**.
+- (Opzionale) schermata gestione **staff** nel backoffice; email SES asincrone
+  (Streams + SQS); ambiente di prova separato.
+- In valutazione con l'associazione: far vedere la **bacheca pubblica in sola lettura**
+  a chi si è registrato ma non è ancora abilitato.

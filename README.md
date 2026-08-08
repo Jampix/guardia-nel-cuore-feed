@@ -182,8 +182,12 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   recupero password), che prima usavano il mittente AWS condiviso. **DMARC in
   `quarantine`** dal 2026-08-05.
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
-  contro l'API di produzione è l'unico modo di provare una modifica prima di
-  esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
+  contro l'API di produzione è l'unico modo di provare una modifica prima di esporla.
+  Le chiamate passano dal **proxy del dev server**, non da origini `localhost`
+  autorizzate nel CORS (§ Sviluppo locale). Un ambiente separato è stato valutato e
+  rimandato: costerebbe pochi centesimi, ma richiederebbe un secondo pool Cognito con
+  utenti di prova da ricreare, dominio e certificato propri e un doppio deploy — da
+  fare quando servirà provare modifiche **distruttive** (schema dati, flusso auth).
 - ✅ **Test**: 164 backend (Vitest, ogni handler coperto) + 110 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.

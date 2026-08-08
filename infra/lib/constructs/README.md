@@ -9,13 +9,19 @@ AWS con default ragionati e API esplicite.
 
 ```
 constructs/
-├── networking/      vpc, security-groups
-├── compute/         ec2-instance
-├── storage/         ebs-volume
-├── monitoring/      cloudwatch
-├── security/        iam-roles
-└── dns/             dns-certificate
+├── api/             http-api        HTTP API + authorizer JWT + CORS + rate limiting
+├── auth/            user-pool       Cognito: gruppi, 2 app client, email via SES
+├── cdn/             static-site     bucket privato + CloudFront (OAC) + header di sicurezza
+├── database/        dynamo-tables   le 4 tabelle DynamoDB
+├── dns/             dns-certificate certificato ACM con validazione DNS
+├── functions/       node-function   default delle Lambda (bundling, memoria, log a 90gg)
+└── storage/         photo-bucket    bucket foto privato, versionato, CORS
 ```
+
+⚠️ L'elenco qui sopra è **quello reale**: se aggiungi un construct, aggiornalo. Prima
+descriveva le cartelle del template di partenza (`networking`, `compute`, `monitoring`),
+che in questo progetto non esistono — una mappa che manda nel posto sbagliato è peggio
+di nessuna mappa.
 
 Mai mettere file di domini diversi flat in `constructs/`. Se aggiungi un
 construct e non c'è la cartella di dominio, creala.
