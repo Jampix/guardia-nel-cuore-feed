@@ -22,7 +22,7 @@ Interamente **serverless su AWS**, costo d'esercizio previsto **< 5 €/mese**.
 - **I miei feedback**: modifica e eliminazione della propria proposta (la modifica
   solo finché è privata: chi ha votato l'ha fatto per quel testo)
 - **Segnalazione** di un contenuto allo staff (motivo scelto, autore non rivelato)
-- Registrazione/login (Cognito) con **approvazione dell'associazione**, e
+- Registrazione/login (Cognito) con **attivazione immediata** alla verifica dell'email, e
   **recupero password** self-service
 
 **Backoffice** (`admin.`, solo staff)
@@ -33,7 +33,7 @@ Interamente **serverless su AWS**, costo d'esercizio previsto **< 5 €/mese**.
   cambiamento visibile al cittadino gli manda una email
 - Feedback **segnalati**: badge, filtro e motivi delle segnalazioni
 - Gestione **categorie**
-- Gestione **cittadini**: approvazione iscrizioni + elenco attivi
+- Gestione **cittadini**: elenco attivi + chi non è attivo (riattivazione)
 
 ## Architettura (sintesi)
 
@@ -47,9 +47,9 @@ Lambda (Node.js 20 / TypeScript)
    ├─ DynamoDB  (Feedbacks, Votes, Categories, FeedbackComments)
    ├─ S3        (foto, bucket privato, upload/lettura via URL prefirmati)
    ├─ Cognito   (User Pool, gruppi cittadino/membro/admin,
-   │             trigger pre-auth = gate approvazione, post-confirmation = avvisi)
+   │             trigger pre-auth = gate accesso, post-confirmation = attiva + avvisa)
    └─ SES       (tutte le email: verifica registrazione e recupero password di
-                 Cognito, approvazione, stato/risposta/pubblicazione, avvisi
+                 Cognito, benvenuto, stato/risposta/pubblicazione, avvisi
                  allo staff per iscrizioni, segnalazioni ed eliminazioni)
 ```
 
@@ -118,14 +118,27 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 ```
 (I nomi bucket / ID distribuzione sono negli output di `GNCProdFrontendStack`.)
 
-## Autenticazione, ruoli e approvazione
+## Autenticazione, ruoli e accesso
 
 - User Pool Cognito unico, gruppi **`admin`** / **`membro`** (staff backoffice) /
-  **`cittadino`** (approvato).
-- La registrazione cittadino è self-service (email + verifica), ma **il login è
-  bloccato** finché lo staff non approva l'iscrizione (trigger **Pre-Authentication**
-  su Cognito). Approvare = aggiungere l'utente al gruppo `cittadino`; all'approvazione
-  parte un'email di benvenuto (SES).
+  **`cittadino`** (abilitato ad accedere).
+- La registrazione è self-service e l'**attivazione è automatica**: il trigger
+  **Post-Confirmation** aggiunge il nuovo iscritto al gruppo `cittadino` appena
+  verifica l'email, e gli manda il benvenuto (SES). Lo staff riceve comunque
+  l'avviso della nuova iscrizione, senza dover fare nulla.
+  *L'approvazione manuale è stata rimossa l'8 agosto 2026: era un collo di
+  bottiglia su due o tre persone.*
+- Il trigger **Pre-Authentication** resta come **interruttore**, non come attesa:
+  chi non è in un gruppo attivo non accede. Per togliere l'accesso a qualcuno lo si
+  rimuove dal gruppo `cittadino` (console Cognito o «rifiuta» dal backoffice).
+  ⚠️ **Non cancellarlo dalla console**: la cancellazione da Cognito non esegue la
+  pulizia dell'app, e proposte, foto, voti e segnalazioni resterebbero legati a un
+  autore inesistente. Per rimuovere del tutto una persona si usa «rifiuta» dal
+  backoffice o «elimina account» dall'app.
+- ⚠️ Se l'attivazione automatica fallisse, il cittadino resterebbe fuori senza che
+  nessuno lo sappia: per questo l'esito viaggia nelle email — lo staff riceve
+  «Iscrizione NON attivata — serve un intervento» e la persona compare in
+  **Cittadini → Non attivi**, dove «Approva» la riabilita.
 - **Contenuti privati**: l'app cittadini è interamente dietro login — chi non è
   autenticato viene mandato alla pagina di accesso e nessun contenuto è leggibile
   (nemmeno via API). Le proposte nascono **private**: solo lo staff può pubblicarle.
