@@ -2,15 +2,20 @@
 
 > Fase **Inception** (AI-DLC, versione leggera).
 > Stato: **FINALIZZATO** — v1.0 · 04/07/2026
+> Ritocco redazionale dell'08/08/2026: la visione diceva «i cittadini di Guardia
+> Piemontese», che escludeva tre dei quattro rapporti col paese dichiarabili
+> all'iscrizione. Allineata ai testi dell'app. **Nessun requisito è cambiato.**
 
 ## 1. Visione e obiettivo
 
-Un'applicazione web attraverso cui i **cittadini di Guardia Piemontese** possono
-lasciare **feedback, proposte, idee e segnalazioni** sul paese. L'iniziativa è
-promossa dall'associazione **Guardia nel Cuore** (non è un canale ufficiale del
-Comune): l'associazione raccoglie la voce dei cittadini e la gestisce da un
-backoffice interno, con l'obiettivo di dare visibilità alle esigenze del
-territorio e, dove possibile, farsene portavoce.
+Un'applicazione web attraverso cui **chi ha Guardia Piemontese nel cuore** può
+lasciare **feedback, proposte, idee e segnalazioni** sul paese. Non solo i
+residenti: il rapporto col paese — residente, non residente, sostenitore,
+turista — si dichiara all'iscrizione ed è visibile allo staff, che lo usa per
+valutare le proposte. L'iniziativa è promossa dall'associazione **Guardia nel
+Cuore** (non è un canale ufficiale del Comune): l'associazione raccoglie la voce
+di chi scrive e la gestisce da un backoffice interno, con l'obiettivo di dare
+visibilità alle esigenze del territorio e, dove possibile, farsene portavoce.
 
 **Obiettivo di successo (semplice e misurabile):** i cittadini riescono a inviare
 un feedback in meno di 1 minuto, e i membri dell'associazione riescono a leggere,

@@ -1,10 +1,11 @@
 # Guardia nel Cuore — feedback civico
 
-Piattaforma web con cui i **cittadini di Guardia Piemontese** lasciano feedback,
-proposte e segnalazioni sul paese. Promossa dall'associazione **Guardia nel
-Cuore** (non è un canale ufficiale del Comune), che raccoglie e gestisce le
-segnalazioni da un backoffice interno. Interamente **serverless su AWS**, costo
-d'esercizio previsto **< 5 €/mese**.
+Piattaforma web con cui **chi ha Guardia Piemontese nel cuore** lascia feedback,
+proposte e segnalazioni sul paese — non solo i residenti: il rapporto col paese
+(residente, non residente, sostenitore, turista) si dichiara all'iscrizione.
+Promossa dall'associazione **Guardia nel Cuore** (non è un canale ufficiale del
+Comune), che raccoglie e gestisce le segnalazioni da un backoffice interno.
+Interamente **serverless su AWS**, costo d'esercizio previsto **< 5 €/mese**.
 
 **Online:**
 - Cittadini → <https://feed.guardianelcuore.it>

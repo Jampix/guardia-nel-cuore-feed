@@ -1,6 +1,6 @@
 # Brochure — Guida per il cittadino
 
-Volantino/guida per i cittadini di Guardia nel Cuore (3 pagine A4).
+Volantino/guida per chi usa Guardia nel Cuore (3 pagine A4).
 
 - **Sorgente**: [`guida-cittadino.html`](guida-cittadino.html) — file HTML autonomo
   (nessuna dipendenza esterna). Si apre e si stampa direttamente da qualsiasi browser.
