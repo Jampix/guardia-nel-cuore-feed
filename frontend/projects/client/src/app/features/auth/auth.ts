@@ -324,7 +324,14 @@ export class Auth {
     // (mostrarli così confonde chi ha semplicemente sbagliato email).
     const msg = String(e?.message ?? '');
     if (/non è abilitato ad accedere/i.test(msg)) {
-      return msg;
+      // Il testo lo scrive il trigger (così l'indirizzo a cui scrivere sta in un
+      // posto solo), ma Cognito lo imballa: «PreAuthentication failed with error
+      // <nostro testo>.» — con il nome di un trigger in faccia a un cittadino e un
+      // punto finale in più, perché il nostro già ce l'ha.
+      return msg
+        .replace(/^.*?failed with error\s*/i, '')
+        .replace(/\.+\s*$/, '.')
+        .trim();
     }
     if (e?.name === 'UserLambdaValidationException') {
       return 'Accesso momentaneamente non disponibile. Riprova tra poco.';

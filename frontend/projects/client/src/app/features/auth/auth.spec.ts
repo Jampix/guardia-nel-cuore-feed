@@ -264,6 +264,50 @@ describe('Auth', () => {
       expect(comp.error()).toContain('guardianelcuore@gmail.com');
     });
 
+    it('con un messaggio lungo l\'icona resta sulla PRIMA riga', async () => {
+      // Con `align-items: center` l'icona finiva a metà altezza, accanto alla riga
+      // centrale di un messaggio di tre righe: sembrava un difetto di
+      // impaginazione. Si misura la geometria vera, in un Chrome vero.
+      await setup('login');
+      comp.error.set(
+        'Questo account non è abilitato ad accedere. Scrivi a guardianelcuore@gmail.com.',
+      );
+      fixture.detectChanges();
+
+      const box = fixture.nativeElement.querySelector('.err') as HTMLElement;
+      const icona = box.querySelector('mat-icon') as HTMLElement;
+      const b = box.getBoundingClientRect();
+      const i = icona.getBoundingClientRect();
+
+      // Il messaggio deve davvero andare a capo, altrimenti il test non prova nulla.
+      expect(b.height).withContext('messaggio su una riga sola: test inutile').toBeGreaterThan(40);
+      // L'icona sta in cima, non al centro verticale del riquadro.
+      expect(i.top - b.top).withContext('icona troppo in basso').toBeLessThan(18);
+      expect(i.top).withContext('icona sotto la metà del riquadro').toBeLessThan(b.top + b.height / 2);
+    });
+
+    it('non mostra al cittadino la cornice tecnica di Cognito', async () => {
+      // Quello che si vedeva davvero: «PreAuthentication failed with error Questo
+      // account non è abilitato ad accedere. Scrivi a guardianelcuore@gmail.com..»
+      // — il nome di un trigger e un punto di troppo, perché Cognito imballa il
+      // messaggio e il nostro già finiva con il punto.
+      await setup('login');
+      const err: any = new Error(
+        'PreAuthentication failed with error Questo account non è abilitato ad accedere. Scrivi a guardianelcuore@gmail.com..',
+      );
+      err.name = 'UserLambdaValidationException';
+      auth.login.and.rejectWith(err);
+      comp.loginForm.setValue({ email: 'a@b.it', password: 'x' });
+
+      await comp.doLogin();
+
+      const mostrato = comp.error() ?? '';
+      expect(mostrato).not.toMatch(/PreAuthentication|failed with error/i);
+      expect(mostrato).not.toMatch(/\.\.$/);
+      expect(mostrato.startsWith('Questo account')).withContext(mostrato).toBe(true);
+      expect(mostrato.endsWith('guardianelcuore@gmail.com.')).withContext(mostrato).toBe(true);
+    });
+
     it('NON parla di approvazione per un errore generico della Lambda', async () => {
       // Regressione: prima bastava il TIPO dell'eccezione, così un errore
       // transitorio veniva mostrato come "account in attesa di approvazione".

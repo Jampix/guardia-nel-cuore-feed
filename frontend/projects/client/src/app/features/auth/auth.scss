@@ -72,7 +72,9 @@
 
 .err {
   display: flex;
-  align-items: center;
+  /* flex-start e non center: un messaggio di tre righe lasciava l'icona a metà
+     altezza, accanto alla riga centrale invece che alla prima. */
+  align-items: flex-start;
   gap: 8px;
   font-size: 13.5px;
   font-weight: 500;
@@ -81,7 +83,9 @@
   border-radius: 12px;
   padding: 10px 13px;
   margin-bottom: 16px;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  /* 1px di scarto: l'icona è quadrata, la riga di testo ha interlinea maggiore,
+     e senza questo l'icona sembra appoggiata troppo in alto. */
+  mat-icon { font-size: 18px; width: 18px; height: 18px; margin-top: 1px; }
 }
 
 .notice {
