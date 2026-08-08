@@ -200,6 +200,10 @@ export class ApiStack extends Stack {
       // Togliere l'accesso senza cancellare nulla: l'operazione giusta quando una
       // proposta è già in bacheca e altri l'hanno sostenuta.
       'cognito-idp:AdminRemoveUserFromGroup',
+      // ⚠️ Indispensabile, non un extra: il gate del pre-auth scatta solo al login,
+      // e senza chiudere le sessioni aperte chi è già dentro resta dentro fino a 30
+      // giorni rinnovando il token in silenzio.
+      'cognito-idp:AdminUserGlobalSignOut',
       'cognito-idp:AdminDeleteUser',
       'cognito-idp:AdminGetUser',
     );

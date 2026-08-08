@@ -9,7 +9,10 @@ import {
   ListUsersInGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
-import { AdminRemoveUserFromGroupCommand } from '@aws-sdk/client-cognito-identity-provider';
+import {
+  AdminRemoveUserFromGroupCommand,
+  AdminUserGlobalSignOutCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { DynamoDBDocumentClient, DeleteCommand, QueryCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
@@ -57,6 +60,7 @@ beforeEach(() => {
   ddb.on(UpdateCommand).resolves({});
   s3.on(DeleteObjectCommand).resolves({});
   cognito.on(AdminRemoveUserFromGroupCommand).resolves({});
+  cognito.on(AdminUserGlobalSignOutCommand).resolves({});
   cognito.on(AdminAddUserToGroupCommand).resolves({});
   cognito.on(AdminDeleteUserCommand).resolves({});
   cognito.on(AdminGetUserCommand).resolves({
@@ -265,6 +269,48 @@ describe('admin-users', () => {
       const { status } = parseResult(await revoke(cittadino));
       expect(status).toBe(403);
       expect(cognito.commandCalls(AdminRemoveUserFromGroupCommand).length).toBe(0);
+      expect(cognito.commandCalls(AdminUserGlobalSignOutCommand).length).toBe(0);
+    });
+
+    it('CHIUDE anche le sessioni aperte, altrimenti non ha effetto per giorni', async () => {
+      // È la parte che rende reale la rimozione: il gate del pre-auth scatta solo
+      // al login, e il token di rinnovo dura 30 giorni — Amplify lo rinnova in
+      // silenzio, quindi senza il global sign-out la persona resterebbe dentro
+      // senza nemmeno accorgersi di essere stata rimossa.
+      const { body } = parseResult(await revoke());
+
+      expect(body.sessioniChiuse).toBe(true);
+      const call = cognito.commandCalls(AdminUserGlobalSignOutCommand)[0];
+      expect(call, 'nessuna chiusura delle sessioni').toBeDefined();
+      expect(call.args[0].input).toMatchObject({ Username: 'u1' });
+    });
+
+    it('toglie il gruppo PRIMA di chiudere le sessioni', async () => {
+      // Se si chiudessero prima le sessioni e la rimozione dal gruppo fallisse, la
+      // persona potrebbe rientrare subito: il gruppo è lo stato autoritativo.
+      let gruppoGiaTolto = false;
+      cognito.on(AdminUserGlobalSignOutCommand).callsFake(() => {
+        gruppoGiaTolto = cognito.commandCalls(AdminRemoveUserFromGroupCommand).length > 0;
+        return {};
+      });
+
+      await revoke();
+
+      expect(gruppoGiaTolto).toBe(true);
+    });
+
+    it('se le sessioni NON si chiudono lo dice, invece di ingoiarlo', async () => {
+      // Il difetto peggiore sarebbe silenzioso: lo staff crede di aver escluso
+      // qualcuno che invece continua a navigare per giorni.
+      cognito.reset();
+      cognito.on(AdminRemoveUserFromGroupCommand).resolves({});
+      cognito.on(AdminUserGlobalSignOutCommand).rejects(new Error('Cognito giù'));
+
+      const { status, body } = parseResult(await revoke());
+
+      expect(status).toBe(200);
+      expect(body.revoked, 'il gruppo è stato tolto comunque').toBe(true);
+      expect(body.sessioniChiuse).toBe(false);
     });
 
     it('non viene confuso con l\'approvazione, che usa lo stesso metodo', async () => {

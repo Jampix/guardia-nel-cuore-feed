@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AdminUsersService, Citizen, PendingUser } from '../../core/admin-users.service';
 import { Cittadini } from './cittadini';
 
@@ -167,7 +168,7 @@ describe('Cittadini — togliere l\'accesso o eliminare', () => {
     ]);
     service.getPending.and.returnValue(of([]));
     service.getCitizens.and.returnValue(of([ATTIVO]));
-    service.revoke.and.returnValue(of({ revoked: true }));
+    service.revoke.and.returnValue(of({ revoked: true, sessioniChiuse: true }));
     service.reject.and.returnValue(of(undefined as unknown as void));
 
     await TestBed.configureTestingModule({
@@ -199,6 +200,29 @@ describe('Cittadini — togliere l\'accesso o eliminare', () => {
 
     expect(service.revoke).toHaveBeenCalledWith('a1');
     expect(service.reject).not.toHaveBeenCalled();
+  });
+
+  it('dichiara che la disconnessione è immediata', async () => {
+    // Il pulsante prometteva più di quanto faceva: il gate scatta solo al login,
+    // quindi senza chiudere le sessioni chi era dentro restava dentro per giorni.
+    // Ora che le chiude, il dialogo lo dice.
+    comp.revoke(ATTIVO);
+
+    expect(dialogData.messaggio).toMatch(/subito/i);
+    expect(dialogData.messaggio).toMatch(/sta usando l'app/i);
+  });
+
+  it('avverte se la sessione aperta NON si è chiusa', async () => {
+    // Credere di aver escluso qualcuno che invece continua a navigare è peggio
+    // che vedere un errore.
+    const snack = TestBed.inject(MatSnackBar);
+    const spia = spyOn(snack, 'open');
+    service.revoke.and.returnValue(of({ revoked: true, sessioniChiuse: false }));
+
+    comp.revoke(ATTIVO);
+
+    expect(spia).toHaveBeenCalled();
+    expect(spia.calls.mostRecent().args[0] as string).toMatch(/potrebbe restare attiva/i);
   });
 
   it('dichiara che i contenuti restano, e che è reversibile', async () => {

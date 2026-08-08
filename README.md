@@ -128,8 +128,20 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   *L'approvazione manuale è stata rimossa l'8 agosto 2026: era un collo di
   bottiglia su due o tre persone.*
 - Il trigger **Pre-Authentication** resta come **interruttore**, non come attesa:
-  chi non è in un gruppo attivo non accede. Per togliere l'accesso a qualcuno lo si
-  rimuove dal gruppo `cittadino` (console Cognito o «rifiuta» dal backoffice).
+  chi non è in un gruppo attivo non accede.
+- **Togliere l'accesso**: dal backoffice, *Cittadini → Attivi → «Rimuovi accesso»*.
+  Rimuove dal gruppo `cittadino` **e chiude le sessioni aperte**
+  (`AdminUserGlobalSignOut`), senza cancellare nulla. Reversibile da *Non attivi*.
+  ⚠️ **Chiudere le sessioni non è un extra**: il gate del pre-auth scatta **solo al
+  login con password**, non sul rinnovo del token. Il token di sessione dura 60
+  minuti ma quello di **rinnovo 30 giorni**, e Amplify lo rinnova da sé, in
+  silenzio: senza il global sign-out una persona rimossa continuerebbe a navigare
+  per settimane, e **nemmeno il logout servirebbe** — non ha motivo di farlo.
+  Resta solo la coda del token già in mano: **al massimo un'ora**. Azzerarla
+  richiederebbe un controllo dei gruppi a ogni chiamata dell'API.
+  ⚠️ Se si rimuove qualcuno **dalla console Cognito** invece che dal backoffice, il
+  global sign-out non parte: fare anche *Sign out user* sull'utente, altrimenti la
+  rimozione non ha effetto per giorni.
   ⚠️ **Non cancellarlo dalla console**: la cancellazione da Cognito non esegue la
   pulizia dell'app, e proposte, foto, voti e segnalazioni resterebbero legati a un
   autore inesistente. Per rimuovere del tutto una persona si usa «rifiuta» dal
@@ -172,7 +184,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
 - ⚠️ **Un solo ambiente: `prod`.** Non esiste un dev/staging separato: `ng serve`
   contro l'API di produzione è l'unico modo di provare una modifica prima di
   esporla. Ne derivano le origini `localhost` nel CORS (vedi sotto).
-- ✅ **Test**: 150 backend (Vitest, ogni handler coperto) + 102 frontend (Karma su
+- ✅ **Test**: 164 backend (Vitest, ogni handler coperto) + 110 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
 - ✅ **Informativa privacy** completa con i dati del titolare (Associazione

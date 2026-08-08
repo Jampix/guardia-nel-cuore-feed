@@ -125,7 +125,8 @@ export class Cittadini {
         data: {
           titolo: 'Togliere l\'accesso?',
           messaggio:
-            `${c.nickname || c.email} non potrà più accedere. Le sue proposte, i suoi ` +
+            `${c.nickname || c.email} non potrà più accedere: viene disconnessa subito, ` +
+            'anche se in questo momento sta usando l\'app. Le sue proposte, i suoi ' +
             'sostegni e le risposte già pubblicate RESTANO dove sono. ' +
             'Puoi riabilitarla in qualsiasi momento dalla scheda «Non attivi».',
           azione: 'Rimuovi accesso',
@@ -138,8 +139,14 @@ export class Cittadini {
   private doRevoke(c: Citizen): void {
     this.acting.set(c.username);
     this.service.revoke(c.username).subscribe({
-      next: () => {
-        this.snack.open(`Accesso rimosso a ${c.nickname || c.email}.`, 'OK', { duration: 3000 });
+      next: (r) => {
+        // Se le sessioni aperte non si sono chiuse, dirlo: credere di aver escluso
+        // qualcuno che continua a navigare per giorni è peggio che un errore.
+        const msg = r?.sessioniChiuse === false
+          ? `Accesso rimosso a ${c.nickname || c.email}, ma la sessione già aperta ` +
+            'potrebbe restare attiva. Riprova per chiuderla.'
+          : `Accesso rimosso a ${c.nickname || c.email}.`;
+        this.snack.open(msg, 'OK', { duration: r?.sessioniChiuse === false ? 8000 : 3000 });
         this.citizens.update((l) => l.filter((x) => x.username !== c.username));
         this.acting.set(null);
         this.loadPending();

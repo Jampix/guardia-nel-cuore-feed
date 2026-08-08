@@ -6,6 +6,7 @@ import {
   AdminDeleteUserCommand,
   AdminGetUserCommand,
   AdminRemoveUserFromGroupCommand,
+  AdminUserGlobalSignOutCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
@@ -43,7 +44,8 @@ const GROUPS = ['admin', 'membro', 'cittadino'];
  * - `POST /admin/users/{username}/revoke` → **toglie l'accesso** rimuovendolo dal
  *   gruppo, senza cancellare nulla. È l'operazione giusta nella gran parte dei
  *   casi: se una sua proposta è già in bacheca e altri l'hanno sostenuta, farla
- *   sparire punirebbe anche loro;
+ *   sparire punirebbe anche loro. ⚠️ Chiude anche le **sessioni aperte**: vedi
+ *   sotto, senza quello la rimozione non avrebbe effetto per giorni;
  * - `DELETE /admin/users/{username}` → **rimozione completa**, con la pulizia dei
  *   dati. ⚠️ Fino all'8 agosto 2026 questa rotta eseguiva solo `AdminDeleteUser`,
  *   quindi lasciava orfani proposte, foto, voti e segnalazioni — lo stesso difetto
@@ -103,6 +105,8 @@ export const handler = async (
 
   // Due rotte POST sullo stesso parametro: si distinguono dal path, come le GET.
   if (method === 'POST' && username && (event.rawPath ?? '').endsWith('/revoke')) {
+    // Prima il gruppo: è lo stato autoritativo, ed è ciò che il gate di login
+    // controlla al prossimo accesso.
     await cognito.send(
       new AdminRemoveUserFromGroupCommand({
         UserPoolId: USER_POOL_ID,
@@ -110,8 +114,36 @@ export const handler = async (
         GroupName: 'cittadino',
       }),
     );
-    console.log('Accesso rimosso a un cittadino (dati conservati)');
-    return resp(200, { revoked: true });
+
+    /**
+     * ⚠️ Poi le sessioni aperte, e non è un extra: senza questo la rimozione non
+     * avrebbe effetto per giorni.
+     *
+     * Il trigger Pre-Authentication scatta **solo al login con password**, non sul
+     * rinnovo del token. Chi è già dentro continua con il token corrente (60
+     * minuti) e — soprattutto — Amplify lo rinnova da sé, in silenzio, senza
+     * passare dal gate: il token di rinnovo dura **30 giorni**. Nemmeno il logout
+     * servirebbe, perché non ha motivo di farlo.
+     *
+     * `AdminUserGlobalSignOut` invalida subito tutti i token di rinnovo: il primo
+     * tentativo fallisce e la persona esce. Resta solo la coda del token che ha
+     * già in mano, al massimo un'ora — azzerarla richiederebbe un controllo dei
+     * gruppi a ogni chiamata dell'API, che è un altro lavoro.
+     */
+    let sessioniChiuse = true;
+    try {
+      await cognito.send(
+        new AdminUserGlobalSignOutCommand({ UserPoolId: USER_POOL_ID, Username: username }),
+      );
+    } catch (err) {
+      // NON si ingoia: se le sessioni restano aperte lo staff deve saperlo,
+      // altrimenti crede di aver escluso qualcuno che invece continua a navigare.
+      console.error('SESSIONI NON CHIUSE: la persona può restare dentro fino a 30 giorni', err);
+      sessioniChiuse = false;
+    }
+
+    console.log('Accesso rimosso a un cittadino (dati conservati)', { sessioniChiuse });
+    return resp(200, { revoked: true, sessioniChiuse });
   }
 
   if (method === 'POST' && username) {

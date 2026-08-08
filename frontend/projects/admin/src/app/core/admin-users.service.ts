@@ -59,8 +59,8 @@ export class AdminUsersService {
    * È l'operazione giusta quando una proposta è già in bacheca e altri l'hanno
    * sostenuta — farla sparire punirebbe anche loro.
    */
-  revoke(username: string): Observable<{ revoked: boolean }> {
-    return this.http.post<{ revoked: boolean }>(
+  revoke(username: string): Observable<{ revoked: boolean; sessioniChiuse: boolean }> {
+    return this.http.post<{ revoked: boolean; sessioniChiuse: boolean }>(
       `${this.api}/admin/users/${encodeURIComponent(username)}/revoke`,
       {},
     );
