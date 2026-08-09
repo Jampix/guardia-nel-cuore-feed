@@ -71,6 +71,19 @@ for (const { nome, componente } of DOCUMENTI) {
       expect(contatto!.href).toContain('@');
     });
 
+    it('«Indietro» riporta nell\'app, non alla schermata di accesso', () => {
+      // Difetto vero, segnalato dall'utente: da PC, loggato come cittadino, apriva
+      // la Guida e «Indietro» lo buttava sul login. La guida e la privacy
+      // puntavano a /accedi, il regolamento a «/» — e «/» è la scelta che funziona
+      // per entrambi i casi: per chi è dentro è la bacheca, per chi non lo è ci
+      // pensa la guardia di rotta a mandarlo all'accesso.
+      const back = root.querySelector<HTMLAnchorElement>('.p-nav .back');
+      expect(back).withContext('manca il link Indietro').not.toBeNull();
+      expect(back!.getAttribute('href'))
+        .withContext('«Indietro» non deve portare alla schermata di accesso')
+        .toBe('/');
+    });
+
     it('numera le sezioni senza salti né ripetizioni', () => {
       // Le sezioni si rinumerano a mano quando se ne inserisce una in mezzo: un
       // doppione o un buco non fa fallire nulla, si vede solo leggendo.
