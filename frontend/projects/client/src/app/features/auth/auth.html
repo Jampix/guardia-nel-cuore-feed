@@ -9,6 +9,11 @@
         <h1 class="welcome-title">Benvenuto in Guardia nel Cuore</h1>
         <p>Lo spazio di chi ha Guardia Piemontese nel cuore: qui si propongono, si segnalano e si sostengono le idee per migliorare il paese.</p>
         <p class="cta-line">Accedi o registrati per partecipare.</p>
+        <!-- Chi arriva qui non sa cos'è l'app: la guida va vista senza cercarla,
+             non fra i link in fondo alla pagina. -->
+        <p class="guida-line">
+          <a routerLink="/guida">Non sai di cosa si tratta? Leggi la guida <mat-icon>arrow_forward</mat-icon></a>
+        </p>
       </div>
     } @else {
       <h1 class="title">{{ title() }}</h1>
@@ -248,6 +253,6 @@
       }
     }
 
-    <p class="back"><a routerLink="/regolamento">Regolamento</a> · <a routerLink="/privacy">Privacy</a></p>
+    <p class="back"><a routerLink="/guida">Guida</a> · <a routerLink="/regolamento">Regolamento</a> · <a routerLink="/privacy">Privacy</a></p>
   </div>
 </div>

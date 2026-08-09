@@ -18,6 +18,22 @@ Oppure da riga di comando con Chrome (headless), come è stato generato:
   "file://$PWD/docs/brochure/guida-cittadino.html"
 ```
 
+## ⚠️ Esiste anche nell'app
+
+Lo stesso contenuto è una **pagina pubblica** dell'app: `/guida`
+(`frontend/projects/client/src/app/features/guida/`), raggiungibile senza
+registrarsi come regolamento e privacy.
+
+**Il markup NON è condiviso**, e non per pigrizia: questo file è un documento A4 con
+larghezza fissa in millimetri e mockup a pixel fissi, che su un telefono scorrerebbe
+in orizzontale. La pagina web usa i componenti dell'app ed è responsive.
+
+⚠️ **Sono due copie dello stesso contenuto: vanno cambiate INSIEME.** È esattamente
+così che questa brochure si è riempita di tre errori fra luglio e agosto. Le guardie
+in `features/documenti.spec.ts` proteggono la pagina web (segnaposto, data di
+aggiornamento, recapito, numerazione) ma **non possono accorgersi** che questo file
+dice una cosa diversa.
+
 ## ⚠️ Vincolo di impaginazione
 
 Ogni `<section class="page">` deve stare **entro 1123px** (l'altezza di un A4 a

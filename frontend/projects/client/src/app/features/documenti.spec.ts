@@ -4,9 +4,10 @@ import { Type } from '@angular/core';
 
 import { Privacy } from './privacy/privacy';
 import { Regolamento } from './regolamento/regolamento';
+import { Guida } from './guida/guida';
 
 /**
- * Invarianti comuni ai documenti pubblici (informativa e regolamento).
+ * Invarianti comuni alle pagine pubbliche (informativa, regolamento, guida).
  *
  * Sono testi che vincolano i cittadini e che l'app fa accettare in fase di
  * iscrizione: i difetti che contano non sono eccezioni a runtime ma frasi
@@ -15,12 +16,13 @@ import { Regolamento } from './regolamento/regolamento';
  * lancio dell'app fino ad agosto, e i due documenti si sono presentati come
  * bozze anche dopo essere stati confermati.
  *
- * Parametrico di proposito: un solo posto da estendere quando si aggiunge un
- * terzo documento.
+ * Parametrico di proposito: un solo posto da estendere quando si aggiunge una
+ * pagina pubblica.
  */
 const DOCUMENTI: { nome: string; componente: Type<unknown> }[] = [
   { nome: 'Informativa privacy', componente: Privacy },
   { nome: 'Regolamento', componente: Regolamento },
+  { nome: 'Guida', componente: Guida },
 ];
 
 for (const { nome, componente } of DOCUMENTI) {
@@ -86,12 +88,16 @@ for (const { nome, componente } of DOCUMENTI) {
       // Il difetto vero della rinumerazione: "(vedi punto 6)" che dopo
       // l'inserimento di una sezione indica il paragrafo sbagliato, e manda a
       // leggere altro proprio dove si spiega come agire.
+      // Una sola asserzione, che viene eseguita SEMPRE: con un ciclo, un documento
+      // senza rimandi non asseriva nulla e Karma lo segnalava come «spec senza
+      // expectations» — un test che passa a vuoto.
       const sezioni = root.querySelectorAll('h2').length;
-      for (const m of testo.matchAll(/punto\s+(\d+)/g)) {
-        const n = Number(m[1]);
-        expect(n).withContext(`rimando "punto ${n}" oltre le ${sezioni} sezioni`).toBeLessThanOrEqual(sezioni);
-        expect(n).toBeGreaterThan(0);
-      }
+      const rimandi = [...testo.matchAll(/punto\s+(\d+)/g)].map((m) => Number(m[1]));
+      const fuoriRange = rimandi.filter((n) => n < 1 || n > sezioni);
+
+      expect(fuoriRange)
+        .withContext(`rimandi fuori dalle ${sezioni} sezioni di questo documento`)
+        .toEqual([]);
     });
   });
 }

@@ -8,6 +8,7 @@ import { Auth } from './features/auth/auth';
 import { Profilo } from './features/profilo/profilo';
 import { Privacy } from './features/privacy/privacy';
 import { Regolamento } from './features/regolamento/regolamento';
+import { Guida } from './features/guida/guida';
 import { authGuard } from './core/auth.guard';
 
 export const routes: Routes = [
@@ -25,5 +26,8 @@ export const routes: Routes = [
   { path: 'nuova-password', component: Auth, data: { mode: 'reset-confirm' }, title: 'Nuova password · Guardia nel Cuore' },
   { path: 'privacy', component: Privacy, title: 'Privacy · Guardia nel Cuore' },
   { path: 'regolamento', component: Regolamento, title: 'Regolamento · Guardia nel Cuore' },
+  // Pubblica come le altre due: serve a chi NON è ancora registrato e vuole capire
+  // cos'è l'app prima di lasciare nome, cognome, email e password.
+  { path: 'guida', component: Guida, title: 'Guida · Guardia nel Cuore' },
   { path: 'profilo', component: Profilo, canActivate: [authGuard], title: 'Profilo · Guardia nel Cuore' },
 ];

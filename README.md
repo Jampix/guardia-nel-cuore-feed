@@ -24,6 +24,8 @@ Interamente **serverless su AWS**, costo d'esercizio previsto **< 5 €/mese**.
 - **Segnalazione** di un contenuto allo staff (motivo scelto, autore non rivelato)
 - Registrazione/login (Cognito) con **attivazione immediata** alla verifica dell'email, e
   **recupero password** self-service
+- **Pagine pubbliche** (senza registrazione): **Guida** all'app, regolamento e
+  informativa privacy — chi arriva capisce cos'è prima di lasciare i propri dati
 
 **Backoffice** (`admin.`, solo staff)
 - Sintesi con KPI + coda "richiede attenzione"
@@ -188,7 +190,7 @@ aws cloudfront create-invalidation --distribution-id <admin-dist>  --paths "/*" 
   rimandato: costerebbe pochi centesimi, ma richiederebbe un secondo pool Cognito con
   utenti di prova da ricreare, dominio e certificato propri e un doppio deploy — da
   fare quando servirà provare modifiche **distruttive** (schema dati, flusso auth).
-- ✅ **Test**: 169 backend (Vitest, ogni handler coperto) + 110 frontend (Karma su
+- ✅ **Test**: 169 backend (Vitest, ogni handler coperto) + 116 frontend (Karma su
   Chrome vero, così si verifica anche l'impaginazione). Entrambe le suite in CI su
   push a `main` e su ogni PR.
 - ✅ **Informativa privacy** completa con i dati del titolare (Associazione

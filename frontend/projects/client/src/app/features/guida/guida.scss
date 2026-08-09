@@ -1,0 +1,116 @@
+// Stessa impalcatura di regolamento e privacy: le tre pagine pubbliche devono
+// sembrare sorelle, non tre isole. Qui si aggiungono solo gli elementi che la
+// guida ha in più — i passi numerati e l'elenco delle funzioni.
+:host { display: block; max-width: 760px; margin: 0 auto; }
+
+.p-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--mat-sys-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  .back { display: inline-flex; align-items: center; gap: 2px; color: var(--mat-sys-primary); text-decoration: none; font-size: 15px; font-weight: 500;
+    mat-icon { font-size: 18px; width: 18px; height: 18px; } }
+  .p-title { font-size: 15px; font-weight: 600; }
+  .p-spacer { width: 76px; }
+}
+
+.doc {
+  padding: 20px 18px 40px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mat-sys-on-surface);
+
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 0 4px; }
+  h2 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin: 28px 0 8px; }
+  p { margin: 0 0 10px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  a { color: var(--mat-sys-primary); font-weight: 600; text-decoration: none; }
+
+  .updated { font-size: 13px; color: var(--mat-sys-on-surface-variant); margin-bottom: 18px; }
+  // La prima cosa che si legge: un filo più grande del resto.
+  .lead { font-size: 16px; }
+  .foot { margin-top: 32px; }
+}
+
+/* I passi SONO una sequenza, quindi la numerazione dice qualcosa di vero.
+   Numero fuori dal testo, in tondo, come sulla guida stampata. */
+.passi {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 4px;
+  counter-reset: passo;
+
+  li {
+    counter-increment: passo;
+    position: relative;
+    padding-left: 42px;
+    margin-bottom: 14px;
+
+    &::before {
+      content: counter(passo);
+      position: absolute;
+      left: 0;
+      top: 1px;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* Le funzioni NON sono una sequenza: icona, non numero. */
+.cose {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    display: flex;
+    gap: 12px;
+    // flex-start: con un paragrafo di tre righe un'icona centrata finirebbe
+    // accanto a quella di mezzo (è già successo nel riquadro d'errore).
+    align-items: flex-start;
+    margin-bottom: 16px;
+
+    mat-icon {
+      flex: 0 0 auto;
+      color: var(--mat-sys-primary);
+      margin-top: 1px;
+    }
+    strong { display: block; margin-bottom: 2px; }
+    p { margin: 0; color: var(--mat-sys-on-surface-variant); font-size: 14.5px; }
+  }
+}
+
+.nota {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  border-radius: 14px;
+  padding: 13px 15px;
+  margin: 16px 0 4px;
+  font-size: 14px;
+  line-height: 1.5;
+
+  mat-icon { flex: 0 0 auto; font-size: 20px; width: 20px; height: 20px; margin-top: 1px; }
+  // Il testo in UN solo span: lasciato sciolto diventerebbe un flex item
+  // affiancato all'icona e il paragrafo si spezzerebbe in colonne.
+  > span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+}

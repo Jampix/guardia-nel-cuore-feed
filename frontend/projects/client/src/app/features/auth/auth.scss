@@ -62,6 +62,23 @@
     color: var(--mat-sys-on-surface);
     margin-bottom: 0;
   }
+
+  /* Invito alla guida: visibile ma subordinato all'azione principale, che resta
+     accedere o registrarsi. Non un pulsante — due azioni concorrenti nello stesso
+     punto fanno esitare chi era già deciso. */
+  .guida-line {
+    margin: 10px 0 0;
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--mat-sys-primary);
+      font-weight: 600;
+      font-size: 14.5px;
+      text-decoration: none;
+    }
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  }
 }
 
 .lead {
