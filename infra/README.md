@@ -16,7 +16,7 @@ CloudFront · SES · Route53/ACM. Contesto completo in
 
 | Stack | Ruolo | Note |
 |---|---|---|
-| `GNCProdDataStack` | 4 tabelle DynamoDB (Feedbacks, Votes, Categories, FeedbackComments) | RETAIN |
+| `GNCProdDataStack` | 4 tabelle DynamoDB (Feedbacks, Votes, Categories, FeedbackComments) | RETAIN · PITR · protezione dalla cancellazione |
 | `GNCProdAuthStack` | Cognito User Pool + gruppi + 2 app client + trigger **pre-auth** (interruttore d'accesso) e **post-confirmation** (attiva il nuovo iscritto, avvisa lo staff) | RETAIN · email via SES con `Reply-To` |
 | `GNCProdStorageStack` | Bucket S3 privato foto (CORS solo domini di produzione, versionato) | RETAIN |
 | `GNCProdApiStack` | HTTP API + JWT authorizer + tutte le Lambda + allarmi operativi (SNS+CloudWatch) | vedi `../backend/README.md` |

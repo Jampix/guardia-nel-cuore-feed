@@ -252,7 +252,11 @@ Con poche centinaia di utenti/mese, gran parte rientra nel **free tier**:
 - **Rate limiting** sull'HTTP API (25 req/s, burst 50) + verifica email come anti-spam.
 - **Log CloudWatch a 90 giorni**: nei log finiscono indirizzi email, e il default di
   Lambda è «mai». Conservarli per sempre contraddirebbe la minimizzazione dichiarata.
-- **PITR** attivo su tutte le tabelle; RETAIN su dati, utenti e foto.
+- **PITR** attivo su tutte le tabelle; RETAIN su dati, utenti e foto. Sulle tabelle
+  anche **protezione dalla cancellazione**: RETAIN riguarda solo ciò che fa
+  CloudFormation con lo stack, questa fa rifiutare la cancellazione a DynamoDB stesso
+  (`delete-table`, console). È derivata dalla `RemovalPolicy`, così un eventuale
+  ambiente con `DESTROY` resta distruggibile.
 - **GDPR**: informativa e regolamento pubblicati (con i dati del titolare), consenso
   obbligatorio all'iscrizione, **cancellazione account self-service** (art. 17) che
   rimuove proposte, foto, voti e segnalazioni. Nessun cookie di profilazione → nessun

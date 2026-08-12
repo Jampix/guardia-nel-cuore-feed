@@ -38,6 +38,14 @@ export class DynamoTablesConstruct extends Construct {
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: props.removalPolicy,
       pointInTimeRecovery: true,
+      // Seconda cintura, su un rischio diverso da RETAIN: quella impedisce a
+      // CloudFormation di cancellare le tabelle con lo stack, questa fa
+      // rifiutare la cancellazione a DynamoDB stesso (delete-table, console).
+      // Derivata dalla removalPolicy e non fissata a true di proposito: in un
+      // ambiente con DESTROY il destroy fallirebbe (DELETE_FAILED) perché
+      // DynamoDB rifiuterebbe la cancellazione che CloudFormation le chiede.
+      // Così le due impostazioni non possono contraddirsi.
+      deletionProtection: props.removalPolicy === RemovalPolicy.RETAIN,
     };
 
     // Feedbacks: PK = id
