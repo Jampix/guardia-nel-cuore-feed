@@ -10,7 +10,11 @@ const FEEDBACKS_TABLE = process.env.FEEDBACKS_TABLE as string;
 const PHOTO_BUCKET = process.env.PHOTO_BUCKET as string;
 
 /**
- * GET /feedback/public — bacheca pubblica (endpoint pubblico, senza auth).
+ * GET /feedback/public — bacheca: i feedback che lo staff ha pubblicato.
+ *
+ * ⚠️ `public` è la VISIBILITÀ dei feedback restituiti, non della rotta: la
+ * rotta è **autenticata** come tutte le altre (i contenuti stanno dietro
+ * l'accesso). L'authorizer valida il token ma non guarda i gruppi.
  *
  * Interroga il GSI `byVisibilita` (PK `visibilita`, SK `createdAt`) filtrando
  * i soli feedback `pubblico`, dal più recente. Il bucket foto è privato:

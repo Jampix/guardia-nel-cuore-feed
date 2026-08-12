@@ -112,8 +112,11 @@ export class ApiStack extends Stack {
       userPool.grant(createFeedbackFn.fn, 'cognito-idp:ListUsersInGroup');
     }
 
-    // GET /feedback/public (pubblica) — bacheca. Legge il bucket foto per
-    // generare gli URL GET prefirmati (grantRead → s3:GetObject).
+    // GET /feedback/public — bacheca. "public" è la VISIBILITÀ dei feedback
+    // elencati (i pubblicati), non della rotta: la rotta è autenticata come
+    // tutte le altre (vedi addRoute più sotto), perché i contenuti stanno
+    // dietro l'accesso. Legge il bucket foto per generare gli URL GET
+    // prefirmati (grantRead → s3:GetObject).
     const listPublicFeedbackFn = new NodeFunctionConstruct(this, 'ListPublicFeedbackFn', {
       entry: path.join(handlersDir, 'list-public-feedback.ts'),
       environment: {

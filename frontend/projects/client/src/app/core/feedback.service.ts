@@ -8,9 +8,11 @@ import { environment } from '../../environments/environment';
  * Accesso ai dati dei feedback per l'app cittadini (HTTP API reale).
  *
  * API base (prod): {@link environment.apiUrl}
- *  - GET /categories       → categorie attive (pubblica)
- *  - GET /feedback/public  → bacheca pubblica (pubblica)
- *  - POST /feedback        → crea feedback (autenticata, non usata qui)
+ * Tutte le rotte sono autenticate (contenuti dietro l'accesso): "public" in
+ * `/feedback/public` è la visibilità dei feedback elencati, non della rotta.
+ *  - GET /categories       → categorie attive
+ *  - GET /feedback/public  → bacheca: i feedback pubblicati dallo staff
+ *  - POST /feedback        → crea feedback (non usata qui)
  */
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
