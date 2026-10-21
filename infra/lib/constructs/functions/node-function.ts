@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { Duration } from 'aws-cdk-lib';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -33,6 +34,18 @@ export interface NodeFunctionConstructProps {
 const SCADENZA_LOG = RetentionDays.THREE_MONTHS;
 
 /**
+ * Radice del bundling: `backend/`, non `infra/`.
+ *
+ * Senza indicazioni NodejsFunction prende come radice la cartella del lockfile
+ * più vicino (`infra/`) e, da aws-cdk-lib 2.2xx, rifiuta un entry fuori da lì
+ * (`PathNotUnderRoot`). Gli handler, le loro dipendenze e il loro lockfile
+ * stanno in `backend/`, ed esbuild viene lanciato da questa cartella: per questo
+ * è una devDependency del backend.
+ */
+const RADICE_BACKEND = path.join(__dirname, '..', '..', '..', '..', 'backend');
+const LOCKFILE_BACKEND = path.join(RADICE_BACKEND, 'package-lock.json');
+
+/**
  * Wrapper attorno a NodejsFunction con i default del progetto.
  *
  * Bundling via esbuild. Il runtime Node.js 20 include già l'AWS SDK v3, quindi
@@ -47,6 +60,8 @@ export class NodeFunctionConstruct extends Construct {
 
     this.fn = new NodejsFunction(this, 'Fn', {
       entry: props.entry,
+      projectRoot: RADICE_BACKEND,
+      depsLockFilePath: LOCKFILE_BACKEND,
       handler: 'handler',
       runtime: Runtime.NODEJS_20_X,
       memorySize: 256,

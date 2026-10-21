@@ -1,4 +1,4 @@
-import { IAspect, Tags } from 'aws-cdk-lib';
+import { IAspect, TagManager } from 'aws-cdk-lib';
 import { IConstruct } from 'constructs';
 
 export interface TaggingAspectProps {
@@ -40,6 +40,9 @@ export function mapEnvironmentToCode(environment: string): string {
   return envMap[normalized] || environment.toUpperCase();
 }
 
+/** La stessa priorità di default di Tags.of().add(): output dei tag invariato. */
+const PRIORITA_TAG = 100;
+
 export class TaggingAspect implements IAspect {
   private readonly tags: TaggingAspectProps['tags'];
   private readonly projectCode?: string;
@@ -52,42 +55,59 @@ export class TaggingAspect implements IAspect {
   }
 
   visit(node: IConstruct): void {
+    // I tag si scrivono direttamente nel TagManager del nodo, non con
+    // Tags.of(node).add(): quella aggiunge un sub-aspect per ogni nodo, e da
+    // aws-cdk-lib 2.172 il motore degli Aspect riparte da capo a ogni aggiunta,
+    // con un tetto di 100 ripartenze («PossibleInfiniteLoopDetected»).
+    // Questo aspect visita già ogni nodo, quindi il risultato è lo stesso.
+    // Vanno gestite entrambe le interfacce: ITaggable (node.tags, incluso lo
+    // Stack) e ITaggableV2 (node.cdkTagManager, risorse più recenti).
+    // I nodi non taggabili si saltano: Tags.of() su di loro non aveva effetto.
+    const gestore = TagManager.isTaggable(node)
+      ? node.tags
+      : TagManager.isTaggableV2(node)
+        ? node.cdkTagManager
+        : undefined;
+    if (!gestore) {
+      return;
+    }
+
     // Apply IT standard tags according to specifications
-    
+
     // Description: Descrizione dell'oggetto
     if (this.tags.description) {
-      Tags.of(node).add('Description', this.tags.description);
+      gestore.setTag('Description', this.tags.description, PRIORITA_TAG);
     }
 
     // Project: Progetto di riferimento
-    Tags.of(node).add('Project', this.tags.project);
+    gestore.setTag('Project', this.tags.project, PRIORITA_TAG);
 
     // Environment: Ambiente applicativo (PRD, STG, TST, DEV, etc.)
     const envCode = this.environmentCode || mapEnvironmentToCode(this.tags.environment);
-    Tags.of(node).add('Environment', envCode);
+    gestore.setTag('Environment', envCode, PRIORITA_TAG);
 
     // Name: Nome dell'oggetto (gestito principalmente da NamingAspect, 
     // ma può essere sovrascritto qui se specificato)
     if (this.tags.name) {
-      Tags.of(node).add('Name', this.tags.name);
+      gestore.setTag('Name', this.tags.name, PRIORITA_TAG);
     }
 
     // ManagedBy: Strumento di gestione (CF, TF, OT, Manual)
     // CDK genera CloudFormation, quindi usiamo 'CF'
     const managedBy = this.tags.managedBy === 'CDK' ? 'CF' : this.tags.managedBy;
-    Tags.of(node).add('ManagedBy', managedBy);
+    gestore.setTag('ManagedBy', managedBy, PRIORITA_TAG);
 
     // Owner: Gruppo o persona di riferimento
-    Tags.of(node).add('Owner', this.tags.owner);
+    gestore.setTag('Owner', this.tags.owner, PRIORITA_TAG);
 
     // Legacy tags for backward compatibility (if needed)
     if (this.tags.backup) {
-      Tags.of(node).add('Backup', this.tags.backup);
+      gestore.setTag('Backup', this.tags.backup, PRIORITA_TAG);
     }
 
     // Additional cost allocation tags
     if (this.projectCode) {
-      Tags.of(node).add('ProjectCode', this.projectCode);
+      gestore.setTag('ProjectCode', this.projectCode, PRIORITA_TAG);
     }
 
     // NB: rimosso il tag "CreatedDate" con new Date(): cambiava a ogni synth
