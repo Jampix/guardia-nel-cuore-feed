@@ -48,7 +48,7 @@ const LOCKFILE_BACKEND = path.join(RADICE_BACKEND, 'package-lock.json');
 /**
  * Wrapper attorno a NodejsFunction con i default del progetto.
  *
- * Bundling via esbuild. Il runtime Node.js 20 include già l'AWS SDK v3, quindi
+ * Bundling via esbuild. Il runtime Node.js 24 include già l'AWS SDK v3, quindi
  * `@aws-sdk/*` è marcato external (non viene impacchettato). Nessun nome fisico
  * (naming auto CDK).
  */
@@ -63,7 +63,7 @@ export class NodeFunctionConstruct extends Construct {
       projectRoot: RADICE_BACKEND,
       depsLockFilePath: LOCKFILE_BACKEND,
       handler: 'handler',
-      runtime: Runtime.NODEJS_20_X,
+      runtime: Runtime.NODEJS_24_X,
       memorySize: 256,
       timeout: Duration.seconds(15),
       environment: props.environment,
@@ -77,7 +77,7 @@ export class NodeFunctionConstruct extends Construct {
       bundling: {
         minify: true,
         sourceMap: true,
-        target: 'node20',
+        target: 'node24',
         externalModules: ['@aws-sdk/*'],
       },
     });

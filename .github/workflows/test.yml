@@ -24,9 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # La stessa versione del runtime delle Lambda (NODEJS_24_X in
+      # infra/lib/constructs/functions/node-function.ts): i test devono girare
+      # sul Node che eseguira' il codice.
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - name: Install
