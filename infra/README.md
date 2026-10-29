@@ -3,7 +3,7 @@
 Infrastruttura come codice (**AWS CDK, TypeScript**) per l'app di feedback civico
 **Guardia nel Cuore**. Architettura **100% serverless** (niente EC2/VPC).
 
-Stack: Lambda (Node.js 20/TS) · API Gateway HTTP · DynamoDB · Cognito · S3 ·
+Stack: Lambda (Node.js 24/TS) · API Gateway HTTP · DynamoDB · Cognito · S3 ·
 CloudFront · SES · Route53/ACM. Contesto completo in
 [`../docs/02-architettura-aws.md`](../docs/02-architettura-aws.md).
 

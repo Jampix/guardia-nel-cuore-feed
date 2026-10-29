@@ -39,7 +39,7 @@
 | Hosting FE | **S3 + CloudFront** | Statico, economico, CDN globale, HTTPS |
 | Auth | **Amazon Cognito** (User Pool) | Registrazione/OTP/reset password già pronti |
 | API | **API Gateway (HTTP API) + Lambda** | HTTP API costa meno della REST API; Lambda scala a zero |
-| Runtime Lambda | **Node.js 20 (TypeScript)** | Stesso linguaggio del FE |
+| Runtime Lambda | **Node.js 24 (TypeScript)** | Stesso linguaggio del FE |
 | Database | **DynamoDB** (multi-table, on-demand) | NoSQL serverless, costo per richiesta, tabelle leggibili |
 | Foto | **S3** (bucket dedicato) + **URL prefirmati** | Upload diretto dal browser, niente traffico via Lambda |
 | Email | **Amazon SES** | Invio email al cambio stato |

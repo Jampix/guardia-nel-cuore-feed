@@ -45,7 +45,7 @@ Browser (Angular SPA)
    ▼
 API Gateway HTTP  ──(JWT Cognito authorizer)
    ▼
-Lambda (Node.js 20 / TypeScript)
+Lambda (Node.js 24 / TypeScript)
    ├─ DynamoDB  (Feedbacks, Votes, Categories, FeedbackComments)
    ├─ S3        (foto, bucket privato, upload/lettura via URL prefirmati)
    ├─ Cognito   (User Pool, gruppi cittadino/membro/admin,
@@ -74,8 +74,9 @@ Dettagli completi in [`docs/02-architettura-aws.md`](docs/02-architettura-aws.md
 - **Account AWS**: `324908170418` (personale, dedicato) · **regione `eu-west-1`**
 - **Accesso**: AWS IAM Identity Center, profilo CLI `guardia-nel-cuore`
   (`aws sso login --profile guardia-nel-cuore`)
-- **Node**: il **frontend** richiede **Node 22 LTS** (via `nvm use 22`); l'infra/CDK
-  gira sul Node di sistema. La CLI Angular si invoca con `npx ng` (v20 locale).
+- **Node**: il **frontend** richiede **Node 22 LTS** (via `nvm use 22`); il **backend**
+  gira su **Node 24**, lo stesso runtime delle Lambda; l'infra/CDK gira sul Node di
+  sistema. La CLI Angular si invoca con `npx ng` (v20 locale).
 
 ## Sviluppo locale (frontend)
 

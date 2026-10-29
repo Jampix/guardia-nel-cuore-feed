@@ -277,8 +277,7 @@ Lancio a mano: `gh workflow run` dall'account GitHub proprietario del repo.
 5. Mitigazione upload: `ResponseContentType` / `ResponseContentDisposition` sui GET
    prefirmati, per servire sempre come immagine qualunque cosa sia stata caricata.
 6. API CDK deprecate da sostituire: PITR, `logRetention`, `addDependency`.
-7. README ancora con «Node.js 20» nello schema dell'architettura: le Lambda sono su Node 24.
-8. Opzionali: i18n IT/EN, test end-to-end, valutazione accessibilità, UI di gestione
+7. Opzionali: i18n IT/EN, test end-to-end, valutazione accessibilità, UI di gestione
    staff, email SES asincrone, ambiente di prova separato, `Permissions-Policy`.
 
 ## 8. Modo di lavorare

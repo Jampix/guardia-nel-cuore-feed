@@ -1,6 +1,6 @@
 # Backend — Guardia nel Cuore
 
-Handler **Lambda in TypeScript** (Node.js 20), impacchettati e deployati
+Handler **Lambda in TypeScript** (Node.js 24), impacchettati e deployati
 dall'`ApiStack` CDK (`NodejsFunction`) — non c'è un server da avviare. Ogni file
 in `src/handlers/` è una funzione; le rotte HTTP API e i permessi IAM (least
 privilege) sono definiti in [`../infra/lib/stacks/api-stack.ts`](../infra/lib/stacks/api-stack.ts).
