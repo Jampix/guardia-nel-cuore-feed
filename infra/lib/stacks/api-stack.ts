@@ -20,6 +20,8 @@ export interface ApiStackProps extends StackProps {
   userPoolId: string;
   clientAppClientId: string;
   adminAppClientId: string;
+  /** Nome della PreAuthFn (i suoi Errors sono blocchi voluti, non guasti). */
+  preAuthFunctionName: string;
   // Da DataStack (stringhe)
   feedbacksTableArn: string;
   feedbacksTableName: string;
@@ -421,21 +423,34 @@ export class ApiStack extends Stack {
       alertsTopic.addSubscription(new EmailSubscription(props.alertEmail));
       const action = new SnsAction(alertsTopic);
 
-      // 1) Errori Lambda (somma su tutte le funzioni dell'API): >=1 in 5 min.
-      const fns = [
-        categoriesFn, createFeedbackFn, listPublicFeedbackFn, listMyFeedbackFn,
-        presignUploadFn, listAdminFeedbackFn, patchFeedbackFn, adminCategoriesFn,
-        adminUsersFn, voteFn,
-      ].map((c) => c.fn);
-      const usingMetrics: Record<string, Metric> = {};
-      fns.forEach((fn, i) => {
-        usingMetrics[`e${i}`] = fn.metricErrors({ period: Duration.minutes(5), statistic: 'Sum' });
-      });
+      // 1) Errori Lambda: >=1 in 5 min su qualsiasi funzione della regione,
+      // esclusa la PreAuthFn (blocca il login lanciando un'eccezione: i suoi
+      // Errors sono blocchi voluti, non guasti).
+      // Totale di account (metrica AWS/Lambda Errors SENZA dimensioni) meno la
+      // PreAuthFn, invece di sommare e0+e1+... per funzione: CloudWatch fattura
+      // un allarme con metric math come un allarme PER METRICA, e con 10+
+      // funzioni si sforava il free tier di 10 allarmi dell'organizzazione.
+      // Così sono 2 metriche, e le funzioni nuove sono coperte da sole
+      // (inclusi PostConfirmFn e i custom resource CDK, che girano ai deploy).
       const lambdaErrors = new MathExpression({
-        expression: Object.keys(usingMetrics).join('+'),
-        usingMetrics,
+        expression: 'tot - FILL(preauth, 0)',
+        usingMetrics: {
+          tot: new Metric({
+            namespace: 'AWS/Lambda',
+            metricName: 'Errors',
+            statistic: 'Sum',
+            period: Duration.minutes(5),
+          }),
+          preauth: new Metric({
+            namespace: 'AWS/Lambda',
+            metricName: 'Errors',
+            dimensionsMap: { FunctionName: props.preAuthFunctionName },
+            statistic: 'Sum',
+            period: Duration.minutes(5),
+          }),
+        },
         period: Duration.minutes(5),
-        label: 'Errori Lambda (totali)',
+        label: 'Errori Lambda (account, esclusa PreAuth)',
       });
       new Alarm(this, 'LambdaErrorsAlarm', {
         metric: lambdaErrors,
@@ -443,7 +458,7 @@ export class ApiStack extends Stack {
         evaluationPeriods: 1,
         comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
         treatMissingData: TreatMissingData.NOT_BREACHING,
-        alarmDescription: 'Una o più Lambda dell\'API hanno restituito un errore.',
+        alarmDescription: 'Una o più Lambda dell\'account hanno restituito un errore.',
       }).addAlarmAction(action);
 
       // 2) 5xx dell'HTTP API: errori lato server percepiti dai cittadini.

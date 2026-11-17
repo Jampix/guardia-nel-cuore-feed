@@ -23,6 +23,8 @@ export class AuthStack extends Stack {
   public readonly userPoolArn: string;
   public readonly clientAppClientId: string;
   public readonly adminAppClientId: string;
+  /** Nome della PreAuthFn: l'ApiStack lo esclude dall'allarme errori Lambda. */
+  public readonly preAuthFunctionName: string;
 
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
@@ -108,6 +110,7 @@ export class AuthStack extends Stack {
     this.userPoolArn = auth.userPool.userPoolArn;
     this.clientAppClientId = auth.clientAppClient.userPoolClientId;
     this.adminAppClientId = auth.adminAppClient.userPoolClientId;
+    this.preAuthFunctionName = preAuthFn.fn.functionName;
 
     const code = props.config.projectCode;
     new CfnOutput(this, 'UserPoolId', { value: this.userPoolId, exportName: `${code}-user-pool-id` });

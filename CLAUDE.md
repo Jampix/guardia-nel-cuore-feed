@@ -193,6 +193,11 @@ Lancio a mano: `gh workflow run` dall'account GitHub proprietario del repo.
 
 - Gli **«Errors» della PreAuthFn non sono guasti**: il trigger blocca lanciando
   un'eccezione, ogni blocco legittimo conta come errore Lambda.
+- **Allarmi CloudWatch e free tier**: un allarme con metric math si paga **per metrica**
+  (la vecchia somma `e0+…+e9` valeva 10 allarmi), e i 10 gratuiti sono condivisi da
+  tutta l'organizzazione AWS. Per questo `LambdaErrorsAlarm` usa il totale di account
+  (`AWS/Lambda Errors` senza dimensioni) meno la PreAuthFn: 2 metriche, e copre da solo
+  le funzioni nuove. Non tornare a un allarme o a una metrica per funzione.
 - Il **401 su `/feedback/public` è corretto**: `public` è la visibilità dei feedback
   elencati, non della rotta (che è autenticata).
 - Nei dati la visibilità vale `pubblico` / `privato` (non `public`); `fotoKey` può

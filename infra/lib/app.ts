@@ -137,6 +137,7 @@ export class InfrastructureApp {
       userPoolId: auth.userPoolId,
       clientAppClientId: auth.clientAppClientId,
       adminAppClientId: auth.adminAppClientId,
+      preAuthFunctionName: auth.preAuthFunctionName,
       feedbacksTableArn: data.feedbacksTableArn,
       feedbacksTableName: data.feedbacksTableName,
       categoriesTableArn: data.categoriesTableArn,
